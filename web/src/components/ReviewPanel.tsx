@@ -4,10 +4,10 @@ import { SRSManager } from '../utils/srs';
 import { marked } from 'marked';
 import { MarkdownRenderer } from './MarkdownRenderer';
 
-interface ReviewPanelProps {
+export interface ReviewPanelProps {
   notes: Note[];
   onNoteClick: (note: Note) => void;
-  model: 'gemini' | 'openai' | 'local';
+  model: 'gemini' | 'openai' | 'local' | 'deepseek';
 }
 
 export const ReviewPanel: React.FC<ReviewPanelProps> = ({ notes, onNoteClick, model }) => {
@@ -28,11 +28,36 @@ export const ReviewPanel: React.FC<ReviewPanelProps> = ({ notes, onNoteClick, mo
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [disableActions, setDisableActions] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     srsManager.initializeFromNotes(notes);
     setStats(srsManager.getReviewStats());
   }, [notes, srsManager]);
+
+  const updateNoteInDatabase = async (noteId: string, srsState: any) => {
+    try {
+      setError(null);
+      const response = await fetch(`http://localhost:3001/api/notes/${noteId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nextReview: srsState.nextReview,
+          interval: srsState.interval,
+          easiness: srsState.easiness,
+          repetitions: srsState.repetitions,
+          lastReview: srsState.lastReview,
+          lastPerformance: srsState.lastPerformance
+        })
+      });
+      if (!response.ok) {
+        throw new Error('Failed to update note in database');
+      }
+    } catch (error) {
+      setError('Failed to update note in database. Review progress may not be saved.');
+      console.error('Database update error:', error);
+    }
+  };
 
   const startReview = async () => {
     const session = srsManager.startReviewSession(notes);
@@ -42,6 +67,7 @@ export const ReviewPanel: React.FC<ReviewPanelProps> = ({ notes, onNoteClick, mo
     }
     setIsReviewing(true);
     setFeedback(null);
+    setError(null);
     await generateQuestion();
   };
 
@@ -62,23 +88,27 @@ export const ReviewPanel: React.FC<ReviewPanelProps> = ({ notes, onNoteClick, mo
 
     setIsLoading(true);
     try {
-      // Generate a question based on the note content using LLM
-      const getEndpoint = () => model === 'gemini' ? '/api/chat' : model === 'openai' ? '/api/chat' : '/api/chat-local';
+      const getEndpoint = () => model === 'local' ? '/api/chat-local' : '/api/chat';
       const response = await fetch(`http://localhost:3001${getEndpoint()}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          message: `You are a study assistant. Generate a concise, atomic question suitable for a spaced repetition flashcard, based on the following note. The question should:
-- Be short and focused on a single fact or concept (atomic)
-- Avoid unnecessary context or explanation
-- Be clear and direct
-- Use Markdown for formatting (bold, italic, lists, code, quotes)
-- Use LaTeX for any math
-- Do NOT include the answer or hints
+          message: `You are a review question generation assistant. Your job is to create a single, objective, atomic review question that reinforces the principal concept of the following Zettelkasten note. The question must:
+
+- Focus on one fundamental concept (atomicity)
+- Be clear, direct, and unambiguous
+- Avoid trivia, superficial details, or multi-part questions
+- Prompt recall or understanding of the core idea, not rote memorization
+- Not be yes/no or true/false
+- Not reference the note or its title directly; the question should stand alone
+- Use simple, precise language
+- If the note contains a mathematical concept, you may ask for the meaning, derivation, or application of a formula, but do not ask for verbatim reproduction
+
+Return ONLY the question as a single string, with no explanation or extra text.
 
 Note:
 ${note.content}`,
-          history: [] // Add empty history array
+          history: []
         }),
       });
 
@@ -93,6 +123,7 @@ ${note.content}`,
     } catch (error) {
       console.error('Error generating question:', error);
       setFeedback('Failed to generate question. Please try again.');
+      setError('Failed to generate question. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -102,14 +133,38 @@ ${note.content}`,
     if (!userAnswer.trim()) return;
     setIsLoading(true);
     setDisableActions(true);
+    setError(null);
     try {
       const currentNote = srsManager.getCurrentNote();
       const note = notes.find(n => n.id === currentNote?.noteId);
       
       const requestBody = { 
-        message: `You are a study assistant. Review the student's answer to the flashcard question below. Your feedback should:
+        message: `You are a helpful study assistant. Your role is to:
+1. Help students understand complex concepts
+2. Provide clear and concise explanations
+3. Use examples and analogies when helpful
+4. Break down complex topics into simpler parts
+5. Check for understanding
+6. Be encouraging and supportive
+7. Maintain context of the conversation
+8. Use Markdown for formatting:
+   - **bold** for emphasis
+   - *italic* for secondary emphasis
+   - \`code\` for technical terms
+   - Lists with - or 1. 2. 3.
+9. Use LaTeX for mathematical expressions:
+   - Inline math: $...$ (e.g., $E = mc^2$)
+   - Block math: $$...$$ (e.g., $$\\frac{d}{dx}f(x) = \\lim_{h \\to 0}\\frac{f(x+h) - f(x)}{h}$$)
+   - Use \\frac for fractions
+   - Use \\sum for summations
+   - Use \\int for integrals
+   - Use \\lim for limits
+   - Use subscripts with _ and superscripts with ^
+10. Do NOT use HTML tags
+
+Review the student's answer to the flashcard question below. Your feedback should:
+- Start with "CORRECT:" or "INCORRECT:" followed by your feedback
 - Be brief and to the point
-- Confirm if the answer is correct or not
 - If incorrect, state the correct answer concisely
 - Avoid unnecessary explanation
 - Use Markdown and LaTeX as needed
@@ -129,7 +184,7 @@ Student's Answer: ${userAnswer}`,
         ]
       };
             
-      const getEndpoint = () => model === 'gemini' ? '/api/chat' : model === 'openai' ? '/api/chat' : '/api/chat-local';
+      const getEndpoint = () => model === 'local' ? '/api/chat-local' : '/api/chat';
       const response = await fetch(`http://localhost:3001${getEndpoint()}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -141,9 +196,47 @@ Student's Answer: ${userAnswer}`,
       const data = await response.json();
       const feedback = data.response;
       setFeedback(feedback);
-      // Determine performance score based on feedback
-      const score = feedback.toLowerCase().includes('correct') ? 5 : 1;
-      srsManager.updateReviewPerformance(score);
+      
+      // Improved scoring based on explicit feedback format
+      const score = feedback.toLowerCase().startsWith('correct:') ? 5 : 1;
+      const newState = srsManager.updateReviewPerformance(score);
+      
+      // Update database with new SRS state
+      if (newState && currentNote) {
+        await updateNoteInDatabase(currentNote.noteId, newState);
+      }
+
+      // Create a note for incorrect answers
+      if (score < 3) {
+        const noteResponse = await fetch('http://localhost:3001/api/note', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            content: `Common Misconception: ${note?.title}
+
+Question: ${currentQuestion}
+Student's Answer: ${userAnswer}
+Correct Answer: ${feedback.replace(/^(INCORRECT:|CORRECT:)/i, '').trim()}
+
+This note captures a common misconception about ${note?.title}. The student's answer reveals a misunderstanding that should be addressed.`
+          })
+        });
+        if (noteResponse.ok) {
+          const noteData = await noteResponse.json();
+          if (noteData.notes && Array.isArray(noteData.notes) && noteData.notes.length > 0) {
+            // Add the new note to the notes array
+            const newNotes = [...notes, ...noteData.notes];
+            // Update the parent component's notes
+            onNoteClick(noteData.notes[0]);
+            // Add the new note to chat history
+            setChatHistory(prev => [...prev, { 
+              role: 'assistant', 
+              content: `I've created a new note about this misconception:\n\n${noteData.notes[0].content}` 
+            }]);
+          }
+        }
+      }
+
       setChatHistory([
         { 
           role: 'system', 
@@ -156,7 +249,9 @@ Student's Answer: ${userAnswer}`,
       setIsChatting(true);
       setShowFeedback(true);
     } catch (error) {
+      console.error('Error in handleSubmit:', error);
       setFeedback('Failed to analyze answer. Please try again.');
+      setError('Failed to analyze answer. Please try again.');
       setShowFeedback(true);
     } finally {
       setIsLoading(false);
@@ -193,7 +288,6 @@ Student's Answer: ${userAnswer}`,
    - *italic* for secondary emphasis
    - \`code\` for technical terms
    - Lists with - or 1. 2. 3.
-   - > for important quotes
 9. Use LaTeX for mathematical expressions:
    - Inline math: $...$ (e.g., $E = mc^2$)
    - Block math: $$...$$ (e.g., $$\\frac{d}{dx}f(x) = \\lim_{h \\to 0}\\frac{f(x+h) - f(x)}{h}$$)
@@ -213,7 +307,7 @@ ${chatInput}`,
         }))
       };
             
-      const getEndpoint = () => model === 'gemini' ? '/api/chat' : model === 'openai' ? '/api/chat' : '/api/chat-local';
+      const getEndpoint = () => model === 'local' ? '/api/chat-local' : '/api/chat';
       const response = await fetch(`http://localhost:3001${getEndpoint()}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -221,7 +315,37 @@ ${chatInput}`,
       });
       if (!response.ok) throw new Error('Failed to get response');
       const data = await response.json();
-      setChatHistory([...newHistory, { role: 'assistant' as const, content: data.response }]);
+      const aiResponse = data.response;
+      setChatHistory([...newHistory, { role: 'assistant' as const, content: aiResponse }]);
+
+      // Create a note for follow-up questions that reveal misconceptions
+      const noteResponse = await fetch('http://localhost:3001/api/note', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: `Follow-up Question: ${note?.title}
+
+Original Question: ${currentQuestion}
+Student's Question: ${chatInput}
+Assistant's Response: ${aiResponse}
+
+This note captures a follow-up question that reveals potential misconceptions or areas needing clarification about ${note?.title}.`
+        })
+      });
+      if (noteResponse.ok) {
+        const noteData = await noteResponse.json();
+        if (noteData.notes && Array.isArray(noteData.notes) && noteData.notes.length > 0) {
+          // Add the new note to the notes array
+          const newNotes = [...notes, ...noteData.notes];
+          // Update the parent component's notes
+          onNoteClick(noteData.notes[0]);
+          // Add the new note to chat history
+          setChatHistory(prev => [...prev, { 
+            role: 'assistant', 
+            content: `I've created a new note about this follow-up question:\n\n${noteData.notes[0].content}` 
+          }]);
+        }
+      }
     } catch (err) {
       setChatHistory([...newHistory, { role: 'assistant' as const, content: 'Sorry, something went wrong.' }]);
     } finally {
@@ -325,6 +449,20 @@ ${chatInput}`,
         alignItems: 'center',
         gap: 28,
       }}>
+        {error && (
+          <div style={{
+            width: '100%',
+            background: '#ff5c5c22',
+            color: '#ff5c5c',
+            borderRadius: 12,
+            padding: '12px 16px',
+            fontSize: 14,
+            fontWeight: 500,
+            marginBottom: -8,
+          }}>
+            {error}
+          </div>
+        )}
         {/* Header and Progress */}
         <div style={{ width: '100%', marginBottom: 8 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>

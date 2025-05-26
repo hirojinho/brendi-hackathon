@@ -16,6 +16,7 @@ import { generateGeminiResponse, generateNoteWithGemini, geminiModel } from './g
 import { generateOpenAIResponse } from './openai.js';
 import { shouldCreateNote, isSimilarNote } from './notes.js';
 import { generateLocalResponse } from './local.js';
+import { generateDeepseekResponse, generateNoteWithDeepseek, shouldCreateNoteWithDeepseek } from './deepseek.js';
 
 dotenv.config();
 
@@ -158,7 +159,7 @@ async function getOllamaEmbedding(text: string): Promise<number[]> {
   if (!res.ok) {
     const errorText = await res.text();
     console.error('Ollama embedding error:', errorText);
-    throw new Error('Ollama embedding failed');
+    throw new Error('Ollama embedding failed: ' + errorText);
   }
   const data = await res.json() as OllamaEmbeddingResponse;
   if (!data.embedding) throw new Error('No embedding in Ollama response');
@@ -194,7 +195,7 @@ function averageEmbeddings(embeddings: number[][]): number[] {
 // Chat endpoint: only returns the AI response
 app.post('/api/chat', async (req: Request, res: Response) => {
   try {
-    const { message, history, model = 'gemini', useRag = false, embeddingProvider = 'openai' } = req.body;
+    const { message, history, model = 'gemini', useRag = false, maxChunks = 5 } = req.body;
 
     if (!message) {
       return res.status(400).json({ error: 'Message is required' });
@@ -203,10 +204,10 @@ app.post('/api/chat', async (req: Request, res: Response) => {
     let response: string;
     let topChunks: any[] = [];
     let context = '';
-    if (model === 'gemini') {
+    if (model === 'gemini' || model === 'deepseek') {
       if (useRag) {
-        // Compute embedding for the user message
-        const queryEmbedding = await getEmbedding(message, embeddingProvider);
+        // Compute embedding for the user message using Ollama to match stored embeddings
+        const queryEmbedding = await getOllamaEmbedding(message);
         // Retrieve all document chunks
         const allChunks = documentDb.getAllChunks();
         // Compute similarity for each chunk
@@ -214,12 +215,36 @@ app.post('/api/chat', async (req: Request, res: Response) => {
           ...chunk,
           similarity: cosineSimilarity(queryEmbedding, chunk.embedding)
         }));
-        // Sort by similarity and take top 5
-        topChunks = scoredChunks.sort((a, b) => b.similarity - a.similarity).slice(0, 5);
+        // Filter by threshold
+        const SIMILARITY_THRESHOLD = 0.7;
+        let filteredChunks = scoredChunks.filter(chunk => chunk.similarity >= SIMILARITY_THRESHOLD);
+        // If none meet the threshold, fall back to top 3
+        if (filteredChunks.length === 0) {
+          filteredChunks = scoredChunks.sort((a, b) => b.similarity - a.similarity).slice(0, 3);
+        } else {
+          // Otherwise, sort by similarity descending and take top 5
+          filteredChunks = filteredChunks.sort((a, b) => b.similarity - a.similarity).slice(0, maxChunks);
+        }
+        topChunks = filteredChunks;
+        // Log similarity scores for retrieved chunks
+        console.log('\nRetrieved chunks similarity scores:');
+        topChunks.forEach((chunk, index) => {
+          console.log(`Chunk ${index + 1} (doc_id: ${chunk.document_id}, chunk_index: ${chunk.chunk_index}): ${(chunk.similarity * 100).toFixed(2)}%`);
+        });
+        console.log('---\n');
         context = topChunks.map(chunk => chunk.chunk_text).join('\n\n');
       }
-      response = await generateGeminiResponse(message, history, context || undefined);
-      // Log RAG usage for Gemini
+      // Add explicit source references to the prompt when using RAG
+      const promptWithSources = useRag ? 
+        `Based on the following sources, please provide a response. For each piece of information you use, cite the source number (e.g., [Source 1], [Source 2], etc.).\n\nFormat all math using LaTeX (use $...$ for inline math and $$...$$ for block math), and use Markdown for all formatting (italics, bold, lists, etc.). Separate paragraphs with double newlines.\n\nSources:\n${topChunks.map((chunk, i) => `[Source ${i + 1}] ${chunk.chunk_text}`).join('\n\n')}\n\nUser question: ${message}\n\nPlease provide a comprehensive response that directly references the sources above.` :
+        message;
+
+      if (model === 'gemini') {
+        response = await generateGeminiResponse(promptWithSources, history, context || undefined);
+      } else {
+        response = await generateDeepseekResponse(promptWithSources, history, context || undefined);
+      }
+      // Log RAG usage
       if (useRag && topChunks.length > 0) {
         const docId = topChunks[0].document_id;
         logRagUsage(
@@ -237,7 +262,15 @@ app.post('/api/chat', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Invalid model specified' });
     }
 
-    res.json({ response });
+    res.json({ 
+      response,
+      retrievedChunks: useRag ? topChunks.map(chunk => ({
+        documentId: chunk.document_id,
+        chunkIndex: chunk.chunk_index,
+        text: chunk.chunk_text,
+        similarity: chunk.similarity
+      })) : undefined
+    });
   } catch (error) {
     console.error('Error in chat endpoint:', error);
     res.status(500).json({ error: 'Failed to generate response' });
@@ -247,19 +280,29 @@ app.post('/api/chat', async (req: Request, res: Response) => {
 // Note endpoint: returns a note for a given assistant response
 app.post('/api/note', async (req: Request, res: Response) => {
   try {
-    const { content } = req.body;
+    const { content, model = 'gemini' } = req.body;
     if (!content) {
       return res.status(400).json({ error: 'Content is required' });
     }
 
-    const shouldCreate = await shouldCreateNote(geminiModel, { role: 'assistant', content });
+    // Use the same model for both note detection and generation
+    const shouldCreate = model === 'deepseek' ? 
+      await shouldCreateNoteWithDeepseek({ role: 'assistant', content }) :
+      await shouldCreateNote(geminiModel, { role: 'assistant', content });
+
     let notes: Note[] = [];
     if (shouldCreate) {
-      const generatedNotes = await generateNoteWithGemini(
-        { role: 'assistant', content },
-        'chat-' + Date.now(),
-        0
-      );
+      const generatedNotes = model === 'gemini' ?
+        await generateNoteWithGemini(
+          { role: 'assistant', content },
+          'chat-' + Date.now(),
+          0
+        ) :
+        await generateNoteWithDeepseek(
+          { role: 'assistant', content },
+          'chat-' + Date.now(),
+          0
+        );
       // Save each unique note
       const allNotes = noteDb.getAllNotes();
       notes = generatedNotes.filter(note => {
@@ -284,22 +327,44 @@ app.post('/api/note', async (req: Request, res: Response) => {
 
 app.post('/api/chat-local', async (req: Request, res: Response) => {
   try {
-    const { message, history } = req.body;
+    const { message, history, useRag = false } = req.body;
     if (!message && !history) {
       return res.status(400).json({ error: 'Message or history is required' });
     }
     let messages;
+    let prompt = message;
+    if (useRag) {
+      // Compute embedding for the user message using Ollama to match stored embeddings
+      const queryEmbedding = await getOllamaEmbedding(message);
+      // Retrieve all document chunks
+      const allChunks = documentDb.getAllChunks();
+      // Compute similarity for each chunk
+      const scoredChunks = allChunks.map(chunk => ({
+        ...chunk,
+        similarity: cosineSimilarity(queryEmbedding, chunk.embedding)
+      }));
+      // Filter by threshold
+      const SIMILARITY_THRESHOLD = 0.7;
+      let filteredChunks = scoredChunks.filter(chunk => chunk.similarity >= SIMILARITY_THRESHOLD);
+      if (filteredChunks.length === 0) {
+        filteredChunks = scoredChunks.sort((a, b) => b.similarity - a.similarity).slice(0, 3);
+      } else {
+        filteredChunks = filteredChunks.sort((a, b) => b.similarity - a.similarity);
+      }
+      const topChunks = filteredChunks;
+      prompt = `Based on the following sources, please provide a response. For each piece of information you use, cite the source number (e.g., [Source 1], [Source 2], etc.).\n\nFormat all math using LaTeX (use $...$ for inline math and $$...$$ for block math), and use Markdown for all formatting (italics, bold, lists, etc.). Separate paragraphs with double newlines.\n\nSources:\n${topChunks.map((chunk, i) => `[Source ${i + 1}] ${chunk.chunk_text}`).join('\n\n')}\n\nUser question: ${message}\n\nPlease provide a comprehensive response that directly references the sources above.`;
+    }
     if (history && Array.isArray(history) && history.length > 0) {
       const last = history[history.length - 1];
       if (!last || last.role !== 'user' || last.content !== message) {
-        messages = [...history, { role: 'user', content: message }];
+        messages = [...history, { role: 'user', content: prompt }];
       } else {
         messages = history;
       }
     } else {
       messages = [
         { role: 'system', content: 'You are a helpful study assistant. Format your responses using markdown for better readability. Use code blocks, bullet points, and text emphasis where appropriate.' },
-        { role: 'user', content: message }
+        { role: 'user', content: prompt }
       ];
     }
     // Send to Ollama local model
@@ -354,10 +419,26 @@ app.patch('/api/notes/:id', (req: Request, res: Response) => {
       lastReview,
       lastPerformance
     } = req.body;
+
+    // Validate input
+    if (interval !== undefined && (typeof interval !== 'number' || interval < 0)) {
+      return res.status(400).json({ error: 'Invalid interval value' });
+    }
+    if (easiness !== undefined && (typeof easiness !== 'number' || easiness < 1.3)) {
+      return res.status(400).json({ error: 'Invalid easiness value' });
+    }
+    if (repetitions !== undefined && (typeof repetitions !== 'number' || repetitions < 0)) {
+      return res.status(400).json({ error: 'Invalid repetitions value' });
+    }
+    if (lastPerformance !== undefined && (typeof lastPerformance !== 'number' || lastPerformance < 0 || lastPerformance > 5)) {
+      return res.status(400).json({ error: 'Invalid performance value' });
+    }
+
     const note = noteDb.getNote(noteId);
     if (!note) {
       return res.status(404).json({ error: 'Note not found' });
     }
+
     // Update SRS fields if provided
     if (nextReview !== undefined) note.nextReview = nextReview ? new Date(nextReview) : undefined;
     if (interval !== undefined) note.interval = interval;
@@ -365,8 +446,20 @@ app.patch('/api/notes/:id', (req: Request, res: Response) => {
     if (repetitions !== undefined) note.repetitions = repetitions;
     if (lastReview !== undefined) note.lastReview = lastReview ? new Date(lastReview) : undefined;
     if (lastPerformance !== undefined) note.lastPerformance = lastPerformance;
+    
     note.lastModified = new Date();
     noteDb.saveNote(note);
+
+    console.log('Updated note SRS fields:', {
+      id: noteId,
+      nextReview: note.nextReview,
+      interval: note.interval,
+      easiness: note.easiness,
+      repetitions: note.repetitions,
+      lastReview: note.lastReview,
+      lastPerformance: note.lastPerformance
+    });
+
     res.json({ note });
   } catch (error) {
     console.error('Error updating note SRS fields:', error);
@@ -396,7 +489,7 @@ app.post('/api/documents/upload', upload.single('file'), async (req: Request & {
     const numPages = pdf.numPages;
     let docTextForEmbedding = '';
     let chunkIndex = 0;
-    const MAX_EMBEDDING_CHARS = 1024;
+    const MAX_EMBEDDING_CHARS = 512;
     const CHUNK_SIZE = 1500;
     const CHUNK_OVERLAP = 200;
     // Save document first, get docId

@@ -350,7 +350,7 @@ const DocumentsPanel: React.FC<{ embeddingProvider: 'openai' | 'ollama' }> = ({ 
             <div className="doc-modal-meta">{modalDoc.originalname}</div>
             <div className="doc-modal-meta-time">🕒 {new Date(modalDoc.created_at).toLocaleString()}</div>
             <div className="doc-modal-section">
-              <h3>Responses & Chunks Used</h3>
+              <h3>Usage History</h3>
               {modalLoading ? (
                 <div className="documents-loading">Loading...</div>
               ) : modalError ? (
@@ -362,7 +362,10 @@ const DocumentsPanel: React.FC<{ embeddingProvider: 'openai' | 'ollama' }> = ({ 
                   {modalUsage.map((entry, idx) => (
                     <div className="doc-modal-usage-entry" key={idx}>
                       <div className="doc-modal-usage-time">{new Date(entry.timestamp).toLocaleString()}</div>
-                      <div className="doc-modal-usage-response-label">Assistant Response:</div>
+                      <details>
+                        <summary className="doc-modal-usage-response-label">
+                          Show Response & Chunks
+                        </summary>
                       <div className="doc-modal-usage-response">{entry.response}</div>
                       <div className="doc-modal-usage-chunks-label">Chunks used:</div>
                       <div className="doc-modal-usage-chunks">
@@ -373,6 +376,7 @@ const DocumentsPanel: React.FC<{ embeddingProvider: 'openai' | 'ollama' }> = ({ 
                           </div>
                         ))}
                       </div>
+                      </details>
                     </div>
                   ))}
                 </div>

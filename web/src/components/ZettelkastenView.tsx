@@ -19,6 +19,8 @@ interface GraphData {
     source: string;
     target: string;
     color: string;
+    sharedTags: string[];
+    width: number;
   }>;
 }
 
@@ -26,11 +28,42 @@ export const ZettelkastenView: React.FC<ZettelkastenViewProps> = ({ notes, onNot
   const containerRef = useRef<HTMLDivElement>(null);
   const graphRef = useRef<any>(null);
   const [modalNote, setModalNote] = useState<Note | null>(null);
+  const [tooltip, setTooltip] = useState<{ x: number; y: number; content: string } | null>(null);
+
+  // Update modal note when notes array changes
+  useEffect(() => {
+    if (modalNote) {
+      const updatedNote = notes.find(n => n.id === modalNote.id);
+      if (updatedNote) {
+        setModalNote(updatedNote);
+      }
+    }
+  }, [notes]);
 
   useEffect(() => {
     if (!containerRef.current) return;
 
-    // Create graph data
+    // Build a map to avoid duplicate links and store shared tags
+    const linkMap: Record<string, { source: string; target: string; sharedTags: string[] }> = {};
+    notes.forEach(note => {
+      notes.forEach(otherNote => {
+        if (note.id !== otherNote.id) {
+          const sharedTags = note.tags.filter(tag => otherNote.tags.includes(tag));
+          if (sharedTags.length > 0) {
+            // Use sorted ids to avoid duplicate links
+            const key = [note.id, otherNote.id].sort().join('-');
+            if (!linkMap[key]) {
+              linkMap[key] = {
+                source: note.id,
+                target: otherNote.id,
+                sharedTags
+              };
+            }
+          }
+        }
+      });
+    });
+
     const graphData: GraphData = {
       nodes: notes.map(note => ({
         id: note.id,
@@ -38,23 +71,14 @@ export const ZettelkastenView: React.FC<ZettelkastenViewProps> = ({ notes, onNot
         val: 1,
         color: '#4a9eff'
       })),
-      links: []
+      links: Object.values(linkMap).map(link => ({
+        source: link.source,
+        target: link.target,
+        color: '#7f53ff',
+        sharedTags: link.sharedTags,
+        width: Math.max(1, link.sharedTags.length * 2) // thickness: 2px per tag, min 1
+      }))
     };
-
-    // Add links based on shared tags
-    notes.forEach(note => {
-      note.tags.forEach(tag => {
-        notes.forEach(otherNote => {
-          if (note.id !== otherNote.id && otherNote.tags.includes(tag)) {
-            graphData.links.push({
-              source: note.id,
-              target: otherNote.id,
-              color: '#7f53ff'
-            });
-          }
-        });
-      });
-    });
 
     // Initialize the graph
     if (!graphRef.current) {
@@ -64,19 +88,46 @@ export const ZettelkastenView: React.FC<ZettelkastenViewProps> = ({ notes, onNot
         .nodeLabel('name')
         .nodeColor('color')
         .linkColor('color')
-        .linkWidth(1)
+        .linkWidth((link: any) => link.width)
         .linkDirectionalParticles(2)
         .linkDirectionalParticleWidth(2)
         .onNodeClick((node: any) => {
           const note = notes.find(n => n.id === node.id);
           if (note) setModalNote(note);
+        })
+        .onLinkHover((link: any, prevLink: any) => {
+          if (link) {
+            // Get mouse position relative to container
+            const rect = containerRef.current!.getBoundingClientRect();
+            // Use last mousemove event
+            const mousemove = (window as any)._zettelMouseMove;
+            if (mousemove) {
+              setTooltip({
+                x: mousemove.clientX - rect.left,
+                y: mousemove.clientY - rect.top,
+                content: `${link.sharedTags.length} shared tag${link.sharedTags.length > 1 ? 's' : ''}: ${link.sharedTags.join(', ')}`
+              });
+            } else {
+              setTooltip({ x: 100, y: 100, content: `${link.sharedTags.length} shared tag${link.sharedTags.length > 1 ? 's' : ''}: ${link.sharedTags.join(', ')}` });
+            }
+          } else {
+            setTooltip(null);
+          }
         });
     } else {
       graphRef.current.graphData(graphData);
+      graphRef.current.linkWidth((link: any) => link.width);
     }
+
+    // Listen for mousemove to track position for tooltip
+    const mouseMoveHandler = (e: MouseEvent) => {
+      (window as any)._zettelMouseMove = e;
+    };
+    window.addEventListener('mousemove', mouseMoveHandler);
 
     // Cleanup
     return () => {
+      window.removeEventListener('mousemove', mouseMoveHandler);
       if (graphRef.current) {
         graphRef.current._destructor();
         graphRef.current = null;
@@ -103,7 +154,28 @@ export const ZettelkastenView: React.FC<ZettelkastenViewProps> = ({ notes, onNot
           alignItems: 'center',
           justifyContent: 'center',
         }}>
-          <div ref={containerRef} className="graph-container" style={{ width: '100%', minHeight: 420, height: 520, borderRadius: 18, overflow: 'hidden', background: 'linear-gradient(120deg, #23272f 0%, #23273a 100%)', border: '2px solid #4a9eff22', boxShadow: '0 2px 12px #4a9eff11' }} />
+          <div ref={containerRef} className="graph-container" style={{ width: '100%', minHeight: 420, height: 520, borderRadius: 18, overflow: 'hidden', background: 'linear-gradient(120deg, #23272f 0%, #23273a 100%)', border: '2px solid #4a9eff22', boxShadow: '0 2px 12px #4a9eff11', position: 'relative' }} />
+          {tooltip && (
+            <div style={{
+              position: 'absolute',
+              left: tooltip.x + 12,
+              top: tooltip.y + 12,
+              background: 'rgba(36,40,48,0.95)',
+              color: '#fff',
+              padding: '8px 16px',
+              borderRadius: 8,
+              boxShadow: '0 2px 8px #7f53ff44',
+              pointerEvents: 'none',
+              zIndex: 20,
+              fontSize: 15,
+              fontWeight: 500,
+              border: '1.5px solid #7f53ff88',
+              maxWidth: 320,
+              whiteSpace: 'pre-line',
+            }}>
+              {tooltip.content}
+            </div>
+          )}
           <div style={{
             position: 'absolute',
             top: 32,
@@ -183,6 +255,42 @@ export const ZettelkastenView: React.FC<ZettelkastenViewProps> = ({ notes, onNot
             <h2 style={{ color: '#7f53ff', fontWeight: 800, fontSize: 26, margin: 0 }}>{modalNote.title}</h2>
             <div style={{ color: '#b0b8c1', fontSize: 17, marginBottom: 8, fontWeight: 500 }}>
               <MarkdownRenderer content={modalNote.content} />
+            </div>
+            {/* SRS Information */}
+            <div style={{ 
+              background: 'linear-gradient(90deg, #23273a 0%, #23272f 100%)',
+              borderRadius: 16,
+              padding: '18px 20px',
+              marginBottom: 8,
+              border: '1.5px solid #4a9eff33'
+            }}>
+              <div style={{ color: '#7f53ff', fontWeight: 700, fontSize: 16, marginBottom: 12 }}>Review Status</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px 20px' }}>
+                <div>
+                  <div style={{ color: '#b0b8c1', fontSize: 14, marginBottom: 4 }}>Next Review</div>
+                  <div style={{ color: '#e6e6e6', fontWeight: 600 }}>
+                    {modalNote.nextReview ? new Date(modalNote.nextReview).toLocaleDateString() : 'Not scheduled'}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ color: '#b0b8c1', fontSize: 14, marginBottom: 4 }}>Interval</div>
+                  <div style={{ color: '#e6e6e6', fontWeight: 600 }}>
+                    {modalNote.interval ? `${modalNote.interval} days` : 'Not set'}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ color: '#b0b8c1', fontSize: 14, marginBottom: 4 }}>Easiness</div>
+                  <div style={{ color: '#e6e6e6', fontWeight: 600 }}>
+                    {modalNote.easiness ? modalNote.easiness.toFixed(2) : 'Not set'}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ color: '#b0b8c1', fontSize: 14, marginBottom: 4 }}>Last Performance</div>
+                  <div style={{ color: '#e6e6e6', fontWeight: 600 }}>
+                    {modalNote.lastPerformance ? `${modalNote.lastPerformance}/5` : 'Not reviewed'}
+                  </div>
+                </div>
+              </div>
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
               {modalNote.tags.map(tag => (
