@@ -3,6 +3,7 @@ import { Note } from '../types';
 import { SRSManager } from '../utils/srs';
 import { marked } from 'marked';
 import { MarkdownRenderer } from './MarkdownRenderer';
+import { useReviewSession } from '../hooks/useReviewSession';
 
 export interface ReviewPanelProps {
   notes: Note[];
@@ -12,363 +13,42 @@ export interface ReviewPanelProps {
 
 export const ReviewPanel: React.FC<ReviewPanelProps> = ({ notes, onNoteClick, model }) => {
   const [srsManager] = useState(() => new SRSManager());
-  const [isLoading, setIsLoading] = useState(false);
-  const [currentQuestion, setCurrentQuestion] = useState<string | null>(null);
-  const [userAnswer, setUserAnswer] = useState('');
-  const [feedback, setFeedback] = useState<string | null>(null);
-  const [isReviewing, setIsReviewing] = useState(false);
   const [stats, setStats] = useState<{
     totalNotes: number;
     dueNotes: number;
     averageEasiness: number;
   } | null>(null);
-  const [chatHistory, setChatHistory] = useState<{role: 'user' | 'assistant' | 'system', content: string}[]>([]);
-  const [isChatting, setIsChatting] = useState(false);
-  const [chatInput, setChatInput] = useState('');
-  const [isChatLoading, setIsChatLoading] = useState(false);
-  const [showFeedback, setShowFeedback] = useState(false);
 
-  const [error, setError] = useState<string | null>(null);
+  // Use our custom hook for all review session logic
+  const reviewSession = useReviewSession(notes, model, onNoteClick, srsManager);
 
   useEffect(() => {
     srsManager.initializeFromNotes(notes);
     setStats(srsManager.getReviewStats());
   }, [notes, srsManager]);
 
-  const updateNoteInDatabase = async (noteId: string, srsState: any) => {
-    try {
-      setError(null);
-      const response = await fetch(`http://localhost:3001/api/notes/${noteId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          nextReview: srsState.nextReview,
-          interval: srsState.interval,
-          easiness: srsState.easiness,
-          repetitions: srsState.repetitions,
-          lastReview: srsState.lastReview,
-          lastPerformance: srsState.lastPerformance
-        })
-      });
-      if (!response.ok) {
-        throw new Error('Failed to update note in database');
-      }
-    } catch (error) {
-      setError('Failed to update note in database. Review progress may not be saved.');
-      console.error('Database update error:', error);
-    }
-  };
-
-  const startReview = async () => {
-    const session = srsManager.startReviewSession(notes);
-    if (session.notes.length === 0) {
-      setFeedback("No notes are due for review at this time.");
-      return;
-    }
-    setIsReviewing(true);
-    setFeedback(null);
-    setError(null);
-    await generateQuestion();
-  };
-
-  const generateQuestion = async () => {
-    const currentNote = srsManager.getCurrentNote();
-    if (!currentNote) {
-      setIsReviewing(false);
-      setFeedback("Review session completed!");
-      return;
-    }
-
-    const note = notes.find(n => n.id === currentNote.noteId);
-    if (!note) {
-      srsManager.skipCurrentNote();
-      await generateQuestion();
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-          const response = await fetch('http://localhost:3001/api/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        message: `You are a review question generation assistant. Your job is to create a single, objective, atomic review question that reinforces the principal concept of the following Zettelkasten note. The question must:
-
-- Focus on one fundamental concept (atomicity)
-- Be clear, direct, and unambiguous
-- Avoid trivia, superficial details, or multi-part questions
-- Prompt recall or understanding of the core idea, not rote memorization
-- Not be yes/no or true/false
-- Not reference the note or its title directly; the question should stand alone
-- Use simple, precise language
-- If the note contains a mathematical concept, you may ask for the meaning, derivation, or application of a formula, but do not ask for verbatim reproduction
-
-Return ONLY the question as a single string, with no explanation or extra text.
-
-Note:
-${note.content}`,
-        history: [],
-        model: model
-      }),
-    });
-
-      if (!response.ok) {
-        throw new Error('Failed to generate question');
-      }
-
-      const data = await response.json();
-      const question = data.response;
-      setCurrentQuestion(question);
-      setUserAnswer('');
-    } catch (error) {
-      console.error('Error generating question:', error);
-      setFeedback('Failed to generate question. Please try again.');
-      setError('Failed to generate question. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleSubmit = async () => {
-    if (!userAnswer.trim()) return;
-    setIsLoading(true);
-    setError(null);
-    try {
-      const currentNote = srsManager.getCurrentNote();
-      const note = notes.find(n => n.id === currentNote?.noteId);
-      
-      const requestBody = { 
-        message: `You are a helpful study assistant. Your role is to:
-1. Help students understand complex concepts
-2. Provide clear and concise explanations
-3. Use examples and analogies when helpful
-4. Break down complex topics into simpler parts
-5. Check for understanding
-6. Be encouraging and supportive
-7. Maintain context of the conversation
-8. Use Markdown for formatting:
-   - **bold** for emphasis
-   - *italic* for secondary emphasis
-   - \`code\` for technical terms
-   - Lists with - or 1. 2. 3.
-9. Use LaTeX for mathematical expressions:
-   - Inline math: $...$ (e.g., $E = mc^2$)
-   - Block math: $$...$$ (e.g., $$\\frac{d}{dx}f(x) = \\lim_{h \\to 0}\\frac{f(x+h) - f(x)}{h}$$)
-   - Use \\frac for fractions
-   - Use \\sum for summations
-   - Use \\int for integrals
-   - Use \\lim for limits
-   - Use subscripts with _ and superscripts with ^
-10. Do NOT use HTML tags
-
-Review the student's answer to the flashcard question below. Your feedback should:
-- Start with "CORRECT:" or "INCORRECT:" followed by your feedback
-- Be brief and to the point
-- If incorrect, state the correct answer concisely
-- Avoid unnecessary explanation
-- Use Markdown and LaTeX as needed
-
-Note:
-${note?.content}
-
-Question: ${currentQuestion}
-Student's Answer: ${userAnswer}`,
-        history: [
-          { 
-            role: 'system',
-            content: `You are a study assistant. You are discussing the following note in a spaced repetition/flashcard context:\n\n${note?.content}\n\nKeep your answers atomic and concise. Use Markdown and LaTeX as needed. Do NOT use HTML tags.`
-          },
-          { role: 'assistant', content: `Here is the question based on the note:\n\n${currentQuestion}` },
-          { role: 'user', content: userAnswer }
-        ]
-      };
-            
-      const response = await fetch('http://localhost:3001/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...requestBody,
-          model: model
-        }),
-      });
-      if (!response.ok) {
-        throw new Error('Failed to analyze answer');
-      }
-      const data = await response.json();
-      const feedback = data.response;
-      setFeedback(feedback);
-      
-      // Improved scoring based on explicit feedback format
-      const score = feedback.toLowerCase().startsWith('correct:') ? 5 : 1;
-      const newState = srsManager.updateReviewPerformance(score);
-      
-      // Update database with new SRS state
-      if (newState && currentNote) {
-        await updateNoteInDatabase(currentNote.noteId, newState);
-      }
-
-      // Create a note for incorrect answers
-      if (score < 3) {
-        const noteResponse = await fetch('http://localhost:3001/api/note', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            content: `Common Misconception: ${note?.title}
-
-Question: ${currentQuestion}
-Student's Answer: ${userAnswer}
-Correct Answer: ${feedback.replace(/^(INCORRECT:|CORRECT:)/i, '').trim()}
-
-This note captures a common misconception about ${note?.title}. The student's answer reveals a misunderstanding that should be addressed.`
-          })
-        });
-        if (noteResponse.ok) {
-          const noteData = await noteResponse.json();
-          if (noteData.notes && Array.isArray(noteData.notes) && noteData.notes.length > 0) {
-            // Update the parent component's notes
-            onNoteClick(noteData.notes[0]);
-            // Add the new note to chat history
-            setChatHistory(prev => [...prev, { 
-              role: 'assistant', 
-              content: `I've created a new note about this misconception:\n\n${noteData.notes[0].content}` 
-            }]);
-          }
-        }
-      }
-
-      setChatHistory([
-        { 
-          role: 'system', 
-          content: `You are a study assistant. You are discussing the following note in a spaced repetition/flashcard context:\n\n${note?.content}\n\nKeep your answers atomic and concise. Use Markdown and LaTeX as needed. Do NOT use HTML tags.` 
-        },
-        { role: 'assistant', content: `Here is the question based on the note:\n\n${currentQuestion}` },
-        { role: 'user', content: userAnswer },
-        { role: 'assistant', content: feedback }
-      ]);
-      setIsChatting(true);
-      setShowFeedback(true);
-    } catch (error) {
-      console.error('Error in handleSubmit:', error);
-      setFeedback('Failed to analyze answer. Please try again.');
-      setError('Failed to analyze answer. Please try again.');
-      setShowFeedback(true);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleSkip = () => {
-    srsManager.skipCurrentNote();
-    generateQuestion();
-  };
-
-  const handleSendChat = async () => {
-    if (!chatInput.trim()) return;
-    const newHistory = [...chatHistory, { role: 'user' as 'user', content: chatInput }];
-    setChatHistory(newHistory);
-    setIsChatLoading(true);
-    setChatInput('');
-    try {
-      const currentNote = srsManager.getCurrentNote();
-      const note = notes.find(n => n.id === currentNote?.noteId);
-      
-      const requestBody = {
-        message: `You are a helpful study assistant. Your role is to:
-1. Help students understand complex concepts
-2. Provide clear and concise explanations
-3. Use examples and analogies when helpful
-4. Break down complex topics into simpler parts
-5. Check for understanding
-6. Be encouraging and supportive
-7. Maintain context of the conversation
-8. Use Markdown for formatting:
-   - **bold** for emphasis
-   - *italic* for secondary emphasis
-   - \`code\` for technical terms
-   - Lists with - or 1. 2. 3.
-9. Use LaTeX for mathematical expressions:
-   - Inline math: $...$ (e.g., $E = mc^2$)
-   - Block math: $$...$$ (e.g., $$\\frac{d}{dx}f(x) = \\lim_{h \\to 0}\\frac{f(x+h) - f(x)}{h}$$)
-   - Use \\frac for fractions
-   - Use \\sum for summations
-   - Use \\int for integrals
-   - Use \\lim for limits
-   - Use subscripts with _ and superscripts with ^
-10. Do NOT use HTML tags
-
-Current question: ${currentQuestion}
-
-${chatInput}`,
-        history: newHistory.map(m => ({ 
-          role: m.role as 'user' | 'assistant' | 'system', 
-          content: m.content 
-        }))
-      };
-            
-      const response = await fetch('http://localhost:3001/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...requestBody,
-          model: model
-        })
-      });
-      if (!response.ok) throw new Error('Failed to get response');
-      const data = await response.json();
-      const aiResponse = data.response;
-      setChatHistory([...newHistory, { role: 'assistant' as const, content: aiResponse }]);
-
-      // Create a note for follow-up questions that reveal misconceptions
-      const noteResponse = await fetch('http://localhost:3001/api/note', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          content: `Follow-up Question: ${note?.title}
-
-Original Question: ${currentQuestion}
-Student's Question: ${chatInput}
-Assistant's Response: ${aiResponse}
-
-This note captures a follow-up question that reveals potential misconceptions or areas needing clarification about ${note?.title}.`
-        })
-      });
-      if (noteResponse.ok) {
-        const noteData = await noteResponse.json();
-        if (noteData.notes && Array.isArray(noteData.notes) && noteData.notes.length > 0) {
-          // Update the parent component's notes
-          onNoteClick(noteData.notes[0]);
-          // Add the new note to chat history
-          setChatHistory(prev => [...prev, { 
-            role: 'assistant', 
-            content: `I've created a new note about this follow-up question:\n\n${noteData.notes[0].content}` 
-          }]);
-        }
-      }
-    } catch (err) {
-      setChatHistory([...newHistory, { role: 'assistant' as const, content: 'Sorry, something went wrong.' }]);
-    } finally {
-      setIsChatLoading(false);
-    }
-  };
-
-  const handleNext = async () => {
-    setShowFeedback(false);
-    setFeedback(null);
-    setUserAnswer('');
-    setIsChatting(false);
-    setChatHistory([]);
-    const hasNext = srsManager.moveToNextNote();
-    if (hasNext) {
-      await generateQuestion();
-    } else {
-      setIsReviewing(false);
-      setFeedback('Review session completed!');
-    }
-  };
-
-  const handleShowChat = () => {
-    setIsChatting(true);
-  };
+  // Extract values from the hook for easier access
+  const {
+    isLoading,
+    isReviewing,
+    isChatLoading,
+    isChatting,
+    currentQuestion,
+    userAnswer,
+    feedback,
+    showFeedback,
+    chatInput,
+    chatHistory,
+    error,
+    startReview,
+    submitAnswer,
+    sendChatMessage,
+    skipCurrentNote,
+    showChatInterface,
+    proceedToNext,
+    setUserAnswer,
+    setChatInput,
+  } = reviewSession;
 
   // Modern progress bar
   const session = srsManager.getCurrentSession();
@@ -519,7 +199,7 @@ This note captures a follow-up question that reveals potential misconceptions or
             onKeyDown={e => {
               if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
                 e.preventDefault();
-                handleSubmit();
+                submitAnswer();
               }
               // Shift+Enter, Ctrl+Enter, or Cmd+Enter insert newline (default)
             }}
@@ -529,27 +209,27 @@ This note captures a follow-up question that reveals potential misconceptions or
         <div style={{ width: '100%', display: 'flex', gap: 14, marginTop: 2 }}>
           {!showFeedback ? (
             <button
-              onClick={handleSubmit}
-              disabled={isLoading || !userAnswer.trim()}
-              style={{
-                flex: 1,
-                borderRadius: 14,
-                padding: '14px 0',
-                fontSize: 18,
-                fontWeight: 700,
-                background: 'linear-gradient(90deg, #4a9eff 0%, #7f53ff 100%)',
-                color: '#fff',
-                border: 'none',
-                boxShadow: '0 2px 8px #4a9eff22',
-                cursor: isLoading || !userAnswer.trim() ? 'not-allowed' : 'pointer',
-                opacity: isLoading || !userAnswer.trim() ? 0.7 : 1,
-                transition: 'opacity 0.2s',
-              }}
-            >{isLoading ? 'Checking...' : 'Submit'}</button>
+                          onClick={submitAnswer}
+            disabled={isLoading || !userAnswer.trim()}
+            style={{
+              flex: 1,
+              borderRadius: 14,
+              padding: '14px 0',
+              fontSize: 18,
+              fontWeight: 700,
+              background: 'linear-gradient(90deg, #4a9eff 0%, #7f53ff 100%)',
+              color: '#fff',
+              border: 'none',
+              boxShadow: '0 2px 8px #4a9eff22',
+              cursor: isLoading || !userAnswer.trim() ? 'not-allowed' : 'pointer',
+              opacity: isLoading || !userAnswer.trim() ? 0.7 : 1,
+              transition: 'opacity 0.2s',
+            }}
+          >{isLoading ? 'Checking...' : 'Submit'}</button>
           ) : (
             <>
               <button
-                onClick={handleNext}
+                onClick={proceedToNext}
                 style={{
                   flex: 1,
                   borderRadius: 14,
@@ -565,7 +245,7 @@ This note captures a follow-up question that reveals potential misconceptions or
                 }}
               >Next</button>
               <button
-                onClick={handleShowChat}
+                onClick={showChatInterface}
                 style={{
                   flex: 1,
                   borderRadius: 14,
@@ -583,7 +263,7 @@ This note captures a follow-up question that reveals potential misconceptions or
             </>
           )}
           <button
-            onClick={handleSkip}
+            onClick={skipCurrentNote}
             disabled={isLoading}
             style={{
               borderRadius: 14,
@@ -675,14 +355,14 @@ This note captures a follow-up question that reveals potential misconceptions or
                 type="text"
                 value={chatInput}
                 onChange={e => setChatInput(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter') handleSendChat(); }}
+                onKeyDown={e => { if (e.key === 'Enter') sendChatMessage(); }}
                 placeholder="Ask a follow-up question..."
                 style={{ flex: 1, borderRadius: 10, border: '1px solid #4a9eff33', padding: '10px 14px', fontSize: 15, background: '#181c20', color: '#e6e6e6' }}
                 disabled={isChatLoading}
                 autoFocus
               />
               <button
-                onClick={handleSendChat}
+                onClick={sendChatMessage}
                 disabled={!chatInput.trim() || isChatLoading}
                 style={{
                   borderRadius: 10,
