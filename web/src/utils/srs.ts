@@ -56,8 +56,8 @@ export class SRSManager {
       this.reviewStates.set(note.id, {
         noteId: note.id,
         nextReview: note.nextReview ? new Date(note.nextReview) : new Date(),
-        interval: note.interval ?? 1,
-        easiness: note.easiness ?? 2.5,
+        interval: note.interval ?? INITIAL_INTERVAL,
+        easiness: note.easiness ?? INITIAL_EASINESS,
         repetitions: note.repetitions ?? 0,
         lastReview: note.lastReview ? new Date(note.lastReview) : null,
         lastPerformance: note.lastPerformance ?? null

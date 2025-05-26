@@ -9,7 +9,7 @@ interface OllamaResponse {
 
 export async function generateLocalResponse(
   message: string,
-  history: { role: string; content: string }[]
+  history: { role: string; content: string }[] = []
 ): Promise<string> {
   try {
     let messages;

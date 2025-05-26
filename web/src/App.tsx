@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ChatPanel } from './components/ChatPanel';
 import NotesPanel from './components/NotesPanel';
 import { ZettelkastenView } from './components/ZettelkastenView';
@@ -16,11 +16,11 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [notes, setNotes] = useState<Note[]>([]);
   const [activeTab, setActiveTab] = useState<'chat' | 'notes' | 'zettelkasten' | 'review' | 'documents'>('chat');
-  const [selectedNote, setSelectedNote] = useState<Note | null>(null);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [model, setModel] = useState<'gemini' | 'openai' | 'local' | 'deepseek'>('deepseek');
-  const [useRag, setUseRag] = useState(false);
+
   const [embeddingProvider, setEmbeddingProvider] = useState<'openai' | 'ollama'>('ollama');
 
   const fetchNotes = async () => {
@@ -122,7 +122,8 @@ function App() {
   };
 
   const handleNoteClick = (note: Note) => {
-    setSelectedNote(note);
+    // Note clicked - could be used for future note selection features
+    console.log('Note clicked:', note.title);
   };
 
   return (
@@ -223,7 +224,6 @@ function App() {
         {activeTab === 'notes' && (
           <NotesPanel
             notes={notes}
-            onNoteClick={handleNoteClick}
             onDeleteNote={handleDeleteNote}
           />
         )}

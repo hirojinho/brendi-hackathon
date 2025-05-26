@@ -23,8 +23,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
   isLoading,
   onSendMessage,
   messagesEndRef,
-  model,
-  embeddingProvider
+  model
 }) => {
   const [input, setInput] = useState('');
   const [useRag, setUseRag] = useState(false);

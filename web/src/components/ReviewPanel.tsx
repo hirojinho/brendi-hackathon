@@ -27,7 +27,7 @@ export const ReviewPanel: React.FC<ReviewPanelProps> = ({ notes, onNoteClick, mo
   const [chatInput, setChatInput] = useState('');
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
-  const [disableActions, setDisableActions] = useState(false);
+
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -88,12 +88,11 @@ export const ReviewPanel: React.FC<ReviewPanelProps> = ({ notes, onNoteClick, mo
 
     setIsLoading(true);
     try {
-      const getEndpoint = () => model === 'local' ? '/api/chat-local' : '/api/chat';
-      const response = await fetch(`http://localhost:3001${getEndpoint()}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          message: `You are a review question generation assistant. Your job is to create a single, objective, atomic review question that reinforces the principal concept of the following Zettelkasten note. The question must:
+          const response = await fetch('http://localhost:3001/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        message: `You are a review question generation assistant. Your job is to create a single, objective, atomic review question that reinforces the principal concept of the following Zettelkasten note. The question must:
 
 - Focus on one fundamental concept (atomicity)
 - Be clear, direct, and unambiguous
@@ -108,9 +107,10 @@ Return ONLY the question as a single string, with no explanation or extra text.
 
 Note:
 ${note.content}`,
-          history: []
-        }),
-      });
+        history: [],
+        model: model
+      }),
+    });
 
       if (!response.ok) {
         throw new Error('Failed to generate question');
@@ -132,7 +132,6 @@ ${note.content}`,
   const handleSubmit = async () => {
     if (!userAnswer.trim()) return;
     setIsLoading(true);
-    setDisableActions(true);
     setError(null);
     try {
       const currentNote = srsManager.getCurrentNote();
@@ -184,11 +183,13 @@ Student's Answer: ${userAnswer}`,
         ]
       };
             
-      const getEndpoint = () => model === 'local' ? '/api/chat-local' : '/api/chat';
-      const response = await fetch(`http://localhost:3001${getEndpoint()}`, {
+      const response = await fetch('http://localhost:3001/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody),
+        body: JSON.stringify({
+          ...requestBody,
+          model: model
+        }),
       });
       if (!response.ok) {
         throw new Error('Failed to analyze answer');
@@ -224,8 +225,6 @@ This note captures a common misconception about ${note?.title}. The student's an
         if (noteResponse.ok) {
           const noteData = await noteResponse.json();
           if (noteData.notes && Array.isArray(noteData.notes) && noteData.notes.length > 0) {
-            // Add the new note to the notes array
-            const newNotes = [...notes, ...noteData.notes];
             // Update the parent component's notes
             onNoteClick(noteData.notes[0]);
             // Add the new note to chat history
@@ -255,7 +254,6 @@ This note captures a common misconception about ${note?.title}. The student's an
       setShowFeedback(true);
     } finally {
       setIsLoading(false);
-      setDisableActions(false);
     }
   };
 
@@ -307,11 +305,13 @@ ${chatInput}`,
         }))
       };
             
-      const getEndpoint = () => model === 'local' ? '/api/chat-local' : '/api/chat';
-      const response = await fetch(`http://localhost:3001${getEndpoint()}`, {
+      const response = await fetch('http://localhost:3001/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify({
+          ...requestBody,
+          model: model
+        })
       });
       if (!response.ok) throw new Error('Failed to get response');
       const data = await response.json();
@@ -335,8 +335,6 @@ This note captures a follow-up question that reveals potential misconceptions or
       if (noteResponse.ok) {
         const noteData = await noteResponse.json();
         if (noteData.notes && Array.isArray(noteData.notes) && noteData.notes.length > 0) {
-          // Add the new note to the notes array
-          const newNotes = [...notes, ...noteData.notes];
           // Update the parent component's notes
           onNoteClick(noteData.notes[0]);
           // Add the new note to chat history
@@ -357,7 +355,6 @@ This note captures a follow-up question that reveals potential misconceptions or
     setShowFeedback(false);
     setFeedback(null);
     setUserAnswer('');
-    setDisableActions(false);
     setIsChatting(false);
     setChatHistory([]);
     const hasNext = srsManager.moveToNextNote();
