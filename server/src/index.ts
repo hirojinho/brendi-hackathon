@@ -12,18 +12,19 @@ import fs from 'fs';
 import path from 'path';
 import DocumentDatabase from './documentDatabase.js';
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.js';
-import { generateGeminiResponse, generateNoteWithGemini, geminiModel } from './gemini.js';
 import { generateOpenAIResponse } from './openai.js';
-import { shouldCreateNote, isSimilarNote } from './notes.js';
-import { generateLocalResponse } from './local.js';
-import { generateDeepseekResponse, generateNoteWithDeepseek, shouldCreateNoteWithDeepseek } from './deepseek.js';
+import { generateOpenRouterResponse } from './openrouter.js';
 import {
   validateChatRequest,
   processRAGQuery,
   generateResponse,
   logRAGUsage as logChatRAGUsage,
   formatChatResponse,
-  handleChatError
+  handleChatError,
+  shouldCreateNote,
+  generateNoteWithOpenRouter,
+  generateNoteWithOpenAI,
+  generateNoteWithOllama
 } from './chatService.js';
 import {
   validateUploadRequest,
@@ -67,12 +68,12 @@ const uploadDir = path.join(process.cwd(), 'uploads');
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
 const upload = multer({ dest: uploadDir });
 
-// Initialize note detection system with Gemini
-const noteDetection = startNoteDetection(geminiModel, (note: Note) => {
-  lastCreatedNote = note;
-  noteDb.saveNote(note);
-  console.log('Note created:', note.title);
-});
+// Note detection system disabled for now - can be re-enabled with specific model
+// const noteDetection = startNoteDetection(geminiModel, (note: Note) => {
+//   lastCreatedNote = note;
+//   noteDb.saveNote(note);
+//   console.log('Note created:', note.title);
+// });
 
 // Upload status and helper functions now handled by uploadService.ts
 
@@ -192,7 +193,7 @@ app.post('/api/chat', async (req: Request, res: Response) => {
     
     // Process RAG if needed
     let ragChunks: any[] = [];
-    if (chatRequest.useRag && (chatRequest.model === 'gemini' || chatRequest.model === 'deepseek' || chatRequest.model === 'local')) {
+    if (chatRequest.useRag && (chatRequest.model === 'openrouter' || chatRequest.model === 'ollama')) {
       ragChunks = await processRAGQuery(
         chatRequest.message,
         chatRequest.maxChunks || 5,
@@ -222,42 +223,40 @@ app.post('/api/chat', async (req: Request, res: Response) => {
 // Note endpoint: returns a note for a given assistant response
 app.post('/api/note', async (req: Request, res: Response) => {
   try {
-    const { content, model = 'gemini' } = req.body;
+    const { content, model = 'openai', modelName } = req.body;
     if (!content) {
       return res.status(400).json({ error: 'Content is required' });
     }
 
-    // Use the same model for both note detection and generation
-    const shouldCreate = model === 'deepseek' ? 
-      await shouldCreateNoteWithDeepseek({ role: 'assistant', content }) :
-      await shouldCreateNote(geminiModel, { role: 'assistant', content });
+    // Check if we should create a note
+    const shouldCreate = await shouldCreateNote(content, model, modelName);
+    if (!shouldCreate) {
+      return res.json({ notes: [] });
+    }
 
+    // Generate notes based on the selected model
     let notes: Note[] = [];
-    if (shouldCreate) {
-      const generatedNotes = model === 'gemini' ?
-        await generateNoteWithGemini(
-          { role: 'assistant', content },
-          'chat-' + Date.now(),
-          0
-        ) :
-        await generateNoteWithDeepseek(
-          { role: 'assistant', content },
-          'chat-' + Date.now(),
-          0
-        );
-      // Save each unique note
-      const allNotes = noteDb.getAllNotes();
-      notes = generatedNotes.filter(note => {
-        if (!isSimilarNote(note, allNotes)) {
-          noteDb.saveNote(note);
-          allNotes.push(note); // Avoid near-duplicates in this batch
-          console.log('Note saved to database:', note.title);
-          return true;
-        } else {
-          console.log('Skipped duplicate/similar note:', note.title);
-          return false;
-        }
-      });
+    const existingNotes = noteDb.getAllNotes();
+    
+    switch (model) {
+      case 'openrouter':
+        notes = await generateNoteWithOpenRouter(content, modelName, existingNotes);
+        break;
+      case 'openai':
+        notes = await generateNoteWithOpenAI(content, existingNotes);
+        break;
+      case 'ollama':
+        notes = await generateNoteWithOllama(content, modelName, existingNotes);
+        break;
+      default:
+        console.log(`Note generation not supported for model: ${model}`);
+        return res.json({ notes: [] });
+    }
+
+    // Save generated notes to database
+    if (notes.length > 0) {
+      notes.forEach(note => noteDb.saveNote(note));
+      console.log(`Generated ${notes.length} notes using ${model}`);
     }
 
     res.json({ notes });

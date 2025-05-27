@@ -2,6 +2,7 @@
 .env
 .DS_Store
 node_modules
+dist
 
 # Ignore SQLite database files
 *.db

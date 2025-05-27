@@ -8,10 +8,11 @@ import { useReviewSession } from '../hooks/useReviewSession';
 export interface ReviewPanelProps {
   notes: Note[];
   onNoteClick: (note: Note) => void;
-  model: 'gemini' | 'openai' | 'local' | 'deepseek';
+  model: 'openrouter' | 'openai' | 'ollama';
+  modelName?: string;
 }
 
-export const ReviewPanel: React.FC<ReviewPanelProps> = ({ notes, onNoteClick, model }) => {
+export const ReviewPanel: React.FC<ReviewPanelProps> = ({ notes, onNoteClick, model, modelName }) => {
   const [srsManager] = useState(() => new SRSManager());
   const [stats, setStats] = useState<{
     totalNotes: number;
@@ -20,7 +21,7 @@ export const ReviewPanel: React.FC<ReviewPanelProps> = ({ notes, onNoteClick, mo
   } | null>(null);
 
   // Use our custom hook for all review session logic
-  const reviewSession = useReviewSession(notes, model, onNoteClick, srsManager);
+  const reviewSession = useReviewSession(notes, model, modelName, onNoteClick, srsManager);
 
   useEffect(() => {
     srsManager.initializeFromNotes(notes);
@@ -33,6 +34,7 @@ export const ReviewPanel: React.FC<ReviewPanelProps> = ({ notes, onNoteClick, mo
     isReviewing,
     isChatLoading,
     isChatting,
+    isEvaluatingFollowUp,
     currentQuestion,
     userAnswer,
     feedback,
@@ -210,22 +212,22 @@ export const ReviewPanel: React.FC<ReviewPanelProps> = ({ notes, onNoteClick, mo
           {!showFeedback ? (
             <button
                           onClick={submitAnswer}
-            disabled={isLoading || !userAnswer.trim()}
-            style={{
-              flex: 1,
-              borderRadius: 14,
-              padding: '14px 0',
-              fontSize: 18,
-              fontWeight: 700,
-              background: 'linear-gradient(90deg, #4a9eff 0%, #7f53ff 100%)',
-              color: '#fff',
-              border: 'none',
-              boxShadow: '0 2px 8px #4a9eff22',
-              cursor: isLoading || !userAnswer.trim() ? 'not-allowed' : 'pointer',
-              opacity: isLoading || !userAnswer.trim() ? 0.7 : 1,
-              transition: 'opacity 0.2s',
-            }}
-          >{isLoading ? 'Checking...' : 'Submit'}</button>
+              disabled={isLoading || !userAnswer.trim()}
+              style={{
+                flex: 1,
+                borderRadius: 14,
+                padding: '14px 0',
+                fontSize: 18,
+                fontWeight: 700,
+                background: 'linear-gradient(90deg, #4a9eff 0%, #7f53ff 100%)',
+                color: '#fff',
+                border: 'none',
+                boxShadow: '0 2px 8px #4a9eff22',
+                cursor: isLoading || !userAnswer.trim() ? 'not-allowed' : 'pointer',
+                opacity: isLoading || !userAnswer.trim() ? 0.7 : 1,
+                transition: 'opacity 0.2s',
+              }}
+            >{isLoading ? 'Checking...' : 'Submit'}</button>
           ) : (
             <>
               <button
@@ -285,7 +287,17 @@ export const ReviewPanel: React.FC<ReviewPanelProps> = ({ notes, onNoteClick, mo
         {showFeedback && feedback && (
           <div style={{
             width: '100%',
-            background: feedback.toLowerCase().includes('correct') ? 'linear-gradient(90deg, #22c55e 0%, #4a9eff 100%)' : 'linear-gradient(90deg, #ff5c5c 0%, #7f53ff 100%)',
+            background: (() => {
+              const upperFeedback = feedback.toUpperCase();
+              if (upperFeedback.startsWith('EXCELLENT:')) return 'linear-gradient(90deg, #10b981 0%, #059669 100%)'; // Emerald green
+              if (upperFeedback.startsWith('GOOD:')) return 'linear-gradient(90deg, #22c55e 0%, #16a34a 100%)'; // Green
+              if (upperFeedback.startsWith('SATISFACTORY:')) return 'linear-gradient(90deg, #f59e0b 0%, #d97706 100%)'; // Amber
+              if (upperFeedback.startsWith('POOR:')) return 'linear-gradient(90deg, #f97316 0%, #ea580c 100%)'; // Orange
+              if (upperFeedback.startsWith('INCORRECT:')) return 'linear-gradient(90deg, #ef4444 0%, #dc2626 100%)'; // Red
+              // Legacy support and fallback
+              if (upperFeedback.startsWith('CORRECT:')) return 'linear-gradient(90deg, #22c55e 0%, #4a9eff 100%)';
+              return 'linear-gradient(90deg, #ff5c5c 0%, #7f53ff 100%)'; // Default red
+            })(),
             color: '#fff',
             borderRadius: 16,
             padding: '22px 20px',
@@ -349,35 +361,67 @@ export const ReviewPanel: React.FC<ReviewPanelProps> = ({ notes, onNoteClick, mo
                   </span>
                 </div>
               )}
+              {isEvaluatingFollowUp && (
+                <div style={{ 
+                  background: 'linear-gradient(90deg, #8b5cf6 0%, #a855f7 100%)', 
+                  color: '#fff', 
+                  borderRadius: 10, 
+                  padding: '10px 14px', 
+                  marginBottom: 6, 
+                  maxWidth: '95%',
+                  fontSize: 14,
+                  fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8
+                }}>
+                  <span className="typing-indicator" style={{ scale: '0.8' }}>
+                    <span></span><span></span><span></span>
+                  </span>
+                  🧠 Evaluating conversation for note creation...
+                </div>
+              )}
             </div>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
               <input
                 type="text"
                 value={chatInput}
                 onChange={e => setChatInput(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter') sendChatMessage(); }}
-                placeholder="Ask a follow-up question..."
-                style={{ flex: 1, borderRadius: 10, border: '1px solid #4a9eff33', padding: '10px 14px', fontSize: 15, background: '#181c20', color: '#e6e6e6' }}
-                disabled={isChatLoading}
+                onKeyDown={e => { if (e.key === 'Enter' && !isChatLoading && !isEvaluatingFollowUp) sendChatMessage(); }}
+                placeholder={isEvaluatingFollowUp ? "Evaluating conversation..." : "Ask a follow-up question..."}
+                style={{ 
+                  flex: 1, 
+                  borderRadius: 10, 
+                  border: `1px solid ${isEvaluatingFollowUp ? '#8b5cf633' : '#4a9eff33'}`, 
+                  padding: '10px 14px', 
+                  fontSize: 15, 
+                  background: '#181c20', 
+                  color: '#e6e6e6',
+                  opacity: isEvaluatingFollowUp ? 0.7 : 1,
+                  transition: 'opacity 0.2s, border 0.2s'
+                }}
+                disabled={isChatLoading || isEvaluatingFollowUp}
                 autoFocus
               />
               <button
                 onClick={sendChatMessage}
-                disabled={!chatInput.trim() || isChatLoading}
+                disabled={!chatInput.trim() || isChatLoading || isEvaluatingFollowUp}
                 style={{
                   borderRadius: 10,
                   padding: '10px 18px',
                   fontWeight: 600,
                   fontSize: 15,
-                  background: 'linear-gradient(90deg, #4a9eff 0%, #7f53ff 100%)',
+                  background: isEvaluatingFollowUp 
+                    ? 'linear-gradient(90deg, #8b5cf6 0%, #a855f7 100%)' 
+                    : 'linear-gradient(90deg, #4a9eff 0%, #7f53ff 100%)',
                   color: '#fff',
                   border: 'none',
-                  boxShadow: '0 2px 8px #4a9eff22',
-                  cursor: !chatInput.trim() || isChatLoading ? 'not-allowed' : 'pointer',
-                  opacity: !chatInput.trim() || isChatLoading ? 0.7 : 1,
-                  transition: 'opacity 0.2s',
+                  boxShadow: isEvaluatingFollowUp ? '0 2px 8px #8b5cf622' : '0 2px 8px #4a9eff22',
+                  cursor: (!chatInput.trim() || isChatLoading || isEvaluatingFollowUp) ? 'not-allowed' : 'pointer',
+                  opacity: (!chatInput.trim() || isChatLoading || isEvaluatingFollowUp) ? 0.7 : 1,
+                  transition: 'opacity 0.2s, background 0.2s',
                 }}
-              >Send</button>
+              >{isEvaluatingFollowUp ? 'Evaluating...' : isChatLoading ? 'Sending...' : 'Send'}</button>
             </div>
           </div>
         )}

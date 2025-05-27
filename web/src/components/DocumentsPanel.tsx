@@ -4,7 +4,7 @@ import { documentsLogic } from '../services/documentsService';
 
 const DocumentsPanel: React.FC<{ embeddingProvider: 'openai' | 'ollama' }> = ({ embeddingProvider }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+
   // Use our custom hook for all document management logic
   const documentManager = useDocumentManager(embeddingProvider);
   

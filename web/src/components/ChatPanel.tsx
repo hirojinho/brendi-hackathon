@@ -12,9 +12,9 @@ interface RetrievedChunk {
 export interface ChatPanelProps {
   messages: Message[];
   isLoading: boolean;
-  onSendMessage: (msg: string, mdl: 'gemini' | 'openai' | 'local' | 'deepseek', useRag: boolean) => Promise<void>;
+  onSendMessage: (msg: string, mdl: 'openrouter' | 'openai' | 'ollama', useRag: boolean) => Promise<void>;
   messagesEndRef: RefObject<HTMLDivElement>;
-  model: 'gemini' | 'openai' | 'local' | 'deepseek';
+  model: 'openrouter' | 'openai' | 'ollama';
   embeddingProvider: 'openai' | 'ollama';
 }
 
@@ -49,25 +49,46 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         {messages.map((message, index) => (
           <div
             key={index}
-            className={`message ${message.role === 'assistant' ? 'assistant' : 'user'}`}
+            className={`message ${message.role === 'assistant' ? 'assistant' : message.role === 'system' ? 'system' : 'user'}`}
             style={{
-              maxWidth: 700,
+              maxWidth: message.role === 'system' ? 600 : 700,
               width: '95%',
-              margin: message.role === 'user' ? '8px 0 8px auto' : '8px auto 8px 0',
-              alignSelf: message.role === 'user' ? 'flex-end' : 'flex-start',
+              margin: message.role === 'user' 
+                ? '8px 0 8px auto' 
+                : message.role === 'system' 
+                  ? '8px auto' 
+                  : '8px auto 8px 0',
+              alignSelf: message.role === 'user' 
+                ? 'flex-end' 
+                : message.role === 'system' 
+                  ? 'center' 
+                  : 'flex-start',
               background: message.role === 'user'
                 ? 'linear-gradient(90deg, #4a9eff 0%, #7f53ff 100%)'
+                : message.role === 'system'
+                  ? '#2d3748'
                 : '#353b48',
-              color: message.role === 'user' ? '#fff' : '#e6e6e6',
-              borderRadius: message.role === 'user' ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
-              padding: '18px 26px',
+              color: message.role === 'user' 
+                ? '#fff' 
+                : message.role === 'system'
+                  ? '#4a9eff'
+                  : '#e6e6e6',
+              borderRadius: message.role === 'user' 
+                ? '18px 18px 4px 18px' 
+                : message.role === 'system'
+                  ? '12px'
+                  : '18px 18px 18px 4px',
+              padding: message.role === 'system' ? '12px 18px' : '18px 26px',
               boxShadow: message.role === 'user'
                 ? '0 2px 8px #4a9eff44'
+                : message.role === 'system'
+                  ? '0 1px 4px rgba(74, 158, 255, 0.2)'
                 : '0 2px 8px rgba(0,0,0,0.07)',
-              fontSize: 16,
+              fontSize: message.role === 'system' ? 14 : 16,
+              fontWeight: message.role === 'system' ? 500 : 'normal',
               wordBreak: 'break-word',
               overflowWrap: 'anywhere',
-              textAlign: 'left',
+              textAlign: message.role === 'system' ? 'center' : 'left',
               position: 'relative',
               overflowX: 'hidden',
             }}

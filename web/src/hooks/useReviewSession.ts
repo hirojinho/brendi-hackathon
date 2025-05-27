@@ -13,6 +13,7 @@ export interface ReviewSessionHook {
   isReviewing: boolean;
   isChatLoading: boolean;
   isChatting: boolean;
+  isEvaluatingFollowUp: boolean;
   currentQuestion: string | null;
   userAnswer: string;
   feedback: string | null;
@@ -20,6 +21,7 @@ export interface ReviewSessionHook {
   chatInput: string;
   chatHistory: ChatMessage[];
   error: string | null;
+  followUpEvaluation: string | null;
   
   // Actions
   startReview: () => Promise<void>;
@@ -37,6 +39,7 @@ export interface ReviewSessionHook {
 export const useReviewSession = (
   notes: Note[],
   model: string,
+  modelName: string | undefined,
   onNoteClick: (note: Note) => void,
   srsManager: SRSManager
 ): ReviewSessionHook => {
@@ -45,6 +48,7 @@ export const useReviewSession = (
   const [isReviewing, setIsReviewing] = useState(false);
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [isChatting, setIsChatting] = useState(false);
+  const [isEvaluatingFollowUp, setIsEvaluatingFollowUp] = useState(false);
   
   // Question and answer state
   const [currentQuestion, setCurrentQuestion] = useState<string | null>(null);
@@ -55,6 +59,7 @@ export const useReviewSession = (
   // Chat state
   const [chatInput, setChatInput] = useState('');
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
+  const [followUpEvaluation, setFollowUpEvaluation] = useState<string | null>(null);
   
   // Error state
   const [error, setError] = useState<string | null>(null);
@@ -79,7 +84,7 @@ export const useReviewSession = (
     setError(null);
     
     try {
-      const question = await reviewApiService.generateQuestion(currentNote.content, model);
+      const question = await reviewApiService.generateQuestion(currentNote.content, model, modelName);
       setCurrentQuestion(question);
       setUserAnswer('');
     } catch (error) {
@@ -122,7 +127,8 @@ export const useReviewSession = (
         noteContent: currentNote.content,
         question: currentQuestion,
         userAnswer: userAnswer,
-        model: model
+        model: model,
+        modelName
       });
       
       setFeedback(feedback);
@@ -141,27 +147,8 @@ export const useReviewSession = (
         }
       }
 
-      // Create misconception note if answer was incorrect
-      if (reviewLogic.shouldCreateMisconceptionNote(score)) {
-        try {
-          const misconceptionNote = await reviewApiService.createMisconceptionNote({
-            noteTitle: currentNote.title,
-            question: currentQuestion,
-            userAnswer: userAnswer,
-            feedback: feedback
-          });
-          
-          if (misconceptionNote) {
-            onNoteClick(misconceptionNote);
-            setChatHistory(prev => [...prev, { 
-              role: 'assistant', 
-              content: `I've created a new note about this misconception:\n\n${misconceptionNote.content}` 
-            }]);
-          }
-        } catch (error) {
-          console.error('Failed to create misconception note:', error);
-        }
-      }
+      // Note: Automatic misconception note creation disabled
+      // Notes are only created during follow-up conversations when LLM evaluates it as educationally valuable
 
       // Set up initial chat history
       const systemMessage = reviewLogic.createSystemMessage(currentNote.content);
@@ -205,30 +192,79 @@ export const useReviewSession = (
         history: newHistory,
         noteContent: currentNote.content,
         currentQuestion: currentQuestion,
-        model: model
+        model: model,
+        modelName
       });
       
       const assistantMessage: ChatMessage = { role: 'assistant', content: aiResponse };
-      setChatHistory([...newHistory, assistantMessage]);
+      const fullConversation = [...newHistory, assistantMessage];
+      setChatHistory(fullConversation);
 
-      // Create follow-up note
+      // Evaluate the follow-up conversation for note creation
+      setIsEvaluatingFollowUp(true);
+      setFollowUpEvaluation(null);
+      
       try {
-        const followUpNote = await reviewApiService.createFollowUpNote({
-          noteTitle: currentNote.title,
-          originalQuestion: currentQuestion,
-          userQuestion: chatInput,
-          assistantResponse: aiResponse
-        });
-        
-        if (followUpNote) {
-          onNoteClick(followUpNote);
-          setChatHistory(prev => [...prev, { 
-            role: 'assistant', 
-            content: `I've created a new note about this follow-up question:\n\n${followUpNote.content}` 
-          }]);
+        // Get only the follow-up conversation (exclude initial answer feedback)
+        const followUpConversation = fullConversation.filter(msg => 
+          msg.role !== 'system' && 
+          !msg.content.startsWith('Here is the question based on the note:') &&
+          !msg.content.includes('EXCELLENT:') && 
+          !msg.content.includes('GOOD:') && 
+          !msg.content.includes('SATISFACTORY:') && 
+          !msg.content.includes('POOR:') && 
+          !msg.content.includes('INCORRECT:')
+        );
+
+        if (followUpConversation.length >= 2) { // At least one exchange
+          const evaluation = await reviewApiService.evaluateFollowUpConversation({
+            noteContent: currentNote.content,
+            originalQuestion: currentQuestion,
+            followUpConversation: followUpConversation,
+            model: model,
+            modelName
+          });
+
+          setFollowUpEvaluation(evaluation);
+          
+          // Parse the evaluation result
+          const evalResult = reviewLogic.parseFollowUpEvaluation(evaluation);
+          
+          if (evalResult.shouldCreate) {
+            // Create enhanced follow-up note with the full conversation
+            const followUpNote = await reviewLogic.createEnhancedFollowUpNote(
+              currentNote.title,
+              currentQuestion,
+              followUpConversation,
+              evalResult.title,
+              model,
+              modelName
+            );
+            
+            if (followUpNote) {
+              onNoteClick(followUpNote);
+              setChatHistory(prev => [...prev, { 
+                role: 'assistant', 
+                content: `✅ **Note Created!** This conversation contains valuable insights, so I've saved it as a new note: "${followUpNote.title}"\n\n*${evalResult.reason}*` 
+              }]);
+            }
+          } else {
+            // Show evaluation feedback without creating note
+            setChatHistory(prev => [...prev, { 
+              role: 'assistant', 
+              content: `💭 **Evaluation**: ${evalResult.reason}\n\n*This conversation wasn't saved as a note, but feel free to continue asking questions!*` 
+            }]);
+          }
         }
+        
       } catch (error) {
-        console.error('Failed to create follow-up note:', error);
+        console.error('Failed to evaluate follow-up conversation:', error);
+        setChatHistory(prev => [...prev, { 
+          role: 'assistant', 
+          content: `ℹ️ *Note: I couldn't evaluate whether this conversation should be saved as a note, but you can continue asking questions.*` 
+        }]);
+      } finally {
+        setIsEvaluatingFollowUp(false);
       }
       
     } catch (error) {
@@ -260,6 +296,8 @@ export const useReviewSession = (
     setUserAnswer('');
     setIsChatting(false);
     setChatHistory([]);
+    setFollowUpEvaluation(null);
+    setIsEvaluatingFollowUp(false);
     
     const hasNext = srsManager.moveToNextNote();
     if (hasNext) {
@@ -276,6 +314,7 @@ export const useReviewSession = (
     isReviewing,
     isChatLoading,
     isChatting,
+    isEvaluatingFollowUp,
     currentQuestion,
     userAnswer,
     feedback,
@@ -283,6 +322,7 @@ export const useReviewSession = (
     chatInput,
     chatHistory,
     error,
+    followUpEvaluation,
     
     // Actions
     startReview,
