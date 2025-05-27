@@ -4,11 +4,10 @@ import { MarkdownRenderer } from './MarkdownRenderer';
 
 interface NotesPanelProps {
   notes: Note[];
-  onNoteClick: (note: Note) => void;
   onDeleteNote: (noteId: string) => Promise<void>;
 }
 
-const NotesPanel: React.FC<NotesPanelProps> = ({ notes, onNoteClick, onDeleteNote }) => {
+const NotesPanel: React.FC<NotesPanelProps> = ({ notes, onDeleteNote }) => {
   const [search, setSearch] = useState('');
   const [tagFilter, setTagFilter] = useState<string | null>(null);
   const [modalNote, setModalNote] = useState<Note | null>(null);

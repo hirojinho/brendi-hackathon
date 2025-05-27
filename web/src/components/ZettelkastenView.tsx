@@ -95,7 +95,7 @@ export const ZettelkastenView: React.FC<ZettelkastenViewProps> = ({ notes, onNot
           const note = notes.find(n => n.id === node.id);
           if (note) setModalNote(note);
         })
-        .onLinkHover((link: any, prevLink: any) => {
+        .onLinkHover((link: any) => {
           if (link) {
             // Get mouse position relative to container
             const rect = containerRef.current!.getBoundingClientRect();

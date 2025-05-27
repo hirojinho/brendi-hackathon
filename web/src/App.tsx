@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ChatPanel } from './components/ChatPanel';
 import NotesPanel from './components/NotesPanel';
 import { ZettelkastenView } from './components/ZettelkastenView';
@@ -16,11 +16,13 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [notes, setNotes] = useState<Note[]>([]);
   const [activeTab, setActiveTab] = useState<'chat' | 'notes' | 'zettelkasten' | 'review' | 'documents'>('chat');
-  const [selectedNote, setSelectedNote] = useState<Note | null>(null);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
-  const [model, setModel] = useState<'gemini' | 'openai' | 'local' | 'deepseek'>('deepseek');
-  const [useRag, setUseRag] = useState(false);
+  const [model, setModel] = useState<'openrouter' | 'openai' | 'ollama'>('openrouter');
+  const [openrouterModelName, setOpenrouterModelName] = useState<string>('meta-llama/llama-3.3-8b-instruct:free');
+  const [ollamaModelName, setOllamaModelName] = useState<string>('phi3:latest');
+
   const [embeddingProvider, setEmbeddingProvider] = useState<'openai' | 'ollama'>('ollama');
 
   const fetchNotes = async () => {
@@ -66,10 +68,20 @@ function App() {
     fetchNotes();
   }, []);
 
-  const handleSendMessage = async (message: string, model: 'gemini' | 'openai' | 'local' | 'deepseek', useRag: boolean = false) => {
+  const handleSendMessage = async (message: string, selectedModel: 'openrouter' | 'openai' | 'ollama', useRag: boolean = false) => {
+    if (isLoading) return;
+    
     setIsLoading(true);
-    try {
       setMessages(prev => [...prev, { role: 'user', content: message }]);
+
+    try {
+      // Determine model name based on selected model
+      let modelName: string | undefined;
+      if (selectedModel === 'openrouter') {
+        modelName = openrouterModelName;
+      } else if (selectedModel === 'ollama') {
+        modelName = ollamaModelName;
+      }
 
       const response = await fetch('http://localhost:3001/api/chat', {
         method: 'POST',
@@ -77,9 +89,10 @@ function App() {
         body: JSON.stringify({
           message,
           history: messages,
-          model,
+          model: selectedModel,
+          modelName,
           useRag
-        })
+        }),
       });
 
       if (!response.ok) {
@@ -87,42 +100,47 @@ function App() {
       }
 
       const data = await response.json();
-      const aiResponse = data.response;
-      setMessages(prev => [...prev, { 
-        role: 'assistant', 
-        content: aiResponse,
-        retrievedChunks: data.retrievedChunks
-      }]);
+      setMessages(prev => [...prev, { role: 'assistant', content: data.response }]);
 
-      // Call /api/note with the assistant's response
-      const noteRes = await fetch('http://localhost:3001/api/note', {
+      // Try to generate notes for the response
+      const noteResponse = await fetch('http://localhost:3001/api/note', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: aiResponse, model })
+        body: JSON.stringify({ 
+          content: data.response, 
+          model: selectedModel,
+          modelName
+        }),
       });
-      if (noteRes.ok) {
-        const noteData = await noteRes.json();
-        if (noteData.notes && Array.isArray(noteData.notes) && noteData.notes.length > 0) {
-          setNotes(prev => [...prev, ...noteData.notes]);
-          setMessages(prev => [
-            ...prev,
-            ...noteData.notes.map((note: any) => ({
-              role: 'assistant',
-              content: `📝 **Note created:**\n\n**${note.title}**\n\n${note.content}\n\n*Tags: ${note.tags.join(', ')}*`
-            }))
-          ]);
+      
+      if (noteResponse.ok) {
+        const noteData = await noteResponse.json();
+        if (noteData.notes && noteData.notes.length > 0) {
+          await fetchNotes();
+          
+          // Add a system message to chat indicating notes were created
+          const noteCount = noteData.notes.length;
+          const noteMessage = noteCount === 1 
+            ? `📝 Created 1 note: "${noteData.notes[0].title}"`
+            : `📝 Created ${noteCount} notes from this conversation`;
+          
+          setMessages(prev => [...prev, { 
+            role: 'system', 
+            content: noteMessage 
+          }]);
         }
       }
     } catch (error) {
-      console.error('[App] Error sending message:', error);
-      setMessages(prev => [...prev, { role: 'assistant', content: 'Sorry, something went wrong.' }]);
+      console.error('Error sending message:', error);
+      setMessages(prev => [...prev, { role: 'assistant', content: 'Sorry, I encountered an error. Please try again.' }]);
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleNoteClick = (note: Note) => {
-    setSelectedNote(note);
+    // Note clicked - could be used for future note selection features
+    console.log('Note clicked:', note.title);
   };
 
   return (
@@ -133,14 +151,40 @@ function App() {
           <div style={{ color: '#b0b8c1', fontWeight: 600, fontSize: 14, marginBottom: 6 }}>Model</div>
           <select
             value={model}
-            onChange={e => setModel(e.target.value as 'gemini' | 'openai' | 'local' | 'deepseek')}
+            onChange={e => setModel(e.target.value as 'openrouter' | 'openai' | 'ollama')}
             style={{ width: '100%', padding: 8, borderRadius: 8, background: '#23272f', color: '#e6e6e6', border: '1px solid #4a9eff33', fontSize: 15, marginBottom: 10 }}
           >
-            <option value="gemini">Gemini Pro</option>
-            <option value="openai">OpenAI (gpt4.1-mini)</option>
-            <option value="local">Ollama (phi3:latest)</option>
-            <option value="deepseek">DeepSeek</option>
+            <option value="openai">OpenAI (gpt-4o-mini)</option>
+            <option value="openrouter">OpenRouter</option>
+            <option value="ollama">Ollama</option>
           </select>
+          
+          {model === 'openrouter' && (
+            <div style={{ marginBottom: 10 }}>
+              <div style={{ color: '#b0b8c1', fontWeight: 600, fontSize: 14, marginBottom: 6 }}>Model Name</div>
+              <input
+                type="text"
+                value={openrouterModelName}
+                onChange={e => setOpenrouterModelName(e.target.value)}
+                placeholder="e.g., meta-llama/llama-3.3-8b-instruct:free"
+                style={{ width: '100%', padding: 8, borderRadius: 8, background: '#23272f', color: '#e6e6e6', border: '1px solid #4a9eff33', fontSize: 15 }}
+              />
+            </div>
+          )}
+          
+          {model === 'ollama' && (
+            <div style={{ marginBottom: 10 }}>
+              <div style={{ color: '#b0b8c1', fontWeight: 600, fontSize: 14, marginBottom: 6 }}>Model Name</div>
+              <input
+                type="text"
+                value={ollamaModelName}
+                onChange={e => setOllamaModelName(e.target.value)}
+                placeholder="e.g., phi3:latest, llama3:8b"
+                style={{ width: '100%', padding: 8, borderRadius: 8, background: '#23272f', color: '#e6e6e6', border: '1px solid #4a9eff33', fontSize: 15 }}
+              />
+            </div>
+          )}
+          
           <div style={{ color: '#b0b8c1', fontWeight: 600, fontSize: 14, marginBottom: 6, marginTop: 14 }}>Embedding Provider</div>
           <select
             value={embeddingProvider}
@@ -223,7 +267,6 @@ function App() {
         {activeTab === 'notes' && (
           <NotesPanel
             notes={notes}
-            onNoteClick={handleNoteClick}
             onDeleteNote={handleDeleteNote}
           />
         )}
@@ -238,6 +281,7 @@ function App() {
             notes={notes}
             onNoteClick={handleNoteClick}
             model={model}
+            modelName={model === 'openrouter' ? openrouterModelName : model === 'ollama' ? ollamaModelName : undefined}
           />
         )}
         {activeTab === 'documents' && (

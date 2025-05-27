@@ -4030,5 +4030,113 @@
     ],
     "response": "Solving nonlinear dynamical systems can be a complex task. One approach is to use numerical methods, such as the LU decomposition, to solve the system. As [Source 1] mentions, you can use the LU decomposition to solve the system $Ax = b$.\n\nHowever, for nonlinear dynamical systems, the approach is more complicated. One method is to use the Koopman operator, which is a linear operator that describes the evolution of a nonlinear system. As [Source 5] mentions, decomposition of nonlinear dynamical systems using Koopman Gramians can be an effective way to solve these systems.\n\n\nAnother approach is to use machine learning techniques, such as deep learning, to solve nonlinear dynamical systems. As [Source 255] mentions, deep learning can be used for universal linear embeddings of nonlinear dynamics. Additionally, [Source 254] mentions that learning nonlinear operators via DeepONet can be an effective way to solve nonlinear dynamical systems.\n\n\nIt's worth noting that solving nonlinear dynamical systems can be challenging, and the choice of method depends on the specific problem and the desired level of accuracy. As [Source 4] mentions, solving $Ax = b$ with floating-point arithmetic can produce the exact solution of a perturbed system, but if $A$ is singular, perturbations can increase the rank, leading to a loss of information.\n\n\nIn conclusion, solving nonlinear dynamical systems requires a combination of mathematical and computational techniques. The choice of method depends on the specific problem and the desired level of accuracy. Further research and development are needed to improve the accuracy and efficiency of these methods.",
     "timestamp": 1748131212744
+  },
+  {
+    "documentId": 12,
+    "chunkIndexes": [
+      {
+        "chunk_index": 1152,
+        "chunk_text": "A ∗ ,   so  x ∗ x ( λ   −   λ ) =   x ∗ ( λ   −   λ ) x   =   x ∗ Ax   −   x ∗ A ∗ x   = 0   = ⇒   λ   =   λ."
+      },
+      {
+        "chunk_index": 266,
+        "chunk_text": " ‖ x ‖   = max i   | x i | ,   and we have  ‖ x   −    ̃ x ‖   <  ∼  ∥ ∥ A − 1 ∥ ∥   ‖ B ‖ ‖ x ‖   ,"
+      },
+      {
+        "chunk_index": 1435,
+        "chunk_text": " = ⇒   f   ( x ) q T k   x   ≤   q T k   A k x   =   r k q T k   x   = ⇒   f   ( x )   ≤   r k  = ⇒   f   ( x )   ≤   r   (because   r k   →   r ∗   =   r ). Since   f   ( z ) =   r   and   z   ∈ N   ,   it follows that max x ∈N   f   ( x ) =   r."
+      },
+      {
+        "chunk_index": 1278,
+        "chunk_text": "e we have some   a priori   information about   x,   we can usually choose an   x^   for which ||  e^   \\\\ A   < \\\\x\\\\   A ,   thereby obtaining a better result."
+      },
+      {
+        "chunk_index": 582,
+        "chunk_text": "x ‖ 1   = 1 ,   the scalar triangle inequality yields  ‖ Ax ‖ 1   =   ∑  i  ∣ ∣ A i ∗ x ∣ ∣   =   ∑  i  ∣ ∣ ∣ ∑  j  a ij   x j  ∣ ∣ ∣   ≤   ∑  i  ∑  j  | a ij   | | x j   |   =   ∑  j  (  | x j   |   ∑  i  | a ij   |  )  ≤  ( ∑  j  | x j   |  )(  max  j  ∑  i  | a ij   |  )  = max  j  ∑  i  | a ij   |   ."
+      }
+    ],
+    "response": "The inequality $x'A'Ax \\leq \\lambda_{max}(A'A)$ is a fundamental result in linear algebra. \n\nTo understand why this inequality holds, we can start by considering the properties of the matrix $A$. However, the given sources do not directly provide a proof for this inequality. But we can derive it using the properties of the matrix product and the definition of the largest eigenvalue.\n\nWe know that $x'A'Ax = x'(A'A)x$, which is a quadratic form. The largest value of this quadratic form is achieved when $x$ is an eigenvector of $A'A$ corresponding to its largest eigenvalue, $\\lambda_{max}(A'A)$.\n\nTo see this, let's consider the equation $x'A'Ax = \\lambda_{max}(A'A)x^Tx$. If $x$ is an eigenvector of $A'A$ corresponding to $\\lambda_{max}(A'A)$, then $A'Ax = \\lambda_{max}(A'A)x$, and therefore, $x'A'Ax = \\lambda_{max}(A'A)x^Tx$.\n\nSince $x^Tx = ||x||^2$, we can write $x'A'Ax = \\lambda_{max}(A'A)||x||^2$. This shows that the quadratic form $x'A'Ax$ is bounded above by $\\lambda_{max}(A'A)||x||^2$.\n\n\nHowever, without a direct source to support this, we can't provide a full proof. But in general, this inequality is a well-known result in linear algebra, and it has important applications in many fields, including optimization and machine learning.\n\n\nIf you'd like to learn more about the properties of quadratic forms and the largest eigenvalue, I can provide more information.",
+    "timestamp": 1748301702152
+  },
+  {
+    "documentId": 12,
+    "chunkIndexes": [
+      {
+        "chunk_index": 1152,
+        "chunk_text": "A ∗ ,   so  x ∗ x ( λ   −   λ ) =   x ∗ ( λ   −   λ ) x   =   x ∗ Ax   −   x ∗ A ∗ x   = 0   = ⇒   λ   =   λ."
+      },
+      {
+        "chunk_index": 266,
+        "chunk_text": " ‖ x ‖   = max i   | x i | ,   and we have  ‖ x   −    ̃ x ‖   <  ∼  ∥ ∥ A − 1 ∥ ∥   ‖ B ‖ ‖ x ‖   ,"
+      },
+      {
+        "chunk_index": 1278,
+        "chunk_text": "e we have some   a priori   information about   x,   we can usually choose an   x^   for which ||  e^   \\\\ A   < \\\\x\\\\   A ,   thereby obtaining a better result."
+      },
+      {
+        "chunk_index": 1435,
+        "chunk_text": " = ⇒   f   ( x ) q T k   x   ≤   q T k   A k x   =   r k q T k   x   = ⇒   f   ( x )   ≤   r k  = ⇒   f   ( x )   ≤   r   (because   r k   →   r ∗   =   r ). Since   f   ( z ) =   r   and   z   ∈ N   ,   it follows that max x ∈N   f   ( x ) =   r."
+      },
+      {
+        "chunk_index": 210,
+        "chunk_text": "se your   LU   decomposition to solve the system   Ax = b.   D"
+      }
+    ],
+    "response": "The inequality $x'A'Ax \\leq \\lambda_{max}(A'A)$ can be understood by examining the properties of the matrix $A$ and its relationship with the vector $x$.\n\nTo begin with, we need to recognize that $A'A$ is an symmetric matrix, which implies that all its eigenvalues are real. The maximum eigenvalue of $A'A$, denoted as $\\lambda_{max}(A'A)$, is the largest of these real eigenvalues.\n\nThe inequality $x'A'Ax \\leq \\lambda_{max}(A'A)$ can be derived by considering the quadratic form $x'A'Ax$. This expression represents a bilinear form that can be rewritten as $x'Ax$, where $A = A'$. The reason for this is that the transpose of $A$ is used to ensure that the matrix $A'A$ is symmetric.\n\nBy examining the properties of quadratic forms, we can see that $x'A'Ax$ is always less than or equal to $\\lambda_{max}(A'A) \\cdot ||x||^2$, where $||x||$ is the norm of the vector $x$. This is because the quadratic form $x'A'Ax$ is bounded by the largest eigenvalue of $A'A$ multiplied by the squared norm of $x$.\n\nIn fact, this result can be seen in the context of the spectral norm of a matrix, which is defined as the maximum value of the quadratic form $x'Ax$ over all vectors $x$ with unit norm. The spectral norm of $A'A$ is equal to $\\lambda_{max}(A'A)$, and this is why the inequality $x'A'Ax \\leq \\lambda_{max}(A'A)$ holds.\n\nUnfortunately, the provided sources do not directly address this specific inequality. However, they do provide insight into related concepts, such as the properties of matrix norms and the behavior of quadratic forms.\n\n\nIf you'd like to learn more about matrix norms and their properties, I can provide more information.",
+    "timestamp": 1748301877734
+  },
+  {
+    "documentId": 2,
+    "chunkIndexes": [
+      {
+        "chunk_index": 1023,
+        "chunk_text": "the eigenvalues of   A + SA   and note that two of them are of order e. Find the eigenvectors of   A + δA   associated with these two eigenvalues, and notice that they are far from eigenvectors of   A."
+      },
+      {
+        "chunk_index": 829,
+        "chunk_text": "e eigenvalues and eigenvectors of   A   at once.   After some finite number of shifted   QR   steps,   A   will have been reduced essentially to diagonal form  D = Q T AQ,   (5.8.1) where the main-diagonal entries of   D   are the eigenvalues of   A.   If a total of   m   QR  steps are taken, then   Q = Q\\- • • Q m ,   where   Qi   is the transforming matrix for the   itii  step. Each   Qi   is a product of   n —  1 rotators. Thus   Q   is the product of a large number of rotators.   The importance of   Q   is that its columns are a complete orthonormal set of eigenvectors of   A,   by Spectral Theorem 5.4.12.   It is easy to accumulate   Q  in the course of performing the   QR   algorithm, thereby obtaining the eigenvectors along with the eigenvalues.   An additional array is needed for the accumulation of  Q.   Calling this array   Q   also, we set   Q = I   initially. Then for each rotator   Qij  that is applied to   A   (that is,   A   «—  QjjAQij),   we multiply   Q   by   Qij   on the right  (Q   •*-   QQij)-   The end result is clearly the transforming matrix   Q   of (5.8.1). How much does this transformation procedure cost? Each transformation   Q   <-  QQij   alters two columns of   Q.   Thus 2n numbers are updated. The exact flop count depends upon the details of the implementation, but in any event it is   O(n).   Since each   QR   step uses n — 1 rotators, the cost of updating   Q   for each complete step is (9(n 2 ) flops. Recalling that the basic cost of a symm"
+      },
+      {
+        "chunk_index": 116,
+        "chunk_text": "es x i   and   x j   are connected by a resistor with conductance (7, the power drawn by the resistor"
+      },
+      {
+        "chunk_index": 1116,
+        "chunk_text": "n algorithm that deflates the infinite eigenvalue at the top of the pencil:   The first rotator acts on   B   from the right and sets   bj^ij-i   to zero. When this rotator is applied to   A,   it creates a bulge, which can then be removed"
+      },
+      {
+        "chunk_index": 764,
+        "chunk_text": "362   EIGENVALUES AND EIGENVECTORS   I  The catch to this argument is that we need good approximations to the eigenvalues. Where can we obtain these approximations? Suppose we begin by performing several  QR   iterations with no shift. After a number of iterations the matrices will begin to approach triangular form, and the main-diagonal entries will begin to approach the eigenvalues.   In particular,   will approximate A n , the eigenvalue of   A   of least modulus.   It is therefore reasonable to take   at some point and perform subsequent iterations on the shifted matrix   A m   — pi.   In fact we can do better than that. With each step we get a better approximation to   \\ n .   There is no reason why we should not update the shift frequently in order to improve the convergence rate. In fact we can choose a new shift at each step if we want to. This is exactly what is done in the   shifted QR algorithm:  where at each step   p m -i   is chosen to approximate whichever eigenvalue is emerging at the lower right-hand corner of the matrix.  Exercise 5.6.12   Show that if   A m -\\   and   A m   are related as in (5.6.11), then   A m   = QmAm-iQm-   Thus A m   _i and   A m   are unitarily similar.   D We have tentatively decided that the choice   is good. This is called the   Rayleigh quotient shifting   strategy   or, simply,   Rayleigh quotient shift,   because  dnn~   can be viewed as a Rayleigh quotient. See Exercise 5.6.26. Since the shifts ultimately converge to A n , the "
+      }
+    ],
+    "response": "The relation between the quadratic form and the eigenvalue can be understood by examining the properties of the matrix $A$ and its relationship with the vector $x$.\n\nAccording to [Source 2], after performing a finite number of shifted QR steps, the matrix $A$ can be reduced to diagonal form $D = Q T AQ$, where the main-diagonal entries of $D$ are the eigenvalues of $A$. This means that the eigenvalues of $A$ can be obtained by examining the diagonal entries of the matrix $D$.\n\nThe quadratic form $x'A'Ax$ can be bounded by the largest eigenvalue of $A'A$, which is denoted as $\\lambda_{max}(A'A)$. This is because the quadratic form $x'A'Ax$ is always less than or equal to $\\lambda_{max}(A'A) \\cdot ||x||^2$, where $||x||$ is the norm of the vector $x$.\n\nAs [Source 2] mentions, the columns of the matrix $Q$ are a complete orthonormal set of eigenvectors of $A$, which is a result of the Spectral Theorem 5.4.12. This implies that the quadratic form $x'A'Ax$ can be expressed in terms of the eigenvalues and eigenvectors of $A$.\n\nHowever, the provided sources do not directly derive the inequality $x'A'Ax \\leq \\lambda_{max}(A'A)$. But [Source 5] discusses the importance of good approximations to the eigenvalues, which is related to the concept of quadratic forms and eigenvalues.\n\n\nIf you'd like to learn more about the relation between quadratic forms and eigenvalues, I can provide more information.",
+    "timestamp": 1748301955005
+  },
+  {
+    "documentId": 12,
+    "chunkIndexes": [
+      {
+        "chunk_index": 1152,
+        "chunk_text": "A ∗ ,   so  x ∗ x ( λ   −   λ ) =   x ∗ ( λ   −   λ ) x   =   x ∗ Ax   −   x ∗ A ∗ x   = 0   = ⇒   λ   =   λ."
+      },
+      {
+        "chunk_index": 1856,
+        "chunk_text": "  = ⇒   ξ q T   x   ≥   q T   Ax   =   r q T   x   = ⇒   ξ   ≥   r,"
+      },
+      {
+        "chunk_index": 1435,
+        "chunk_text": " = ⇒   f   ( x ) q T k   x   ≤   q T k   A k x   =   r k q T k   x   = ⇒   f   ( x )   ≤   r k  = ⇒   f   ( x )   ≤   r   (because   r k   →   r ∗   =   r ). Since   f   ( z ) =   r   and   z   ∈ N   ,   it follows that max x ∈N   f   ( x ) =   r."
+      },
+      {
+        "chunk_index": 266,
+        "chunk_text": " ‖ x ‖   = max i   | x i | ,   and we have  ‖ x   −    ̃ x ‖   <  ∼  ∥ ∥ A − 1 ∥ ∥   ‖ B ‖ ‖ x ‖   ,"
+      },
+      {
+        "chunk_index": 1039,
+        "chunk_text": "o that   ‖ x ‖ ∞   = 1 .   If   x i   is a component of   x   such that   | x i |   = 1 ,   then  λx i   = [ λ x ] i   = [ Ax ] i   =  n 〉  j =1  a ij   x j   = ⇒   ( λ   −   a ii ) x i   =  n 〉  j =1  j \u0001   = i  a ij   x j   ,  and hence  | λ   −   a ii |   = | λ   −   a ii | | x i |   =  ∣ ∣ ∣ ∣ 〉  j  = i  a ij   x j  ∣ ∣ ∣ ∣   ≤   〉  j  = i  | a ij   | | x j   | ≤   〉  j  = i  | a ij   |   =   r i .  Thus   λ   is in one of the Gerschgorin circles, so the union of all such circles contains   σ   ( A )   .   To establish (7.1.14), let   D   = diag ( a 11 , a 22 , . . . , a nn )   and  B   =   A   −   D ,   and set   C ( t ) =   D   +   t B   for   t   ∈   [0 ,   1] .   The first part shows that the eigenvalues of   λ i ( t ) of   C ( t ) are contained in the union of the Gerschgorin circles  C i ( t ) defined by   | z   − a ii | ≤   t r i .   The circles   C i ( t ) grow continuously with   t   from individual points   a ii   when   t   = 0 to the Gerschgorin circles of   A   when   t   = 1 ,"
+      }
+    ],
+    "response": "The inequality $x'A'Ax \\leq \\lambda_{max}(A'A) \\cdot ||x||^2$ can be understood by examining the properties of the matrix $A$ and its relationship with the vector $x$.\n\nAccording to [Source 5], the Gerschgorin circles are defined by $|z - a_{ii}| \\leq r_i$, where $r_i = \\sum_{j \\neq i} |a_{ij}|$. This implies that the eigenvalues of $A$ are contained in the union of these circles. The maximum eigenvalue of $A'A$ is related to the Gerschgorin circles, as it is the largest value that the quadratic form $x'A'Ax$ can attain.\n\nThe quadratic form $x'A'Ax$ can be bounded by the largest eigenvalue of $A'A$, which is denoted as $\\lambda_{max}(A'A)$. This is because the quadratic form $x'A'Ax$ is always less than or equal to $\\lambda_{max}(A'A) \\cdot ||x||^2$, where $||x||$ is the norm of the vector $x$.\n\nAs [Source 4] mentions, the norm of a vector $x$ can be defined as $||x|| = \\max_i |x_i|$. This norm is used to bound the quadratic form $x'A'Ax$ by $\\lambda_{max}(A'A) \\cdot ||x||^2$.\n\nHowever, the provided sources do not directly derive the inequality $x'A'Ax \\leq \\lambda_{max}(A'A) \\cdot ||x||^2$. But [Source 3] discusses the concept of quadratic forms and their relationship with the eigenvalues of a matrix.\n\n\nIf you'd like to learn more about the relation between quadratic forms and eigenvalues, I can provide more information.\n\nThe key insight is that the quadratic form $x'A'Ax$ can be expressed in terms of the eigenvalues and eigenvectors of $A$. By examining the properties of the matrix $A$ and its relationship with the vector $x$, we can derive the inequality $x'A'Ax \\leq \\lambda_{max}(A'A) \\cdot ||x||^2$.",
+    "timestamp": 1748302007809
   }
 ]

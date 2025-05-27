@@ -7,9 +7,10 @@ interface OllamaResponse {
   content?: string;
 }
 
-export async function generateLocalResponse(
+export async function generateOllamaResponse(
   message: string,
-  history: { role: string; content: string }[] = []
+  history: { role: string; content: string }[] = [],
+  modelName?: string
 ): Promise<string> {
   try {
     let messages;
@@ -27,11 +28,14 @@ export async function generateLocalResponse(
       ];
     }
 
+    // Use provided model name or fallback to default
+    const model = modelName || 'phi3:latest';
+
     const ollamaRes = await fetch('http://localhost:11434/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'phi3:latest',
+        model,
         messages,
         stream: false
       })
@@ -44,7 +48,7 @@ export async function generateLocalResponse(
     const data = await ollamaRes.json() as OllamaResponse;
     return data.message?.content || data.content || '';
   } catch (error) {
-    console.error('Error in local response generation:', error);
+    console.error('Error in ollama response generation:', error);
     throw error;
   }
 } 
