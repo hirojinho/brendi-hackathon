@@ -20,7 +20,7 @@ function App() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [model, setModel] = useState<'openrouter' | 'openai' | 'ollama'>('openrouter');
-  const [openrouterModelName, setOpenrouterModelName] = useState<string>('meta-llama/llama-3.3-8b-instruct:free');
+  const [openrouterModelName, setOpenrouterModelName] = useState<string>('qwen/qwen3-14b:free');
   const [ollamaModelName, setOllamaModelName] = useState<string>('phi3:latest');
 
   const [embeddingProvider, setEmbeddingProvider] = useState<'openai' | 'ollama'>('ollama');
@@ -166,7 +166,7 @@ function App() {
                 type="text"
                 value={openrouterModelName}
                 onChange={e => setOpenrouterModelName(e.target.value)}
-                placeholder="e.g., meta-llama/llama-3.3-8b-instruct:free"
+                placeholder="e.g., qwen/qwen3-14b:free"
                 style={{ width: '100%', padding: 8, borderRadius: 8, background: '#23272f', color: '#e6e6e6', border: '1px solid #4a9eff33', fontSize: 15 }}
               />
             </div>

@@ -24,14 +24,12 @@ A powerful AI-powered study assistant that helps you learn, take notes, and revi
 
 ### Backend
 - **Runtime**: Node.js with Express
+- **Architecture**: Lean Clean Architecture (HTTP → Application → Domain → Infrastructure)
 - **Database**: SQLite with better-sqlite3
-- **AI Integration**: 
-  - OpenAI API (GPT-4.1-mini)
-  - Google Gemini API (Gemini 2.0 Flash)
-  - OpenRouter API (Llama 3.3 8B Instruct)
-  - Ollama (local models, default: phi3:latest)
-- **Document Processing**: PDF-parse and PDF.js
-- **File Upload**: Multer for handling file uploads
+- **AI Providers**: OpenAI, OpenRouter, Ollama (via provider strategy)
+- **RAG**: Embedding providers + cosine similarity, usage logging
+- **Documents**: PDF.js parsing, ingestion pipeline (extract → chunk → embed → store)
+- **File Upload**: Multer
 
 ## Prerequisites
 
@@ -76,14 +74,12 @@ Create a `.env` file in the `server` directory with your API keys:
 # OpenAI (for GPT-4.1-mini)
 OPENAI_API_KEY=your_openai_api_key
 
-# Google Gemini (for Gemini 2.0 Flash)
-GOOGLE_API_KEY=your_google_api_key
-
 # OpenRouter (for Llama 3.3 8B and other models)
 OPENROUTER_API_KEY=your_openrouter_api_key
 
 # Server configuration
 PORT=3001
+OLLAMA_BASE_URL=http://localhost:11434
 ```
 
 6. **Start the application:**
@@ -106,36 +102,58 @@ The application will be available at:
 - Frontend: `http://localhost:5173`
 - Backend API: `http://localhost:3001`
 
-## Project Structure
+## Backend Architecture and Layout
 
 ```
-brendi-hackathon/
-├── server/                 # Backend Express server
-│   ├── src/
-│   │   ├── index.ts       # Main server entry point
-│   │   ├── database.ts    # SQLite database management
-│   │   ├── notes.ts       # Note management system
-│   │   ├── chatService.ts # AI chat handling
-│   │   ├── uploadService.ts # File upload processing
-│   │   ├── openai.ts      # OpenAI GPT-4.1-mini integration
-│   │   ├── gemini.ts      # Google Gemini 2.0 Flash integration
-│   │   ├── openrouter.ts  # OpenRouter API integration (Llama models)
-│   │   ├── deepseek.ts    # DeepSeek integration (via OpenRouter)
-│   │   ├── ollama.ts      # Ollama local model integration
-│   │   └── ...
-│   ├── uploads/           # Uploaded files storage
-│   └── *.db              # SQLite database files
-├── web/                   # Frontend React application
-│   ├── src/
-│   │   ├── App.tsx        # Main React component
-│   │   ├── components/    # React components
-│   │   ├── services/      # API service functions
-│   │   ├── hooks/         # Custom React hooks
-│   │   ├── utils/         # Utility functions
-│   │   └── styles/        # CSS and styling
-│   └── index.html         # HTML entry point
-└── README.md             # This file
+server/src/
+├── index.ts                     # Only root file; bootstraps container and registers routes
+├── bootstrap/
+│   └── container.ts            # DI wiring: repositories, providers, services
+├── http/
+│   ├── registerRoutes.ts       # Mounts all routers
+│   ├── routes/
+│   │   ├── chat.routes.ts
+│   │   ├── documents.routes.ts
+│   │   └── notes.routes.ts
+│   └── controllers/
+│       ├── chat.controller.ts
+│       ├── documents.controller.ts
+│       └── notes.controller.ts
+├── app/                        # Application layer (use-cases/services)
+│   ├── chat/ChatService.ts
+│   ├── documents/DocumentIngestionService.ts
+│   ├── documents/RAGService.ts
+│   └── notes/NotesService.ts
+├── domain/                     # Domain contracts and prompts
+│   ├── entities/
+│   │   └── index.ts
+│   ├── ports/
+│   │   ├── providers/index.ts
+│   │   └── repositories/index.ts
+│   └── prompts/
+│       ├── system.ts           # Chat system prompt (single source of truth)
+│       └── note.ts             # Note-generation prompt
+├── infra/                      # Infrastructure adapters
+│   ├── config/index.ts         # Env and defaults, typed config
+│   ├── db/
+│   │   ├── documentDatabase.ts
+│   │   └── noteDatabase.ts
+│   ├── providers/
+│   │   ├── embeddings/{openai,ollama}.ts
+│   │   ├── llm/{openai,openrouter,ollama}.ts
+│   │   ├── pdf/pdfjs.ts
+│   │   └── storage/filesystem.ts
+│   └── repositories/
+│       ├── file/UsageRepositoryFile.ts
+│       └── sqlite/{DocumentsRepositorySQLite,DocumentChunksRepositorySQLite,NotesRepositorySQLite}.ts
+└── shared/
+    └── uploadStatus.ts
 ```
+
+Design principles:
+- Clear separation of concerns; swappable providers via interfaces
+- Minimal validation/logging for now; production hardening can be added later
+- Single source of truth for prompts in `domain/prompts/*`
 
 ## Features in Detail
 
@@ -192,13 +210,15 @@ The application uses SQLite databases:
 - `study_notes.db` - Stores notes, tags, and spaced repetition data
 - `documents.db` - Stores uploaded documents and their metadata
 
-### API Endpoints
+### API Endpoints (core)
 
-The server provides RESTful API endpoints for:
-- Chat management (`/api/chat`)
-- Note operations (`/api/notes`)
-- Document upload (`/api/upload`)
-- Spaced repetition (`/api/review`)
+- `POST /api/chat` — Chat with optional RAG; supports models: `openai`, `openrouter`, `ollama`
+- `POST /api/note` — Generate notes from content via selected model
+- `GET /api/notes`, `DELETE /api/notes/:id`, `PATCH /api/notes/:id` — Notes management + SRS update
+- `POST /api/documents/upload` — Upload and index a PDF (embedding provider: `openai` or `ollama`)
+- `GET /api/documents/upload-status/:uploadId` — Poll upload progress
+- `GET /api/documents`, `DELETE /api/documents/:id` — Document management
+- `GET /api/documents/:id/usage` — RAG usage log for a document
 
 ## License
 

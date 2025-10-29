@@ -73,7 +73,7 @@ export class DocumentDatabase {
       FROM document_chunks 
       ORDER BY document_id, chunk_index ASC
     `).all();
-    return rows.map((row: any) => ({ ...row, embedding: JSON.parse(row.embedding) }));
+    return (rows as any[]).map((row) => ({ ...row, embedding: JSON.parse((row as any).embedding) }));
   }
 
   getChunkWithDocMeta(chunkId: number): { title: string; originalname: string } | null {
@@ -110,4 +110,6 @@ export class DocumentDatabase {
   }
 }
 
-export default DocumentDatabase; 
+export default DocumentDatabase;
+
+
