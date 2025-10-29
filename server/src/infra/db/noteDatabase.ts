@@ -1,4 +1,5 @@
 import Database from 'better-sqlite3';
+import { NoteEntity } from 'domain/entities';
 import { Document } from 'langchain/document';
 import path from 'path';
 
@@ -77,7 +78,7 @@ export class NoteDatabase {
     return result;
   }
 
-  getAllNotes(): Note[] {
+  getAllNotes(): NoteEntity[] {
     const notes = this.db.prepare('SELECT * FROM notes').all() as any[];
     return notes.map(note => ({
       id: note.id,
@@ -85,14 +86,15 @@ export class NoteDatabase {
       content: note.content,
       tags: JSON.parse(note.tags),
       relatedNotes: JSON.parse(note.related_notes),
-      createdAt: new Date(note.created_at),
-      lastModified: new Date(note.last_modified),
-      source: { conversationId: note.conversation_id, messageIndex: note.message_index },
-      nextReview: note.next_review ? new Date(note.next_review) : undefined,
+      createdAt: note.created_at,
+      lastModified: note.last_modified,
+      conversationId: note.conversation_id,
+      messageIndex: note.message_index,
+      nextReview: note.next_review ? note.next_review : undefined,
       interval: note.interval ?? undefined,
       easiness: note.easiness ?? undefined,
       repetitions: note.repetitions ?? undefined,
-      lastReview: note.last_review ? new Date(note.last_review) : undefined,
+      lastReview: note.last_review ? note.last_review : undefined,
       lastPerformance: note.last_performance ?? undefined
     }));
   }
