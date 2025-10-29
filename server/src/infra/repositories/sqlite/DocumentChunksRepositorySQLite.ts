@@ -3,7 +3,7 @@ import { DocumentChunksRepository } from '../../../domain/ports/repositories/ind
 import { DocumentChunkEntity } from '../../../domain/entities/index.js';
 
 export class DocumentChunksRepositorySQLite implements DocumentChunksRepository {
-  constructor(private readonly db: DocumentDatabase = new DocumentDatabase()) {}
+  constructor(private readonly documentDatabase: DocumentDatabase = new DocumentDatabase()) {}
 
   saveMany(documentId: number, chunks: Array<Omit<DocumentChunkEntity, 'id' | 'documentId'>>): void {
     const payload = chunks.map(c => ({
@@ -11,16 +11,16 @@ export class DocumentChunksRepositorySQLite implements DocumentChunksRepository 
       chunk_text: c.chunkText,
       embedding: c.embedding
     }));
-    this.db.saveChunks(documentId, payload);
+    this.documentDatabase.saveChunks(documentId, payload);
   }
 
   getAll(): DocumentChunkEntity[] {
-    return this.db.getAllChunks().map((c: any) => ({
-      id: c.id,
-      documentId: c.document_id,
-      chunkIndex: c.chunk_index,
-      chunkText: c.chunk_text,
-      embedding: c.embedding
+    return this.documentDatabase.getAllChunks().map((row: any) => ({
+      id: row.id,
+      documentId: row.document_id,
+      chunkIndex: row.chunk_index,
+      chunkText: row.chunk_text,
+      embedding: row.embedding
     }));
   }
 

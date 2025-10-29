@@ -11,43 +11,44 @@ export function makeCreateNoteHandler(container: Container) {
       // Minimal allow logic: ensure non-trivial content
       if (!content || content.length < 100) return res.json({ notes: [] });
 
-      const existing = container.services.notes.list().map(n => ({
-        id: n.id,
-        title: n.title,
-        content: n.content,
-        tags: n.tags,
-        relatedNotes: n.relatedNotes,
-        createdAt: new Date(n.createdAt),
-        lastModified: new Date(n.lastModified),
-        source: { conversationId: n.conversationId, messageIndex: n.messageIndex },
-        nextReview: n.nextReview ? new Date(n.nextReview) : undefined,
-        interval: n.interval ?? undefined,
-        easiness: n.easiness ?? undefined,
-        repetitions: n.repetitions ?? undefined,
-        lastReview: n.lastReview ? new Date(n.lastReview) : undefined,
-        lastPerformance: n.lastPerformance ?? undefined
+      const existingNotesForDedup = container.services.notes.list().map(note => ({
+        id: note.id,
+        title: note.title,
+        content: note.content,
+        tags: note.tags,
+        relatedNotes: note.relatedNotes,
+        createdAt: new Date(note.createdAt),
+        lastModified: new Date(note.lastModified),
+        source: { conversationId: note.conversationId, messageIndex: note.messageIndex },
+        nextReview: note.nextReview ? new Date(note.nextReview) : undefined,
+        interval: note.interval ?? undefined,
+        easiness: note.easiness ?? undefined,
+        repetitions: note.repetitions ?? undefined,
+        lastReview: note.lastReview ? new Date(note.lastReview) : undefined,
+        lastPerformance: note.lastPerformance ?? undefined
       })) as any[];
 
       const prompt = buildNoteGenerationPrompt(content);
-      const provider = model === 'openrouter'
+      const selectedProvider = model === 'openrouter'
         ? container.providers.llm.openrouter
         : model === 'ollama'
           ? container.providers.llm.ollama
           : container.providers.llm.openai;
-      const raw = await provider.generateResponse(prompt, [], modelName);
-      const cleaned = raw.replace(/```json|```/g, '').trim();
-      let notes: any[] = [];
+
+      const providerResponse = await selectedProvider.generateResponse(prompt, [], modelName);
+      const cleanedResponse = providerResponse.replace(/```json|```/g, '').trim();
+      let generatedNotes: any[] = [];
       try {
-        const parsed = JSON.parse(cleaned);
-        const arr = Array.isArray(parsed.notes) ? parsed.notes : [];
-        notes = arr.filter((n: any) => n && n.title && n.content && Array.isArray(n.tags));
+        const parsed = JSON.parse(cleanedResponse);
+        const parsedNotesArray = Array.isArray(parsed.notes) ? parsed.notes : [];
+        generatedNotes = parsedNotesArray.filter((candidate: any) => candidate && candidate.title && candidate.content && Array.isArray(candidate.tags));
       } catch {
-        notes = [];
+        generatedNotes = [];
       }
 
-      if (notes.length > 0) {
+      if (generatedNotes.length > 0) {
         const nowIso = new Date().toISOString();
-        for (const note of notes) {
+        for (const note of generatedNotes) {
           container.services.notes.create({
             id: note.id,
             title: note.title,
@@ -68,7 +69,7 @@ export function makeCreateNoteHandler(container: Container) {
         }
       }
 
-      return res.json({ notes });
+      return res.json({ notes: generatedNotes });
     } catch (err) {
       console.error('[HTTP] /api/note error', err);
       return res.status(500).json({ error: 'Failed to generate note' });
@@ -79,23 +80,24 @@ export function makeCreateNoteHandler(container: Container) {
 export function makeListNotesHandler(container: Container) {
   return (_req: Request, res: Response) => {
     try {
-      const notes = container.services.notes.list().map(n => ({
-        id: n.id,
-        title: n.title,
-        content: n.content,
-        tags: n.tags,
-        relatedNotes: n.relatedNotes,
-        createdAt: n.createdAt,
-        lastModified: n.lastModified,
-        source: { conversationId: n.conversationId, messageIndex: n.messageIndex },
-        nextReview: n.nextReview || undefined,
-        interval: n.interval || undefined,
-        easiness: n.easiness || undefined,
-        repetitions: n.repetitions || undefined,
-        lastReview: n.lastReview || undefined,
-        lastPerformance: n.lastPerformance || undefined
+      const notesList = container.services.notes.list().map(note => ({
+        id: note.id,
+        title: note.title,
+        content: note.content,
+        tags: note.tags,
+        relatedNotes: note.relatedNotes,
+        createdAt: note.createdAt,
+        lastModified: note.lastModified,
+        source: { conversationId: note.conversationId, messageIndex: note.messageIndex },
+        nextReview: note.nextReview || undefined,
+        interval: note.interval || undefined,
+        easiness: note.easiness || undefined,
+        repetitions: note.repetitions || undefined,
+        lastReview: note.lastReview || undefined,
+        lastPerformance: note.lastPerformance || undefined
       }));
-      return res.json({ notes });
+
+      return res.json({ notes: notesList });
     } catch (err) {
       return res.status(500).json({ error: 'Failed to retrieve notes' });
     }

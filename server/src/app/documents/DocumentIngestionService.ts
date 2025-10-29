@@ -3,54 +3,58 @@ import { DocumentsRepository, DocumentChunksRepository } from '../../domain/port
 
 export class DocumentIngestionService {
   constructor(
-    private readonly pdf: PdfParserProvider,
-    private readonly embeddings: EmbeddingProvider,
-    private readonly documentsRepo: DocumentsRepository,
-    private readonly chunksRepo: DocumentChunksRepository,
-    private readonly maxEmbeddingChars: number
+    private readonly pdfParser: PdfParserProvider,
+    private readonly embeddingProvider: EmbeddingProvider,
+    private readonly documentsRepository: DocumentsRepository,
+    private readonly documentChunksRepository: DocumentChunksRepository,
+    private readonly maxEmbeddingCharacters: number
   ) {}
 
-  private chunkText(text: string, chunkSize = 1500): string[] {
-    const chunks: string[] = [];
-    for (let i = 0; i < text.length; i += chunkSize) {
-      chunks.push(text.slice(i, Math.min(i + chunkSize, text.length)));
+  private createChunksFromText(text: string, chunkSize = 1500): string[] {
+    const chunkList: string[] = [];
+
+    for (let offset = 0; offset < text.length; offset += chunkSize) {
+      chunkList.push(text.slice(offset, Math.min(offset + chunkSize, text.length)));
     }
-    return chunks;
+
+    return chunkList;
   }
 
-  async ingest(filePath: string, originalname: string): Promise<number> {
-    const { title, pages, fullText } = await this.pdf.extract(filePath);
-    const pageText = pages.join('\n');
-    const chunks = this.chunkText(pageText);
+  async ingest(filePath: string, originalFileName: string): Promise<number> {
+    const { title, pages, fullText } = await this.pdfParser.extract(filePath);
 
-    // Save document placeholder to get id
-    const docId = this.documentsRepo.save({
+    const concatenatedPagesText = pages.join('\n');
+    const chunkTexts = this.createChunksFromText(concatenatedPagesText);
+
+    // Create the document and fetch its ID
+    const documentId = this.documentsRepository.save({
       title,
-      originalname,
+      originalname: originalFileName,
       text: '',
-      embedding: [],
-      createdAt: new Date().toISOString(),
-      id: 0
+      embedding: []
     });
 
-    // Embed chunks
-    const embedded = await Promise.all(chunks.map(async (text, idx) => ({
-      chunkIndex: idx,
-      chunkText: text,
-      embedding: await this.embeddings.embed(text)
-    })));
+    // Embed each chunk in parallel
+    const embeddedChunkRecords = await Promise.all(
+      chunkTexts.map(async (chunkText, chunkIndex) => ({
+        chunkIndex,
+        chunkText,
+        embedding: await this.embeddingProvider.embed(chunkText)
+      }))
+    );
 
-    this.chunksRepo.saveMany(docId, embedded);
+    this.documentChunksRepository.saveMany(documentId, embeddedChunkRecords);
 
-    // Document-level embedding (possibly truncated)
-    let docEmbeddingText = fullText;
-    if (docEmbeddingText.length > this.maxEmbeddingChars) {
-      docEmbeddingText = docEmbeddingText.slice(0, this.maxEmbeddingChars);
+    // Compute and save document-level embedding (with truncation safeguard)
+    let documentEmbeddingText = fullText;
+    if (documentEmbeddingText.length > this.maxEmbeddingCharacters) {
+      documentEmbeddingText = documentEmbeddingText.slice(0, this.maxEmbeddingCharacters);
     }
-    const docEmbedding = await this.embeddings.embed(docEmbeddingText);
-    this.documentsRepo.updateEmbeddingAndText(docId, docEmbedding, fullText);
 
-    return docId;
+    const documentEmbedding = await this.embeddingProvider.embed(documentEmbeddingText);
+    this.documentsRepository.updateEmbeddingAndText(documentId, documentEmbedding, fullText);
+
+    return documentId;
   }
 }
 

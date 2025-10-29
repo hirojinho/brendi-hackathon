@@ -5,23 +5,29 @@ import fetch from 'node-fetch';
 export class OllamaProvider implements LLMProvider {
   constructor(private readonly baseUrl: string = 'http://localhost:11434') {}
 
-  async generateResponse(message: string, history: ChatMessage[] = [], modelName?: string): Promise<string> {
-    const model = modelName || 'phi3:latest';
-    const messages = history && history.length > 0
-      ? history
+  async generateResponse(userMessage: string, messageHistory: ChatMessage[] = [], modelName?: string): Promise<string> {
+    const effectiveModelName = modelName || 'phi3:latest';
+
+    const chatMessages = (messageHistory && messageHistory.length > 0)
+      ? messageHistory
       : [
-          { role: 'system' as const, content: getChatSystemPrompt() },
-          { role: 'user' as const, content: message }
+          { role: 'system', content: getChatSystemPrompt() },
+          { role: 'user', content: userMessage }
         ];
 
-    const res = await fetch(`${this.baseUrl}/api/chat`, {
+    const httpResponse = await fetch(`${this.baseUrl}/api/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model, messages, stream: false })
+      body: JSON.stringify({ model: effectiveModelName, messages: chatMessages, stream: false })
     });
-    if (!res.ok) throw new Error(`Ollama error: ${await res.text()}`);
-    const data = await res.json() as any;
-    return data.message?.content || data.content || '';
+
+    if (!httpResponse.ok) {
+      const errorText = await httpResponse.text();
+      throw new Error(`Ollama error: ${errorText}`);
+    }
+
+    const completion = await httpResponse.json() as any;
+    return completion.message?.content || completion.content || '';
   }
 }
 

@@ -3,11 +3,11 @@ import { NoteEntity } from '../../../domain/entities/index.js';
 import NoteDatabase from '../../db/noteDatabase.js';
 
 export class NotesRepositorySQLite implements NotesRepository {
-  constructor(private readonly db: NoteDatabase = new NoteDatabase()) {}
+  constructor(private readonly noteDatabase: NoteDatabase = new NoteDatabase()) {}
 
   save(note: NoteEntity): void {
     // Adapt NoteEntity to Note type expected by NoteDatabase.saveNote
-    this.db.saveNote({
+    this.noteDatabase.saveNote({
       id: note.id,
       title: note.title,
       content: note.content,
@@ -29,35 +29,35 @@ export class NotesRepositorySQLite implements NotesRepository {
     id: string,
     fields: Partial<Pick<NoteEntity, 'nextReview' | 'interval' | 'easiness' | 'repetitions' | 'lastReview' | 'lastPerformance'>>
   ): void {
-    const existing = this.list().find(n => n.id === id);
+    const existing = this.list().find(note => note.id === id);
     if (!existing) return;
     const updated: NoteEntity = { ...existing, ...fields, lastModified: new Date().toISOString() } as any;
     this.save(updated);
   }
 
   list(): NoteEntity[] {
-    const notes = this.db.getAllNotes();
-    return notes.map((n: any) => ({
-      id: n.id,
-      title: n.title,
-      content: n.content,
-      tags: n.tags,
-      relatedNotes: n.relatedNotes,
-      createdAt: n.createdAt.toISOString(),
-      lastModified: n.lastModified.toISOString(),
-      conversationId: n.source.conversationId,
-      messageIndex: n.source.messageIndex,
-      nextReview: n.nextReview ? n.nextReview.toISOString() : null,
-      interval: n.interval ?? null,
-      easiness: n.easiness ?? null,
-      repetitions: n.repetitions ?? null,
-      lastReview: n.lastReview ? n.lastReview.toISOString() : null,
-      lastPerformance: n.lastPerformance ?? null
+    const notes = this.noteDatabase.getAllNotes();
+    return notes.map((row: any) => ({
+      id: row.id,
+      title: row.title,
+      content: row.content,
+      tags: row.tags,
+      relatedNotes: row.relatedNotes,
+      createdAt: row.createdAt.toISOString(),
+      lastModified: row.lastModified.toISOString(),
+      conversationId: row.source.conversationId,
+      messageIndex: row.source.messageIndex,
+      nextReview: row.nextReview ? row.nextReview.toISOString() : null,
+      interval: row.interval ?? null,
+      easiness: row.easiness ?? null,
+      repetitions: row.repetitions ?? null,
+      lastReview: row.lastReview ? row.lastReview.toISOString() : null,
+      lastPerformance: row.lastPerformance ?? null
     }));
   }
 
   delete(id: string): void {
-    this.db.deleteNote(id);
+    this.noteDatabase.deleteNote(id);
   }
 }
 

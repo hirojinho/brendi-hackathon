@@ -3,10 +3,10 @@ import { DocumentsRepository } from '../../../domain/ports/repositories/index.js
 import { DocumentEntity } from '../../../domain/entities/index.js';
 
 export class DocumentsRepositorySQLite implements DocumentsRepository {
-  constructor(private readonly db: DocumentDatabase = new DocumentDatabase()) {}
+  constructor(private readonly documentDatabase: DocumentDatabase = new DocumentDatabase()) {}
 
   save(document: Omit<DocumentEntity, 'id' | 'createdAt'>): number {
-    return this.db.saveDocument({
+    return this.documentDatabase.saveDocument({
       title: document.title,
       originalname: document.originalname,
       embedding: document.embedding || [],
@@ -15,18 +15,18 @@ export class DocumentsRepositorySQLite implements DocumentsRepository {
   }
 
   updateEmbeddingAndText(id: number, embedding: number[], text: string): void {
-    this.db.updateDocumentEmbeddingAndText(id, embedding, text);
+    this.documentDatabase.updateDocumentEmbeddingAndText(id, embedding, text);
   }
 
   delete(id: number): void {
-    this.db.deleteDocument(id);
+    this.documentDatabase.deleteDocument(id);
   }
 
   getById(id: number): DocumentEntity | null {
-    const metaList = this.db.getAllDocuments();
+    const metaList = this.documentDatabase.getAllDocuments();
     const meta = metaList.find(d => d.id === id);
     if (!meta) return null;
-    const embText = this.db.getEmbeddingAndText(id);
+    const embText = this.documentDatabase.getEmbeddingAndText(id);
     return {
       id,
       title: meta.title,
@@ -38,14 +38,14 @@ export class DocumentsRepositorySQLite implements DocumentsRepository {
   }
 
   list(): DocumentEntity[] {
-    const docs = this.db.getAllDocuments();
-    return docs.map(d => ({
-      id: d.id,
-      title: d.title,
-      originalname: d.originalname,
-      text: this.db.getEmbeddingAndText(d.id)?.text || '',
-      embedding: this.db.getEmbeddingAndText(d.id)?.embedding || [],
-      createdAt: d.created_at
+    const docs = this.documentDatabase.getAllDocuments();
+    return docs.map(documentRow => ({
+      id: documentRow.id,
+      title: documentRow.title,
+      originalname: documentRow.originalname,
+      text: this.documentDatabase.getEmbeddingAndText(documentRow.id)?.text || '',
+      embedding: this.documentDatabase.getEmbeddingAndText(documentRow.id)?.embedding || [],
+      createdAt: documentRow.created_at
     }));
   }
 }

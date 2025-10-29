@@ -5,15 +5,16 @@ import fetch from 'node-fetch';
 export class OpenRouterProvider implements LLMProvider {
   constructor(private readonly apiKey: string = process.env.OPENROUTER_API_KEY || '') {}
 
-  async generateResponse(message: string, history: ChatMessage[] = [], modelName?: string): Promise<string> {
-    const model = modelName || 'meta-llama/llama-3.3-8b-instruct:free';
-    const messages = [
+  async generateResponse(userMessage: string, messageHistory: ChatMessage[] = [], modelName?: string): Promise<string> {
+    const effectiveModelName = modelName || 'meta-llama/llama-3.3-8b-instruct:free';
+
+    const chatMessages = [
       { role: 'system', content: getChatSystemPrompt() },
-      ...history.map(m => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: m.content })),
-      { role: 'user', content: message }
+      ...messageHistory.map(entry => ({ role: entry.role === 'assistant' ? 'assistant' : 'user', content: entry.content })),
+      { role: 'user', content: userMessage }
     ];
 
-    const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    const httpResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -21,11 +22,16 @@ export class OpenRouterProvider implements LLMProvider {
         'HTTP-Referer': 'http://localhost:3001',
         'X-Title': 'Study Assistant'
       },
-      body: JSON.stringify({ model, messages, temperature: 0.7 })
+      body: JSON.stringify({ model: effectiveModelName, messages: chatMessages, temperature: 0.7 })
     });
-    if (!res.ok) throw new Error(`OpenRouter error: ${await res.text()}`);
-    const data = await res.json() as any;
-    return data.choices?.[0]?.message?.content || '';
+
+    if (!httpResponse.ok) {
+      const errorText = await httpResponse.text();
+      throw new Error(`OpenRouter error: ${errorText}`);
+    }
+
+    const completion = await httpResponse.json() as any;
+    return completion.choices?.[0]?.message?.content || '';
   }
 }
 

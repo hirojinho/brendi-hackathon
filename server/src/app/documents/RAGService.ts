@@ -10,42 +10,53 @@ export interface ScoredChunk {
 
 export class RAGService {
   constructor(
-    private readonly embeddings: EmbeddingProvider,
-    private readonly chunksRepo: DocumentChunksRepository,
-    private readonly usageRepo: UsageRepository,
+    private readonly embeddingProvider: EmbeddingProvider,
+    private readonly documentChunksRepository: DocumentChunksRepository,
+    private readonly usageRepository: UsageRepository,
     private readonly similarityThreshold: number,
-    private readonly fallbackChunks: number
+    private readonly fallbackChunkCount: number
   ) {}
 
-  private cosineSimilarity(a: number[], b: number[]): number {
-    let dot = 0, normA = 0, normB = 0;
-    for (let i = 0; i < a.length; i++) {
-      dot += a[i] * b[i];
-      normA += a[i] * a[i];
-      normB += b[i] * b[i];
+  private cosineSimilarity(vectorA: number[], vectorB: number[]): number {
+    let dotProduct = 0;
+    let vectorANorm = 0;
+    let vectorBNorm = 0;
+
+    for (let i = 0; i < vectorA.length; i++) {
+      dotProduct += vectorA[i] * vectorB[i];
+      vectorANorm += vectorA[i] * vectorA[i];
+      vectorBNorm += vectorB[i] * vectorB[i];
     }
-    return dot / (Math.sqrt(normA) * Math.sqrt(normB));
+
+    return dotProduct / (Math.sqrt(vectorANorm) * Math.sqrt(vectorBNorm));
   }
 
-  async retrieve(message: string, maxChunks: number): Promise<ScoredChunk[]> {
-    const queryEmbedding = await this.embeddings.embed(message);
-    const all = this.chunksRepo.getAll();
-    const scored = all.map(c => ({
-      chunkIndex: c.chunkIndex,
-      chunkText: c.chunkText,
-      documentId: c.documentId,
-      similarity: this.cosineSimilarity(queryEmbedding, c.embedding)
+  async retrieve(userMessage: string, maxChunks: number): Promise<ScoredChunk[]> {
+    const queryEmbedding = await this.embeddingProvider.embed(userMessage);
+    const allChunks = this.documentChunksRepository.getAll();
+
+    const scoredChunks = allChunks.map(chunk => ({
+      chunkIndex: chunk.chunkIndex,
+      chunkText: chunk.chunkText,
+      documentId: chunk.documentId,
+      similarity: this.cosineSimilarity(queryEmbedding, chunk.embedding)
     }));
 
-    let filtered = scored.filter(s => s.similarity >= this.similarityThreshold);
-    if (filtered.length === 0) {
-      return scored.sort((a, b) => b.similarity - a.similarity).slice(0, this.fallbackChunks);
+    const chunksAboveThreshold = scoredChunks.filter(scored => scored.similarity >= this.similarityThreshold);
+
+    if (chunksAboveThreshold.length === 0) {
+      return scoredChunks
+        .sort((left, right) => right.similarity - left.similarity)
+        .slice(0, this.fallbackChunkCount);
     }
-    return filtered.sort((a, b) => b.similarity - a.similarity).slice(0, maxChunks);
+
+    return chunksAboveThreshold
+      .sort((left, right) => right.similarity - left.similarity)
+      .slice(0, maxChunks);
   }
 
   logUsage(documentId: number, chunkIndexes: number[], responseExcerpt: string): void {
-    this.usageRepo.log({ documentId, chunkIndexes, responseExcerpt });
+    this.usageRepository.log({ documentId, chunkIndexes, responseExcerpt });
   }
 }
 
