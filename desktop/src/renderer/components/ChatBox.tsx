@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import SettingsPanel from './SettingsPanel';
 import './ChatBox.css';
 
 interface Message {
@@ -14,6 +15,7 @@ const ChatBox: React.FC = () => {
   const [model, setModel] = useState<'openai' | 'openrouter' | 'ollama'>('openai');
   const [useRag, setUseRag] = useState(false);
   const [maxChunks, setMaxChunks] = useState(5);
+  const [showSettings, setShowSettings] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,7 +43,16 @@ const ChatBox: React.FC = () => {
       setMessages([...updatedMessages, { role: 'assistant', content: result.response }]);
     } catch (error: any) {
       console.error('Chat error:', error);
-      setResponse(`Error: ${error.message || 'Failed to get response'}`);
+      let errorMessage = error.message || 'Failed to get response';
+      
+      // Provide helpful error messages for common issues
+      if (errorMessage.includes('API key is not configured') || errorMessage.includes('No cookie auth credentials')) {
+        errorMessage = `${errorMessage}\n\nTo configure API keys, edit the config file at:\n~/Library/Application Support/study-assistant-desktop/config.json\n\nOr set them via the Electron Store API (settings UI coming soon).`;
+      }
+      
+      setResponse(`Error: ${errorMessage}`);
+      // Also add error as a message so it's visible in the chat
+      setMessages([...updatedMessages, { role: 'assistant', content: `Error: ${errorMessage}` }]);
     } finally {
       setIsLoading(false);
     }
@@ -86,14 +97,28 @@ const ChatBox: React.FC = () => {
     <div className="chat-box">
       <div className="chat-header">
         <h2>Study Assistant</h2>
-        <button 
-          className="close-btn"
-          onClick={() => window.electronAPI.toggleOverlay()}
-          title="Close (ESC)"
-        >
-          ×
-        </button>
+        <div className="header-actions">
+          <button 
+            className="settings-btn"
+            onClick={() => setShowSettings(true)}
+            title="Settings"
+          >
+            ⚙️
+          </button>
+          <button 
+            className="close-btn"
+            onClick={() => window.electronAPI.toggleOverlay()}
+            title="Close (ESC)"
+          >
+            ×
+          </button>
+        </div>
       </div>
+
+      <SettingsPanel 
+        isOpen={showSettings}
+        onClose={() => setShowSettings(false)}
+      />
 
       <div className="chat-controls">
         <div className="control-group">

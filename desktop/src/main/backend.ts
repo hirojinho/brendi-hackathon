@@ -14,7 +14,7 @@ const serverDistPath = path.resolve(workspaceRoot, 'server/dist');
 
 // Use dynamic import to load server modules from dist
 // This allows us to handle the case where server might not be built yet
-async function loadServerModules() {
+async function loadServerModules() { 
   // Check if server dist exists
   const containerPath = path.join(serverDistPath, 'bootstrap/container.js');
   const routesPath = path.join(serverDistPath, 'http/registerRoutes.js');
@@ -23,7 +23,7 @@ async function loadServerModules() {
     throw new Error(
       `Server not built. Please run: cd ../server && npm run build\n` +
       `Expected files:\n` +
-      `  ${containerPath}\n` +
+      `  ${containerPath}\n` + 
       `  ${routesPath}`
     );
   }

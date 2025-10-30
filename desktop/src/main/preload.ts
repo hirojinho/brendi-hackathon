@@ -2,7 +2,8 @@ import { contextBridge, ipcRenderer } from 'electron';
 
 // Expose protected methods that allow the renderer process to use
 // the ipcRenderer without exposing the entire object
-contextBridge.exposeInMainWorld('electronAPI', {
+try {
+  contextBridge.exposeInMainWorld('electronAPI', {
   // Chat API
   sendChat: (payload: {
     message: string;
@@ -29,7 +30,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Config
   getConfig: (key: string) => ipcRenderer.invoke('config:get', key),
   setConfig: (key: string, value: any) => ipcRenderer.invoke('config:set', key, value),
-});
+  });
+  
+  console.log('[Preload] electronAPI exposed successfully');
+} catch (error) {
+  console.error('[Preload] Failed to expose electronAPI:', error);
+}
 
 // TypeScript definitions for the exposed API
 declare global {

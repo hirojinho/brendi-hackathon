@@ -1,6 +1,7 @@
 import { app, BrowserWindow, globalShortcut, ipcMain } from 'electron';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import fs from 'fs';
 import getPort from 'get-port';
 import Store from 'electron-store';
 import { initializeBackend } from './backend.js';
@@ -18,15 +19,18 @@ const userDataPath = app.getPath('userData');
 app.setPath('userData', userDataPath);
 
 async function startBackend() {
+  console.log('[Main] Starting backend initialization...');
   const userDataPath = app.getPath('userData');
   
   // Override cwd so backend databases are created in userData
   const originalCwd = process.cwd();
+  console.log('[Main] Setting cwd to:', userDataPath);
   process.chdir(userDataPath);
   
   try {
     // Get available port
     const port = await getPort({ port: 3001 });
+    console.log('[Main] Got port:', port);
     
     // Load environment variables from store
     const envVars: Record<string, string> = {};
@@ -34,19 +38,31 @@ async function startBackend() {
     const openrouterKey = configStore.get('openrouterApiKey') as string | undefined;
     const ollamaUrl = configStore.get('ollamaBaseUrl') as string | undefined;
     
-    if (openaiKey) envVars.OPENAI_API_KEY = openaiKey;
-    if (openrouterKey) envVars.OPENROUTER_API_KEY = openrouterKey;
-    if (ollamaUrl) envVars.OLLAMA_BASE_URL = ollamaUrl;
+    if (openaiKey) {
+      envVars.OPENAI_API_KEY = openaiKey;
+      console.log('[Main] OpenAI key found');
+    }
+    if (openrouterKey) {
+      envVars.OPENROUTER_API_KEY = openrouterKey;
+      console.log('[Main] OpenRouter key found');
+    }
+    if (ollamaUrl) {
+      envVars.OLLAMA_BASE_URL = ollamaUrl;
+      console.log('[Main] Ollama URL found:', ollamaUrl);
+    }
     
+    console.log('[Main] Calling initializeBackend...');
     // Initialize backend
     const result = await initializeBackend(port, envVars);
     backendUrl = `http://127.0.0.1:${port}`;
     backendServer = result.app;
     
-    console.log(`[Main] Backend initialized at ${backendUrl}`);
+    console.log(`[Main] ✓ Backend initialized successfully at ${backendUrl}`);
     console.log(`[Main] User data path: ${userDataPath}`);
   } catch (error) {
-    console.error('[Main] Failed to start backend:', error);
+    console.error('[Main] ✗ Failed to start backend:', error);
+    backendUrl = null; // Ensure it's null on failure
+    backendServer = null;
     throw error;
   } finally {
     // Restore original cwd if needed elsewhere
@@ -55,6 +71,10 @@ async function startBackend() {
 }
 
 function createOverlayWindow() {
+  const preloadPath = path.join(__dirname, 'preload.cjs');
+  console.log('[Main] Preload script path:', preloadPath);
+  console.log('[Main] Preload script exists?', fs.existsSync(preloadPath));
+  
   overlayWindow = new BrowserWindow({
     width: 700,
     height: 520,
@@ -65,9 +85,10 @@ function createOverlayWindow() {
     skipTaskbar: true,
     resizable: false,
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      preload: preloadPath,
       nodeIntegration: false,
       contextIsolation: true,
+      sandbox: false, // Preload scripts need sandbox: false to use contextBridge
     },
     backgroundColor: '#00000000',
     vibrancy: 'sidebar',
@@ -75,11 +96,31 @@ function createOverlayWindow() {
   });
 
   // Load renderer
-  if (process.env.ELECTRON_START_URL) {
-    overlayWindow.loadURL(process.env.ELECTRON_START_URL);
-  } else {
-    overlayWindow.loadURL('http://localhost:5173');
-  }
+  const loadUrl = process.env.ELECTRON_START_URL || 'http://localhost:5173';
+  console.log('[Main] Loading renderer from:', loadUrl);
+  
+  overlayWindow.loadURL(loadUrl);
+  
+  overlayWindow.webContents.on('did-finish-load', () => {
+    console.log('[Main] Renderer finished loading');
+    // Verify preload executed
+    if (overlayWindow) {
+      overlayWindow.webContents.executeJavaScript(`
+        console.log('window.electronAPI exists?', typeof window.electronAPI !== 'undefined');
+        console.log('window.electronAPI:', window.electronAPI);
+      `).catch(err => console.error('[Main] Failed to check electronAPI:', err));
+    }
+  });
+  
+  overlayWindow.webContents.on('console-message', (_event, level, message, _line, sourceId) => {
+    const prefix = sourceId === 'electron/preload' || String(sourceId).includes('preload') ? '[Preload]' : '[Renderer]';
+    console.log(`${prefix} [${level}]:`, message);
+  });
+  
+  // Check for preload errors
+  overlayWindow.webContents.on('preload-error', (_event, _preloadPath, error) => {
+    console.error('[Main] Preload script error:', error);
+  });
 
   // Hide on blur (optional - can be removed if you want it to stay visible)
   overlayWindow.on('blur', () => {
@@ -157,16 +198,19 @@ ipcMain.handle('note:create', async (_event, payload) => {
 });
 
 ipcMain.handle('server:health', async () => {
+  console.log('[Main] ===== Health check IPC called =====');
+  console.log('[Main] backendUrl value:', backendUrl);
+  console.log('[Main] backendServer value:', backendServer ? 'exists' : 'null');
+  
   if (!backendUrl) {
+    console.log('[Main] Returning unhealthy - backendUrl is null');
     return { healthy: false, error: 'Backend not initialized' };
   }
   
-  try {
-    // Simple health check - try to connect
-    return { healthy: true, url: backendUrl };
-  } catch (error) {
-    return { healthy: false, error: String(error) };
-  }
+  // If backendUrl is set, the backend should be running
+  // (we set it only after successful initialization)
+  console.log('[Main] Returning healthy:', backendUrl);
+  return { healthy: true, url: backendUrl };
 });
 
 ipcMain.handle('overlay:toggle', () => {
@@ -195,7 +239,19 @@ app.whenReady().then(async () => {
     console.error('[Main] Failed to start backend, app will continue but may not function:', error);
   }
   
+  // Create window after backend is ready (or attempted)
+  console.log('[Main] Creating overlay window...');
   createOverlayWindow();
+  
+  // Give window time to load, then verify backendUrl is still set
+  setTimeout(() => {
+    console.log('[Main] Backend URL after window creation:', backendUrl);
+    if (backendUrl) {
+      console.log('[Main] Backend should be accessible at:', backendUrl);
+    } else {
+      console.error('[Main] ERROR: backendUrl is null after initialization!');
+    }
+  }, 2000);
   
   // Register global shortcut (Option+Space on Mac)
   const shortcut = 'Shift+Space+Q';

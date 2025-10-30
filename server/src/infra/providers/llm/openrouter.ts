@@ -3,9 +3,17 @@ import { getChatSystemPrompt } from '../../../domain/prompts/system.js';
 import fetch from 'node-fetch';
 
 export class OpenRouterProvider implements LLMProvider {
-  constructor(private readonly apiKey: string = process.env.OPENROUTER_API_KEY || '') {}
+  private readonly apiKey: string;
+
+  constructor(apiKey: string = process.env.OPENROUTER_API_KEY || '') {
+    this.apiKey = apiKey;
+  }
 
   async generateResponse(userMessage: string, messageHistory: ChatMessage[] = [], modelName?: string): Promise<string> {
+    if (!this.apiKey || this.apiKey.trim() === '') {
+      throw new Error('OpenRouter API key is not configured. Please set OPENROUTER_API_KEY environment variable or configure it in the app settings.');
+    }
+
     const effectiveModelName = modelName || 'meta-llama/llama-3.3-8b-instruct:free';
 
     const chatMessages = [
@@ -27,7 +35,15 @@ export class OpenRouterProvider implements LLMProvider {
 
     if (!httpResponse.ok) {
       const errorText = await httpResponse.text();
-      throw new Error(`OpenRouter error: ${errorText}`);
+      let errorMessage = `OpenRouter API error: ${errorText}`;
+      
+      if (httpResponse.status === 401) {
+        errorMessage = 'OpenRouter API key is invalid or expired. Please check your API key in settings.';
+      } else if (httpResponse.status === 429) {
+        errorMessage = 'OpenRouter rate limit exceeded. Please try again later.';
+      }
+      
+      throw new Error(errorMessage);
     }
 
     const completion = await httpResponse.json() as any;

@@ -7,21 +7,38 @@ function App() {
   const overlayRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Check backend health on mount
-    const checkHealth = async () => {
+    // Poll backend health until it's ready
+    const maxRetries = 30; // 30 attempts (15 seconds max with 500ms interval)
+    
+    const checkHealth = async (attempt: number): Promise<boolean> => {
       try {
         const health = await window.electronAPI.checkHealth();
-        setIsReady(health.healthy);
-        if (!health.healthy) {
-          console.error('Backend not healthy:', health.error);
+        if (health.healthy) {
+          setIsReady(true);
+          console.log('Backend is ready:', health.url);
+          return true;
+        } else {
+          console.log(`Backend not ready yet (attempt ${attempt + 1}/${maxRetries}):`, health.error);
+          return false;
         }
       } catch (error) {
         console.error('Health check failed:', error);
+        return false;
+      }
+    };
+
+    // Start polling immediately, then retry every 500ms
+    const pollHealth = async (attempt: number = 0) => {
+      const isReady = await checkHealth(attempt);
+      if (!isReady && attempt < maxRetries - 1) {
+        setTimeout(() => pollHealth(attempt + 1), 500);
+      } else if (!isReady) {
+        console.error('Backend failed to start after', maxRetries, 'attempts');
         setIsReady(false);
       }
     };
 
-    checkHealth();
+    pollHealth();
 
     // Handle ESC key to close overlay
     const handleKeyDown = (e: KeyboardEvent) => {

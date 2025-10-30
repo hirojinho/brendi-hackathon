@@ -3,15 +3,24 @@ import { getChatSystemPrompt } from '../../../domain/prompts/system.js';
 import OpenAI from 'openai';
 
 export class OpenAIProvider implements LLMProvider {
-  private openAIClient: OpenAI;
+  private openAIClient: OpenAI | null = null;
+  private apiKey: string | undefined;
   private defaultModelName: string;
 
   constructor(apiKey?: string, modelName: string = 'gpt-4.1-mini') {
-    this.openAIClient = new OpenAI({ apiKey: apiKey || process.env.OPENAI_API_KEY });
+    this.apiKey = apiKey || process.env.OPENAI_API_KEY;
     this.defaultModelName = modelName;
+    // Only create client if API key is available
+    if (this.apiKey) {
+      this.openAIClient = new OpenAI({ apiKey: this.apiKey });
+    }
   }
 
   async generateResponse(userMessage: string, messageHistory: ChatMessage[] = [], _modelName?: string): Promise<string> {
+    if (!this.openAIClient) {
+      throw new Error('OpenAI API key is not configured. Please set OPENAI_API_KEY environment variable or provide an API key.');
+    }
+
     const chatMessages = [
       { role: 'system', content: getChatSystemPrompt() },
       ...messageHistory.map(entry => ({ role: (entry.role === 'assistant' ? 'assistant' : 'user'), content: entry.content })),
