@@ -1,0 +1,17 @@
+appId: com.studyassistant.desktop
+productName: Study Assistant
+directories:
+  output: dist-electron
+files:
+  - dist/**/*
+  - package.json
+mac:
+  category: public.app-category.utilities
+  target:
+    - dmg
+    - zip
+  icon: assets/icon.icns
+dmg:
+  title: ${productName}-${version}
+  icon: assets/icon.icns
+
