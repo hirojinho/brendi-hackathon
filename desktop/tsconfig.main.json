@@ -1,20 +1,15 @@
 {
-  "extends": "./tsconfig.json",
   "compilerOptions": {
-    "target": "ES2020",
+    "outDir": "dist/main",
     "module": "ESNext",
-    "moduleResolution": "bundler",
-    "outDir": "./dist/main",
-    "rootDir": "./src/main",
-    "noEmit": false,
-    "allowImportingTsExtensions": false,
-    "resolveJsonModule": true,
+    "target": "ES2020",
+    "moduleResolution": "Node",
+    "strict": true,
     "esModuleInterop": true,
+    "resolveJsonModule": true,
     "skipLibCheck": true,
-    "allowSyntheticDefaultImports": true,
-    "baseUrl": "."
+    "allowSyntheticDefaultImports": true
   },
   "include": ["src/main/**/*"],
-  "exclude": ["node_modules", "dist", "src/main/preload.ts"]
+  "exclude": ["node_modules", "dist"]
 }
-

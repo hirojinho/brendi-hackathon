@@ -4,24 +4,51 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.4);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .settings-panel {
-  background: rgba(28, 28, 30, 0.95);
-  backdrop-filter: blur(20px);
-  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(40px) saturate(180%);
+  border-radius: 20px;
   width: 90%;
   max-width: 500px;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 
+    0 20px 60px rgba(0, 0, 0, 0.15),
+    0 0 0 0.5px rgba(255, 255, 255, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  border: 0.5px solid rgba(0, 0, 0, 0.08);
+  animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .settings-header {
@@ -29,38 +56,52 @@
   justify-content: space-between;
   align-items: center;
   padding: 20px 24px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 0.5px solid rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
 }
 
 .settings-header h2 {
   margin: 0;
-  font-size: 20px;
+  font-size: 17px;
   font-weight: 600;
-  color: #ffffff;
+  color: rgba(0, 0, 0, 0.85);
+  letter-spacing: -0.3px;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
 }
 
 .settings-header .close-btn {
   background: none;
   border: none;
-  color: #ffffff;
-  font-size: 28px;
+  color: rgba(0, 0, 0, 0.6);
+  font-size: 20px;
   cursor: pointer;
   padding: 0;
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
-  transition: background-color 0.2s;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .settings-header .close-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.06);
+  color: rgba(0, 0, 0, 0.9);
+}
+
+.settings-header .close-btn:active {
+  transform: scale(0.95);
+  background: rgba(0, 0, 0, 0.1);
 }
 
 .settings-content {
   padding: 24px;
+  background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
 }
 
 .settings-section {
@@ -69,15 +110,16 @@
 
 .settings-section h3 {
   margin: 0 0 8px 0;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
-  color: #ffffff;
+  color: rgba(0, 0, 0, 0.85);
+  letter-spacing: -0.2px;
 }
 
 .settings-description {
   margin: 0 0 20px 0;
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(0, 0, 0, 0.6);
   line-height: 1.5;
 }
 
@@ -88,44 +130,60 @@
 .settings-field label {
   display: block;
   margin-bottom: 8px;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
-  color: #ffffff;
+  color: rgba(0, 0, 0, 0.85);
+}
+
+.settings-field input,
+.settings-field select {
+  width: 100%;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 0.5px solid rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+  color: rgba(0, 0, 0, 0.85);
+  font-size: 13px;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  box-sizing: border-box;
+  outline: none;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .settings-field input {
-  width: 100%;
-  padding: 12px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
-  color: #ffffff;
-  font-size: 14px;
-  font-family: 'Monaco', 'Menlo', monospace;
-  transition: all 0.2s;
-  box-sizing: border-box;
+  font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
 }
 
-.settings-field input:focus {
-  outline: none;
-  border-color: rgba(0, 122, 255, 0.6);
-  background: rgba(255, 255, 255, 0.15);
+.settings-field select {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+  cursor: pointer;
 }
 
-.settings-field input:disabled {
+.settings-field input:focus,
+.settings-field select:focus {
+  border-color: #007AFF;
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15);
+  background: rgba(255, 255, 255, 1);
+}
+
+.settings-field input:disabled,
+.settings-field select:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
 .settings-field input::placeholder {
-  color: rgba(255, 255, 255, 0.4);
+  color: rgba(0, 0, 0, 0.35);
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
 }
 
 .settings-field small {
   display: block;
   margin-top: 6px;
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(0, 0, 0, 0.5);
+  line-height: 1.4;
 }
 
 .settings-status {
@@ -134,18 +192,19 @@
   margin-bottom: 20px;
   font-size: 13px;
   line-height: 1.5;
+  animation: fadeIn 0.2s ease-out;
 }
 
 .settings-status.success {
-  background: rgba(52, 199, 89, 0.2);
-  border: 1px solid rgba(52, 199, 89, 0.4);
-  color: #4cd964;
+  background: rgba(52, 199, 89, 0.15);
+  border: 0.5px solid rgba(52, 199, 89, 0.3);
+  color: #34C759;
 }
 
 .settings-status.error {
-  background: rgba(255, 59, 48, 0.2);
-  border: 1px solid rgba(255, 59, 48, 0.4);
-  color: #ff3b30;
+  background: rgba(255, 59, 48, 0.15);
+  border: 0.5px solid rgba(255, 59, 48, 0.3);
+  color: #FF3B30;
 }
 
 .settings-footer {
@@ -154,36 +213,49 @@
   justify-content: flex-end;
   margin-top: 24px;
   padding-top: 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 0.5px solid rgba(0, 0, 0, 0.08);
 }
 
 .settings-cancel-btn,
 .settings-save-btn {
-  padding: 10px 20px;
+  padding: 9px 20px;
   border: none;
   border-radius: 8px;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  font-family: inherit;
+  letter-spacing: -0.1px;
 }
 
 .settings-cancel-btn {
-  background: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
+  background: rgba(0, 0, 0, 0.06);
+  color: rgba(0, 0, 0, 0.85);
 }
 
 .settings-cancel-btn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.settings-cancel-btn:active:not(:disabled) {
+  transform: scale(0.97);
 }
 
 .settings-save-btn {
-  background: rgba(0, 122, 255, 0.8);
-  color: #ffffff;
+  background: linear-gradient(135deg, #007AFF 0%, #0051D5 100%);
+  color: white;
+  box-shadow: 0 2px 8px rgba(0, 122, 255, 0.25);
 }
 
 .settings-save-btn:hover:not(:disabled) {
-  background: rgba(0, 122, 255, 1);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 122, 255, 0.35);
+  background: linear-gradient(135deg, #0051D5 0%, #0040AA 100%);
+}
+
+.settings-save-btn:active:not(:disabled) {
+  transform: translateY(0);
 }
 
 .settings-cancel-btn:disabled,
@@ -192,3 +264,23 @@
   cursor: not-allowed;
 }
 
+/* Scrollbar styling */
+.settings-panel::-webkit-scrollbar {
+  width: 8px;
+}
+
+.settings-panel::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.settings-panel::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.settings-panel::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
+  background-clip: padding-box;
+}

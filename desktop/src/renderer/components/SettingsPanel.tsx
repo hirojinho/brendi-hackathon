@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
+import { useSettings } from '../hooks/useSettings';
 import './SettingsPanel.css';
 
 interface SettingsPanelProps {
@@ -7,56 +8,21 @@ interface SettingsPanelProps {
 }
 
 const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose }) => {
-  const [openaiKey, setOpenaiKey] = useState('');
-  const [openrouterKey, setOpenrouterKey] = useState('');
-  const [ollamaUrl, setOllamaUrl] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [saveStatus, setSaveStatus] = useState<string>('');
-
-  useEffect(() => {
-    if (isOpen) {
-      loadSettings();
-    }
-  }, [isOpen]);
-
-  const loadSettings = async () => {
-    try {
-      const [openai, openrouter, ollama] = await Promise.all([
-        window.electronAPI.getConfig('openaiApiKey'),
-        window.electronAPI.getConfig('openrouterApiKey'),
-        window.electronAPI.getConfig('ollamaBaseUrl'),
-      ]);
-
-      setOpenaiKey(openai || '');
-      setOpenrouterKey(openrouter || '');
-      setOllamaUrl(ollama || '');
-    } catch (error) {
-      console.error('Failed to load settings:', error);
-    }
-  };
-
-  const handleSave = async () => {
-    setIsLoading(true);
-    setSaveStatus('');
-
-    try {
-      await Promise.all([
-        openaiKey ? window.electronAPI.setConfig('openaiApiKey', openaiKey) : window.electronAPI.setConfig('openaiApiKey', ''),
-        openrouterKey ? window.electronAPI.setConfig('openrouterApiKey', openrouterKey) : window.electronAPI.setConfig('openrouterApiKey', ''),
-        ollamaUrl ? window.electronAPI.setConfig('ollamaBaseUrl', ollamaUrl) : window.electronAPI.setConfig('ollamaBaseUrl', ''),
-      ]);
-
-      setSaveStatus('Settings saved! Restart the app for API keys to take effect.');
-      setTimeout(() => {
-        setSaveStatus('');
-      }, 3000);
-    } catch (error: any) {
-      console.error('Failed to save settings:', error);
-      setSaveStatus(`Error: ${error.message || 'Failed to save settings'}`);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const {
+    openaiKey,
+    openrouterKey,
+    ollamaUrl,
+    provider,
+    modelName,
+    isLoading,
+    saveStatus,
+    setOpenaiKey,
+    setOpenrouterKey,
+    setOllamaUrl,
+    setProvider,
+    setModelName,
+    saveSettings,
+  } = useSettings(isOpen);
 
   if (!isOpen) return null;
 
@@ -69,6 +35,53 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose }) => {
         </div>
 
         <div className="settings-content">
+          <div className="settings-section">
+            <h3>Model Configuration</h3>
+            <p className="settings-description">
+              Choose your AI provider and model. Settings are saved automatically.
+            </p>
+
+            <div className="settings-field">
+              <label>
+                Provider
+                <select
+                  value={provider}
+                  onChange={(e) => setProvider(e.target.value as 'openai' | 'openrouter' | 'ollama')}
+                  disabled={isLoading}
+                >
+                  <option value="openai">OpenAI</option>
+                  <option value="openrouter">OpenRouter</option>
+                  <option value="ollama">Ollama</option>
+                </select>
+              </label>
+              <small>Select the AI provider to use</small>
+            </div>
+
+            <div className="settings-field">
+              <label>
+                Model Name
+                <input
+                  type="text"
+                  value={modelName}
+                  onChange={(e) => setModelName(e.target.value)}
+                  placeholder={
+                    provider === 'openai' 
+                      ? 'gpt-4o-mini' 
+                      : provider === 'openrouter'
+                      ? 'meta-llama/llama-3.3-8b-instruct:free'
+                      : 'phi3:latest'
+                  }
+                  disabled={isLoading}
+                />
+              </label>
+              <small>
+                {provider === 'openai' && 'Leave empty to use default (gpt-4.1-mini) or specify: gpt-4o-mini, gpt-4o, gpt-4-turbo, gpt-3.5-turbo'}
+                {provider === 'openrouter' && 'Model ID from OpenRouter (e.g., meta-llama/llama-3.3-8b-instruct:free)'}
+                {provider === 'ollama' && 'Model name from your local Ollama instance (e.g., phi3:latest, llama3, mistral)'}
+              </small>
+            </div>
+          </div>
+
           <div className="settings-section">
             <h3>API Keys</h3>
             <p className="settings-description">
@@ -134,7 +147,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose }) => {
             </button>
             <button
               className="settings-save-btn"
-              onClick={handleSave}
+              onClick={saveSettings}
               disabled={isLoading}
             >
               {isLoading ? 'Saving...' : 'Save Settings'}
@@ -147,4 +160,3 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose }) => {
 };
 
 export default SettingsPanel;
-

@@ -1,36 +1,45 @@
-import { app, BrowserWindow, globalShortcut, ipcMain } from 'electron';
+import { app, BrowserWindow, BrowserWindowConstructorOptions, globalShortcut, ipcMain } from 'electron';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import fs from 'fs';
 import getPort from 'get-port';
 import Store from 'electron-store';
 import { initializeBackend } from './backend.js';
+
+interface ConfigStore {
+  openaiApiKey?: string;
+  openrouterApiKey?: string;
+  ollamaBaseUrl?: string;
+  [key: string]: any;
+}
+
+interface StoreInterface {
+  get(key: string): any;
+  set(key: string, value: any): void;
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 let overlayWindow: BrowserWindow | null = null;
+let mainWindow: BrowserWindow | null = null;
 let backendUrl: string | null = null;
 let backendServer: any = null;
-const configStore = new Store();
+const configStore = new Store<ConfigStore>() as unknown as StoreInterface;
 
 // Ensure userData directory exists
 const userDataPath = app.getPath('userData');
 app.setPath('userData', userDataPath);
 
 async function startBackend() {
-  console.log('[Main] Starting backend initialization...');
   const userDataPath = app.getPath('userData');
   
   // Override cwd so backend databases are created in userData
   const originalCwd = process.cwd();
-  console.log('[Main] Setting cwd to:', userDataPath);
   process.chdir(userDataPath);
   
   try {
     // Get available port
     const port = await getPort({ port: 3001 });
-    console.log('[Main] Got port:', port);
     
     // Load environment variables from store
     const envVars: Record<string, string> = {};
@@ -38,29 +47,17 @@ async function startBackend() {
     const openrouterKey = configStore.get('openrouterApiKey') as string | undefined;
     const ollamaUrl = configStore.get('ollamaBaseUrl') as string | undefined;
     
-    if (openaiKey) {
-      envVars.OPENAI_API_KEY = openaiKey;
-      console.log('[Main] OpenAI key found');
-    }
-    if (openrouterKey) {
-      envVars.OPENROUTER_API_KEY = openrouterKey;
-      console.log('[Main] OpenRouter key found');
-    }
-    if (ollamaUrl) {
-      envVars.OLLAMA_BASE_URL = ollamaUrl;
-      console.log('[Main] Ollama URL found:', ollamaUrl);
-    }
+    if (openaiKey) envVars.OPENAI_API_KEY = openaiKey;
+    if (openrouterKey) envVars.OPENROUTER_API_KEY = openrouterKey;
+    if (ollamaUrl) envVars.OLLAMA_BASE_URL = ollamaUrl;
     
-    console.log('[Main] Calling initializeBackend...');
     // Initialize backend
     const result = await initializeBackend(port, envVars);
     backendUrl = `http://127.0.0.1:${port}`;
     backendServer = result.app;
     
-    console.log(`[Main] ✓ Backend initialized successfully at ${backendUrl}`);
-    console.log(`[Main] User data path: ${userDataPath}`);
   } catch (error) {
-    console.error('[Main] ✗ Failed to start backend:', error);
+    console.error('[Main] Failed to start backend:', error);
     backendUrl = null; // Ensure it's null on failure
     backendServer = null;
     throw error;
@@ -72,8 +69,6 @@ async function startBackend() {
 
 function createOverlayWindow() {
   const preloadPath = path.join(__dirname, 'preload.cjs');
-  console.log('[Main] Preload script path:', preloadPath);
-  console.log('[Main] Preload script exists?', fs.existsSync(preloadPath));
   
   overlayWindow = new BrowserWindow({
     width: 700,
@@ -84,6 +79,7 @@ function createOverlayWindow() {
     alwaysOnTop: true,
     skipTaskbar: true,
     resizable: false,
+    visibleOnAllWorkspaces: false, // Stay on current workspace (Raycast-like behavior)
     webPreferences: {
       preload: preloadPath,
       nodeIntegration: false,
@@ -91,40 +87,21 @@ function createOverlayWindow() {
       sandbox: false, // Preload scripts need sandbox: false to use contextBridge
     },
     backgroundColor: '#00000000',
-    vibrancy: 'sidebar',
     visualEffectState: 'active',
-  });
+  } as BrowserWindowConstructorOptions );
 
-  // Load renderer
-  const loadUrl = process.env.ELECTRON_START_URL || 'http://localhost:5173';
-  console.log('[Main] Loading renderer from:', loadUrl);
-  
-  overlayWindow.loadURL(loadUrl);
-  
-  overlayWindow.webContents.on('did-finish-load', () => {
-    console.log('[Main] Renderer finished loading');
-    // Verify preload executed
-    if (overlayWindow) {
-      overlayWindow.webContents.executeJavaScript(`
-        console.log('window.electronAPI exists?', typeof window.electronAPI !== 'undefined');
-        console.log('window.electronAPI:', window.electronAPI);
-      `).catch(err => console.error('[Main] Failed to check electronAPI:', err));
-    }
-  });
-  
-  overlayWindow.webContents.on('console-message', (_event, level, message, _line, sourceId) => {
-    const prefix = sourceId === 'electron/preload' || String(sourceId).includes('preload') ? '[Preload]' : '[Renderer]';
-    console.log(`${prefix} [${level}]:`, message);
-  });
+  // Load React app from renderer build
+  const rendererPath = path.join(__dirname, '../renderer/index.html');
+  overlayWindow.loadFile(rendererPath);
   
   // Check for preload errors
   overlayWindow.webContents.on('preload-error', (_event, _preloadPath, error) => {
     console.error('[Main] Preload script error:', error);
   });
 
-  // Hide on blur (optional - can be removed if you want it to stay visible)
+  // Hide on blur (clicking outside) - Raycast-like behavior
   overlayWindow.on('blur', () => {
-    // Optionally hide on blur
+    overlayWindow?.hide();
   });
 
   overlayWindow.on('closed', () => {
@@ -141,11 +118,46 @@ function toggleOverlay() {
     if (overlayWindow.isVisible()) {
       overlayWindow.hide();
     } else {
+      // Ensure window is on current workspace before showing (Raycast-like)
+      overlayWindow.setVisibleOnAllWorkspaces(false, { visibleOnFullScreen: true });
       overlayWindow.center();
       overlayWindow.show();
       overlayWindow.focus();
+      overlayWindow.moveTop(); // Ensure it's on top
     }
   }
+}
+
+function createMainWindow() {
+  if (mainWindow) {
+    mainWindow.show();
+    mainWindow.focus();
+    return;
+  }
+
+  const preloadPath = path.join(__dirname, 'preload.cjs');
+
+  mainWindow = new BrowserWindow({
+    width: 1200,
+    height: 800,
+    title: 'Study Assistant',
+    webPreferences: {
+      preload: preloadPath,
+      nodeIntegration: false,
+      contextIsolation: true,
+      sandbox: false
+    }
+  });
+
+  // Load the embedded web app (React UI) from the bundled files
+  // __dirname is dist/main/, so go up one level to dist/web/
+  const webAppPath = path.join(__dirname, '..', 'web', 'index.html');
+  console.log('[Main] Loading web app from:', webAppPath);
+  mainWindow.loadFile(webAppPath);
+
+  mainWindow.on('closed', () => {
+    mainWindow = null;
+  });
 }
 
 // IPC Handlers
@@ -198,18 +210,12 @@ ipcMain.handle('note:create', async (_event, payload) => {
 });
 
 ipcMain.handle('server:health', async () => {
-  console.log('[Main] ===== Health check IPC called =====');
-  console.log('[Main] backendUrl value:', backendUrl);
-  console.log('[Main] backendServer value:', backendServer ? 'exists' : 'null');
-  
   if (!backendUrl) {
-    console.log('[Main] Returning unhealthy - backendUrl is null');
     return { healthy: false, error: 'Backend not initialized' };
   }
   
   // If backendUrl is set, the backend should be running
   // (we set it only after successful initialization)
-  console.log('[Main] Returning healthy:', backendUrl);
   return { healthy: true, url: backendUrl };
 });
 
@@ -232,37 +238,40 @@ ipcMain.handle('config:set', (_event, key: string, value: any) => {
   return true;
 });
 
+ipcMain.handle('open-main-window', async () => {
+  console.log('[Main] open-main-window IPC called');
+  try {
+    createMainWindow();
+    console.log('[Main] Main window created successfully');
+    return true;
+  } catch (error) {
+    console.error('[Main] Failed to create main window:', error);
+    throw error;
+  }
+});
+
 app.whenReady().then(async () => {
+  // Hide app from dock (menu bar app like Raycast)
+  if (process.platform === 'darwin') {
+    app.dock.hide();
+  }
+  
   try {
     await startBackend();
   } catch (error) {
     console.error('[Main] Failed to start backend, app will continue but may not function:', error);
   }
   
-  // Create window after backend is ready (or attempted)
-  console.log('[Main] Creating overlay window...');
   createOverlayWindow();
   
-  // Give window time to load, then verify backendUrl is still set
-  setTimeout(() => {
-    console.log('[Main] Backend URL after window creation:', backendUrl);
-    if (backendUrl) {
-      console.log('[Main] Backend should be accessible at:', backendUrl);
-    } else {
-      console.error('[Main] ERROR: backendUrl is null after initialization!');
-    }
-  }, 2000);
-  
-  // Register global shortcut (Option+Space on Mac)
-  const shortcut = 'Shift+Space+Q';
+  // Register global shortcut
+  const shortcut = 'CmdOrCtrl+Shift+Space';
   const registered = globalShortcut.register(shortcut, () => {
     toggleOverlay();
   });
   
   if (!registered) {
     console.warn(`[Main] Failed to register shortcut: ${shortcut}`);
-  } else {
-    console.log(`[Main] Registered global shortcut: ${shortcut}`);
   }
 });
 

@@ -5,18 +5,13 @@
   "main": "dist/main/main.js",
   "type": "module",
   "scripts": {
-    "postinstall": "electron-rebuild -f -w better-sqlite3 && cd ../server && npx electron-rebuild -f -w better-sqlite3 -e ../desktop/node_modules/electron",
-    "predev": "node scripts/ensure-server.js",
-    "dev": "npm run build:main:once && concurrently \"npm run build:main:watch\" \"vite\" \"wait-on http://localhost:5173 && cross-env ELECTRON_START_URL=http://localhost:5173 NODE_ENV=development electron .\"",
-    "ensure:server": "node scripts/ensure-server.js",
-    "rebuild:native": "electron-rebuild -f -w better-sqlite3 && cd ../server && npx electron-rebuild -f -w better-sqlite3 -e ../desktop/node_modules/electron",
-    "build": "npm run build:server && npm run build:main:once && vite build",
-    "build:main:watch": "concurrently \"tsc -p tsconfig.main.json --watch\" \"node scripts/watch-preload.js\"",
-    "build:main:once": "tsc -p tsconfig.main.json && tsc -p tsconfig.preload.json && mv dist/main/preload.js dist/main/preload.cjs || true",
-    "build:server": "cd ../server && npm run build",
-    "package": "electron-builder",
-    "package:mac": "electron-builder --mac",
-    "dist": "npm run build && npm run package"
+    "build:web": "cd ../web && ELECTRON_BUILD=true npm run build",
+    "build:renderer": "vite build",
+    "build:electron": "tsc -p tsconfig.main.json && tsc -p tsconfig.preload.json && mv dist/main/preload.js dist/main/preload.cjs && node scripts/copyOverlay.js",
+    "build": "npm run build:web && npm run build:renderer && npm run build:electron",
+    "dev": "npm run build:web && npm run build:renderer && concurrently -k \"tsc -w -p tsconfig.main.json\" \"tsc -w -p tsconfig.preload.json\" \"wait-on dist/main/main.js && electron .\"",
+    "start": "npm run build && electron .",
+    "rebuild:native": "electron-rebuild -f -w better-sqlite3"
   },
   "keywords": [],
   "author": "",
@@ -30,12 +25,16 @@
     "electron-store": "^10.1.0",
     "express": "^4.18.3",
     "get-port": "^7.0.0",
+    "katex": "^0.16.25",
     "langchain": "^0.1.25",
+    "marked": "^16.4.1",
     "multer": "^1.4.5-lts.2",
     "node-fetch": "^3.3.2",
     "openai": "^4.28.0",
     "pdf-parse": "^1.1.1",
-    "pdfjs-dist": "^2.16.105"
+    "pdfjs-dist": "^2.16.105",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.9",
@@ -48,16 +47,10 @@
     "@types/react-dom": "^18.2.19",
     "@vitejs/plugin-react": "^4.2.1",
     "concurrently": "^8.2.2",
-    "cross-env": "^7.0.3",
     "electron": "^28.1.0",
-    "electron-builder": "^24.9.1",
     "electron-rebuild": "^3.2.9",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "tsx": "^4.19.4",
     "typescript": "^5.3.3",
     "vite": "^5.1.0",
-    "vite-plugin-electron": "^0.28.0",
     "wait-on": "^7.2.0"
   }
 }

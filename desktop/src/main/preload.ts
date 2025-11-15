@@ -3,7 +3,7 @@ import { contextBridge, ipcRenderer } from 'electron';
 // Expose protected methods that allow the renderer process to use
 // the ipcRenderer without exposing the entire object
 try {
-  contextBridge.exposeInMainWorld('electronAPI', {
+contextBridge.exposeInMainWorld('electronAPI', {
   // Chat API
   sendChat: (payload: {
     message: string;
@@ -30,9 +30,15 @@ try {
   // Config
   getConfig: (key: string) => ipcRenderer.invoke('config:get', key),
   setConfig: (key: string, value: any) => ipcRenderer.invoke('config:set', key, value),
-  });
   
-  console.log('[Preload] electronAPI exposed successfully');
+  // Main window
+  openMainWindow: () => ipcRenderer.invoke('open-main-window'),
+});
+
+// Also expose as window.api for overlay compatibility
+contextBridge.exposeInMainWorld('api', {
+  openMainWindow: () => ipcRenderer.invoke('open-main-window'),
+});
 } catch (error) {
   console.error('[Preload] Failed to expose electronAPI:', error);
 }
@@ -58,6 +64,7 @@ declare global {
       checkHealth: () => Promise<{ healthy: boolean; url?: string; error?: string }>;
       getConfig: (key: string) => Promise<any>;
       setConfig: (key: string, value: any) => Promise<boolean>;
+      openMainWindow: () => Promise<boolean>;
     };
   }
 }
