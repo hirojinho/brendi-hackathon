@@ -37,6 +37,7 @@ export function makeCreateNoteHandler(container: Container) {
 
       const providerResponse = await selectedProvider.generateResponse(prompt, [], modelName);
       const cleanedResponse = providerResponse.replace(/```json|```/g, '').trim();
+      console.log('cleanedResponse', JSON.stringify(cleanedResponse, null, 2));
       let generatedNotes: any[] = [];
       try {
         const parsed = JSON.parse(cleanedResponse);

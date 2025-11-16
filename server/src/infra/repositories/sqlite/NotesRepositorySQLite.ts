@@ -37,23 +37,33 @@ export class NotesRepositorySQLite implements NotesRepository {
 
   list(): NoteEntity[] {
     const notes = this.noteDatabase.getAllNotes();
-    return notes.map((row: any) => ({
-      id: row.id,
-      title: row.title,
-      content: row.content,
-      tags: row.tags,
-      relatedNotes: row.relatedNotes,
-      createdAt: row.createdAt.toISOString(),
-      lastModified: row.lastModified.toISOString(),
-      conversationId: row.source.conversationId,
-      messageIndex: row.source.messageIndex,
-      nextReview: row.nextReview ? row.nextReview.toISOString() : null,
-      interval: row.interval ?? null,
-      easiness: row.easiness ?? null,
-      repetitions: row.repetitions ?? null,
-      lastReview: row.lastReview ? row.lastReview.toISOString() : null,
-      lastPerformance: row.lastPerformance ?? null
-    }));
+    return notes.map((row: any) => {
+      // Helper to convert string or Date to ISO string
+      const toISOString = (value: string | Date | undefined | null): string | null => {
+        if (!value) return null;
+        if (typeof value === 'string') return value;
+        if (value instanceof Date) return value.toISOString();
+        return null;
+      };
+
+      return {
+        id: row.id,
+        title: row.title,
+        content: row.content,
+        tags: row.tags,
+        relatedNotes: row.relatedNotes,
+        createdAt: toISOString(row.createdAt) || new Date().toISOString(),
+        lastModified: toISOString(row.lastModified) || new Date().toISOString(),
+        conversationId: row.conversationId || row.source?.conversationId,
+        messageIndex: row.messageIndex ?? row.source?.messageIndex ?? 0,
+        nextReview: toISOString(row.nextReview),
+        interval: row.interval ?? null,
+        easiness: row.easiness ?? null,
+        repetitions: row.repetitions ?? null,
+        lastReview: toISOString(row.lastReview),
+        lastPerformance: row.lastPerformance ?? null
+      };
+    });
   }
 
   delete(id: string): void {

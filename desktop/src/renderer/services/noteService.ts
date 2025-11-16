@@ -7,7 +7,7 @@ export interface CreateNoteRequest {
 }
 
 export interface CreateNoteResponse {
-  notes: Array<{ id: string; content: string }>;
+  notes: Array<{ id: string; title: string; content: string; tags: string[] }>;
 }
 
 export class NoteService {

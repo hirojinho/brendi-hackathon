@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import type { Message, ModelType, ChatRequest } from '../types';
 import { chatService } from '../services/chatService';
 import { settingsService } from '../services/settingsService';
+import { noteService } from '../services/noteService';
 
 interface UseChatOptions {
   initialModel?: ModelType;
@@ -68,10 +69,40 @@ export function useChat(options: UseChatOptions = {}) {
       const result = await chatService.sendChat(request);
       
       setCurrentResponse(result.response);
-      setMessages(prev => [...prev, { role: 'assistant', content: result.response }]);
+      const assistantMessage: Message = { role: 'assistant', content: result.response };
+      setMessages(prev => [...prev, assistantMessage]);
+      
+      // Clear currentResponse once message is added to prevent duplication
+      setCurrentResponse('');
+      
+      // Automatically create notes from the question and response
+      // Include both for better context extraction
+      try {
+        const contentForNote = `${message}\n\n${result.response}`;
+        const noteResult = await noteService.createNote({
+          content: contentForNote,
+          model,
+          modelName: modelName || undefined,
+        });
+        
+        if (noteResult.notes && noteResult.notes.length > 0) {
+          const noteCount = noteResult.notes.length;
+          const noteMessage = noteCount === 1 
+            ? `📝 Created 1 note: "${noteResult.notes[0].title || 'Untitled'}"`
+            : `📝 Created ${noteCount} notes from this conversation`;
+          
+          setMessages(prev => [...prev, { 
+            role: 'system', 
+            content: noteMessage 
+          }]);
+        }
+      } catch (noteError) {
+        // Silently fail note creation - don't interrupt the chat flow
+        console.error('Note creation failed:', noteError);
+      }
     } catch (error: any) {
       const errorMessage = error.message || 'Failed to get response';
-      setCurrentResponse(`Error: ${errorMessage}`);
+      setCurrentResponse('');
       setMessages(prev => [...prev, { role: 'assistant', content: `Error: ${errorMessage}` }]);
     } finally {
       setIsLoading(false);

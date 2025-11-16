@@ -13,4 +13,7 @@
 - Prompt engineering
 
 = RELEASE =
-- 
+- Note taking functionality (more direct)
+- More explicit zettelkasten functionality
+    - The application should be something to take notes and srs only, with a chat in the full application
+    - There should be a more interactive and more thoroughly way to connect a note in the web of knowledge

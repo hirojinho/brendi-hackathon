@@ -20,16 +20,14 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({
         <ChatMessage key={idx} message={msg} />
       ))}
       
-      {isLoading && !currentResponse && (
-        <div className="message message-assistant">
-          <div className="message-content loading">Thinking...</div>
-        </div>
-      )}
-      
-      {currentResponse && (
+      {isLoading && (
         <div className="message message-assistant">
           <div className="message-content">
-            <MarkdownRenderer content={currentResponse} />
+            {currentResponse ? (
+              <MarkdownRenderer content={currentResponse} />
+            ) : (
+              <div className="loading">Thinking...</div>
+            )}
           </div>
         </div>
       )}
