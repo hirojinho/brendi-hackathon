@@ -41,4 +41,23 @@ export interface RAGUsageEntity {
   createdAt: string;
 }
 
+export interface ContextEntity {
+  id: string;
+  name: string;
+  description: string;
+  parentId: string | null;
+  createdAt: string;
+  lastModified: string;
+}
+
+export interface QuickNoteEntity {
+  id: string;
+  title: string;
+  content: string;
+  tags: string[];
+  contextId: string | null;
+  createdAt: string;
+  lastModified: string;
+}
+
 

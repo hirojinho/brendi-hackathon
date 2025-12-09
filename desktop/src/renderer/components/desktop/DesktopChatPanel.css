@@ -2,7 +2,7 @@
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: rgba(255, 255, 255, 0.5);
+  background: #ffffff;
 }
 
 .chat-messages-container {
@@ -16,10 +16,14 @@
 .chat-messages {
   flex: 1;
   overflow-y: auto;
-  padding: 24px 32px;
+  overflow-x: hidden;
+  padding: 32px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
+  /* Ensure proper scrolling behavior */
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
 }
 
 .chat-welcome {
@@ -81,21 +85,44 @@
   font-size: 15px;
   line-height: 1.5;
   word-wrap: break-word;
+  overflow-wrap: break-word;
+  /* Prevent content from causing horizontal scroll */
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.message-content .markdown-content {
+  max-width: 100%;
+  overflow-x: auto;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.message-content .markdown-content pre,
+.message-content .markdown-content code {
+  max-width: 100%;
+  overflow-x: auto;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+.message-content .markdown-content .katex {
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 
 .chat-message.user .message-content {
-  background: linear-gradient(135deg, #007AFF 0%, #0051D5 100%);
+  background: #007AFF;
   color: white;
   border-bottom-right-radius: 4px;
-  box-shadow: 0 2px 8px rgba(0, 122, 255, 0.25);
 }
 
 .chat-message.assistant .message-content {
-  background: rgba(255, 255, 255, 0.9);
+  background: #f5f5f7;
   color: #1d1d1f;
-  border: 0.5px solid rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.08);
   border-bottom-left-radius: 4px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .typing-indicator {
@@ -132,10 +159,9 @@
 }
 
 .chat-input-area {
-  border-top: 0.5px solid rgba(0, 0, 0, 0.1);
-  background: rgba(246, 246, 246, 0.8);
-  backdrop-filter: blur(20px);
-  padding: 16px 24px;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  background: #ffffff;
+  padding: 20px 32px;
 }
 
 .chat-controls-bar {
@@ -220,22 +246,21 @@
   flex: 1;
   min-height: 44px;
   max-height: 120px;
-  padding: 12px 16px;
-  border: 0.5px solid rgba(0, 0, 0, 0.15);
-  border-radius: 20px;
-  font-size: 15px;
+  padding: 10px 16px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 10px;
+  font-size: 14px;
   font-family: inherit;
-  background: rgba(255, 255, 255, 0.9);
+  background: #ffffff;
   color: #1d1d1f;
   resize: none;
   outline: none;
-  transition: all 0.15s;
+  transition: border-color 0.15s ease;
 }
 
 .chat-textarea:focus {
   border-color: #007AFF;
-  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
-  background: white;
+  outline: none;
 }
 
 .chat-textarea::placeholder {
@@ -246,21 +271,19 @@
   width: 44px;
   height: 44px;
   border: none;
-  border-radius: 22px;
-  background: linear-gradient(135deg, #007AFF 0%, #0051D5 100%);
+  border-radius: 10px;
+  background: #007AFF;
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: background 0.15s ease;
   flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(0, 122, 255, 0.25);
 }
 
 .chat-send-button:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 122, 255, 0.35);
+  background: #0051D5;
 }
 
 .chat-send-button:active:not(:disabled) {

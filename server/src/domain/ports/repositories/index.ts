@@ -1,4 +1,4 @@
-import { DocumentEntity, DocumentChunkEntity, NoteEntity, RAGUsageEntity } from '../../entities/index.js';
+import { DocumentEntity, DocumentChunkEntity, NoteEntity, RAGUsageEntity, QuickNoteEntity, ContextEntity } from '../../entities/index.js';
 
 export interface DocumentsRepository {
   save(document: Omit<DocumentEntity, 'id' | 'createdAt'>): number;
@@ -24,6 +24,24 @@ export interface NotesRepository {
 export interface UsageRepository {
   log(entry: Omit<RAGUsageEntity, 'id' | 'createdAt'>): number;
   forDocument(documentId: number): RAGUsageEntity[];
+}
+
+export interface QuickNotesRepository {
+  save(note: QuickNoteEntity): void;
+  update(id: string, note: Partial<Omit<QuickNoteEntity, 'id' | 'createdAt'>>): void;
+  list(contextId?: string): QuickNoteEntity[];
+  getById(id: string): QuickNoteEntity | null;
+  delete(id: string): void;
+  getByContext(contextId: string): QuickNoteEntity[];
+}
+
+export interface ContextRepository {
+  save(context: ContextEntity): void;
+  update(id: string, context: Partial<Omit<ContextEntity, 'id' | 'createdAt'>>): void;
+  list(): ContextEntity[];
+  getById(id: string): ContextEntity | null;
+  getChildren(parentId: string): ContextEntity[];
+  delete(id: string): void;
 }
 
 

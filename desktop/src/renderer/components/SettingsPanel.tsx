@@ -14,6 +14,8 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose }) => {
     ollamaUrl,
     provider,
     modelName,
+    globalShortcut,
+    defaultMode,
     isLoading,
     saveStatus,
     setOpenaiKey,
@@ -21,6 +23,8 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose }) => {
     setOllamaUrl,
     setProvider,
     setModelName,
+    setGlobalShortcut,
+    setDefaultMode,
     saveSettings,
   } = useSettings(isOpen);
 
@@ -128,6 +132,53 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose }) => {
                 />
               </label>
               <small>URL for your local Ollama instance (default: http://localhost:11434)</small>
+            </div>
+          </div>
+
+          <div className="settings-section">
+            <h3>Application Mode</h3>
+            <p className="settings-description">
+              Choose the default mode when opening the overlay.
+            </p>
+
+            <div className="settings-field">
+              <label>
+                Default Mode
+                <select
+                  value={defaultMode}
+                  onChange={(e) => setDefaultMode(e.target.value as 'chat' | 'note-taking')}
+                  disabled={isLoading}
+                >
+                  <option value="chat">Chat Mode</option>
+                  <option value="note-taking">Note-Taking Agent Mode</option>
+                </select>
+              </label>
+              <small>
+                Chat Mode: Interactive Q&A with automatic note generation. Note-Taking Agent Mode: Quick natural language input for fast note capture.
+              </small>
+            </div>
+          </div>
+
+          <div className="settings-section">
+            <h3>Keyboard Shortcut</h3>
+            <p className="settings-description">
+              Configure the global keyboard shortcut to toggle the overlay window.
+            </p>
+
+            <div className="settings-field">
+              <label>
+                Global Shortcut
+                <input
+                  type="text"
+                  value={globalShortcut}
+                  onChange={(e) => setGlobalShortcut(e.target.value)}
+                  placeholder="CmdOrCtrl+Shift+Space"
+                  disabled={isLoading}
+                />
+              </label>
+              <small>
+                Format: CmdOrCtrl+Shift+Space (use CmdOrCtrl for macOS/Windows, Command/Control for specific, Alt/Option, Shift, and key names like Space, A, B, etc.)
+              </small>
             </div>
           </div>
 

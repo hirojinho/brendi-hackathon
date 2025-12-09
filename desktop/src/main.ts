@@ -1,9 +1,14 @@
-import { app, BrowserWindow, globalShortcut, ipcMain, shell } from 'electron';
+import { app, BrowserWindow, globalShortcut, ipcMain } from 'electron';
 import path from 'path';
 import url from 'url';
 
 let overlayWindow: BrowserWindow | null = null;
 let mainWindow: BrowserWindow | null = null;
+
+// Hide dock icon on macOS
+if (process.platform === 'darwin') {
+  app.dock.hide();
+}
 
 function createOverlayWindow() {
   overlayWindow = new BrowserWindow({
@@ -14,12 +19,16 @@ function createOverlayWindow() {
     resizable: false,
     transparent: false,
     show: false,
+    skipTaskbar: true, // Hide from dock/taskbar
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false
     }
   });
+
+  // Make window visible on all workspaces to prevent workspace switching
+  overlayWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
 
   overlayWindow.loadURL(url.pathToFileURL(path.join(__dirname, '../overlay/index.html')).toString());
 
@@ -64,6 +73,7 @@ function registerGlobalShortcut() {
     } else {
       overlayWindow.center();
       overlayWindow.show();
+      overlayWindow.focus();
     }
   });
 }

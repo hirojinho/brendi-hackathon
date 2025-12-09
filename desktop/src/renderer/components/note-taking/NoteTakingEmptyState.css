@@ -1,0 +1,29 @@
+.note-taking-empty-state {
+  padding: 20px 16px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.note-taking-empty-state p {
+  margin: 0 0 12px 0;
+}
+
+.empty-state-examples {
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  margin-top: 16px !important;
+}
+
+.note-taking-empty-state ul {
+  margin: 8px 0 0 0;
+  padding-left: 20px;
+  list-style-type: disc;
+}
+
+.note-taking-empty-state li {
+  margin: 6px 0;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 12px;
+}
+

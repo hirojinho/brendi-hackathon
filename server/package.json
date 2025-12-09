@@ -27,13 +27,15 @@
     "node-fetch": "^3.3.2",
     "openai": "^4.28.0",
     "pdf-parse": "^1.1.1",
-    "pdfjs-dist": "^2.16.105"
+    "pdfjs-dist": "^2.16.105",
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.9",
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
     "@types/node": "^20.11.24",
+    "@types/uuid": "^10.0.0",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
     "tsx": "^4.19.4",

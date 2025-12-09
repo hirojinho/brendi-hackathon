@@ -2,6 +2,8 @@ import { loadConfig, AppConfig } from '../infra/config/index.js';
 import { DocumentsRepositorySQLite } from '../infra/repositories/sqlite/DocumentsRepositorySQLite.js';
 import { DocumentChunksRepositorySQLite } from '../infra/repositories/sqlite/DocumentChunksRepositorySQLite.js';
 import { NotesRepositorySQLite } from '../infra/repositories/sqlite/NotesRepositorySQLite.js';
+import { QuickNotesRepositorySQLite } from '../infra/repositories/sqlite/QuickNotesRepositorySQLite.js';
+import { ContextRepositorySQLite } from '../infra/repositories/sqlite/ContextRepositorySQLite.js';
 import { UsageRepositoryFile } from '../infra/repositories/file/UsageRepositoryFile.js';
 import { OpenAIProvider } from '../infra/providers/llm/openai.js';
 import { OpenRouterProvider } from '../infra/providers/llm/openrouter.js';
@@ -14,6 +16,9 @@ import { ChatService } from '../app/chat/ChatService.js';
 import { RAGService } from '../app/documents/RAGService.js';
 import { DocumentIngestionService } from '../app/documents/DocumentIngestionService.js';
 import { NotesService } from '../app/notes/NotesService.js';
+import { QuickNotesService } from '../app/quickNotes/QuickNotesService.js';
+import { ContextsService } from '../app/contexts/ContextsService.js';
+import { NoteTakingAgentService } from '../app/note-taking/NoteTakingAgentService.js';
 
 export interface Container {
   config: AppConfig;
@@ -21,6 +26,8 @@ export interface Container {
     documents: DocumentsRepositorySQLite;
     chunks: DocumentChunksRepositorySQLite;
     notes: NotesRepositorySQLite;
+    quickNotes: QuickNotesRepositorySQLite;
+    contexts: ContextRepositorySQLite;
     usage: UsageRepositoryFile;
   };
   providers: {
@@ -41,6 +48,9 @@ export interface Container {
     rag: RAGService;
     ingestion: DocumentIngestionService;
     notes: NotesService;
+    quickNotes: QuickNotesService;
+    contexts: ContextsService;
+    noteTakingAgent: NoteTakingAgentService;
   };
 }
 
@@ -50,6 +60,8 @@ export function buildContainer(): Container {
     documents: new DocumentsRepositorySQLite(),
     chunks: new DocumentChunksRepositorySQLite(),
     notes: new NotesRepositorySQLite(),
+    quickNotes: new QuickNotesRepositorySQLite(),
+    contexts: new ContextRepositorySQLite(),
     usage: new UsageRepositoryFile()
   };
 
@@ -87,15 +99,28 @@ export function buildContainer(): Container {
       repositories.chunks,
       config.rag.maxEmbeddingChars
     ),
-    notes: new NotesService(repositories.notes)
+    notes: new NotesService(repositories.notes),
+    quickNotes: new QuickNotesService(repositories.quickNotes),
+    contexts: new ContextsService(repositories.contexts)
   };
 
-  return {
+  // Create note-taking agent service with full container
+  const container: Container = {
     config,
     repositories,
     providers,
-    services
+    services: {
+      ...services,
+      noteTakingAgent: new NoteTakingAgentService({
+        config,
+        repositories,
+        providers,
+        services
+      } as Container)
+    }
   };
+
+  return container;
 }
 
 

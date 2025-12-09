@@ -1,15 +1,31 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import ChatBox from './components/ChatBox';
+import { NoteTakingAgent } from './components/note-taking';
 import { StatusMessage } from './components/layout';
 import { useBackendHealth } from './hooks/useBackendHealth';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
+import { settingsService } from './services/settingsService';
 import './App.css';
 
 function App() {
   const { isReady, isChecking } = useBackendHealth();
   const overlayRef = useRef<HTMLDivElement>(null);
+  const [mode, setMode] = useState<'chat' | 'note-taking'>('chat');
 
   useKeyboardShortcuts();
+
+  // Load default mode from settings on mount
+  useEffect(() => {
+    const loadDefaultMode = async () => {
+      try {
+        const settings = await settingsService.loadAllSettings();
+        setMode(settings.defaultMode || 'chat');
+      } catch (error) {
+        console.error('Failed to load default mode:', error);
+      }
+    };
+    loadDefaultMode();
+  }, []);
 
   // Auto-focus input when overlay opens
   useEffect(() => {
@@ -19,7 +35,7 @@ function App() {
         (input as HTMLElement).focus();
       }
     }
-  }, [isReady]);
+  }, [isReady, mode]);
 
   if (!isReady) {
     return (
@@ -37,7 +53,7 @@ function App() {
   return (
     <div className="overlay-container" ref={overlayRef}>
       <div className="overlay-content">
-        <ChatBox />
+        {mode === 'chat' ? <ChatBox /> : <NoteTakingAgent />}
       </div>
     </div>
   );

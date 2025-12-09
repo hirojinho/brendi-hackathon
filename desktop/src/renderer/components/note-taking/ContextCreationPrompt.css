@@ -1,0 +1,81 @@
+.context-creation-prompt {
+  margin: 12px 16px;
+  padding: 16px;
+  border-radius: 8px;
+  background: rgba(43, 144, 255, 0.1);
+  border: 1px solid rgba(43, 144, 255, 0.3);
+  animation: fadeIn 0.2s ease-out;
+}
+
+.context-creation-header {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
+  margin-bottom: 12px;
+}
+
+.context-creation-details {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1.6;
+  margin-bottom: 12px;
+}
+
+.context-creation-details p {
+  margin: 4px 0;
+}
+
+.context-creation-parent {
+  margin-top: 12px;
+}
+
+.context-creation-parent label {
+  display: block;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.context-creation-hint {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+  font-style: italic;
+  margin-top: 8px !important;
+}
+
+.context-creation-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.create-context-btn,
+.cancel-context-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s ease;
+}
+
+.create-context-btn {
+  background: #2b90ff;
+  color: white;
+}
+
+.create-context-btn:hover {
+  background: #1f75d6;
+}
+
+.cancel-context-btn {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.cancel-context-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+

@@ -6,6 +6,8 @@ export interface Settings {
   ollamaBaseUrl?: string;
   provider?: ProviderType;
   modelName?: string;
+  globalShortcut?: string;
+  defaultMode?: 'chat' | 'note-taking';
 }
 
 export interface SettingsState {

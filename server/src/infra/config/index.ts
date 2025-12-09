@@ -10,6 +10,7 @@ export interface AppConfig {
   openaiApiKey?: string;
   openrouterApiKey?: string;
   ollamaBaseUrl?: string;
+  defaultMode?: 'chat' | 'note-taking';
   rag: {
     similarityThreshold: number;
     fallbackChunks: number;
@@ -32,6 +33,7 @@ export function loadConfig(cwd: string = process.cwd()): AppConfig {
     openaiApiKey: process.env.OPENAI_API_KEY,
     openrouterApiKey: process.env.OPENROUTER_API_KEY,
     ollamaBaseUrl: process.env.OLLAMA_BASE_URL,
+    defaultMode: (process.env.DEFAULT_MODE as 'chat' | 'note-taking' | undefined) || 'chat',
     rag: {
       similarityThreshold: Number(process.env.RAG_SIMILARITY_THRESHOLD || 0.35),
       fallbackChunks: Number(process.env.RAG_FALLBACK_CHUNKS || 5),

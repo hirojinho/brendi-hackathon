@@ -9,6 +9,7 @@ interface ConfigStore {
   openaiApiKey?: string;
   openrouterApiKey?: string;
   ollamaBaseUrl?: string;
+  globalShortcut?: string;
   [key: string]: any;
 }
 
@@ -24,7 +25,30 @@ let overlayWindow: BrowserWindow | null = null;
 let mainWindow: BrowserWindow | null = null;
 let backendUrl: string | null = null;
 let backendServer: any = null;
+let currentShortcut: string | null = null;
 const configStore = new Store<ConfigStore>() as unknown as StoreInterface;
+
+// Function to register global shortcut
+function registerGlobalShortcut(shortcut: string): boolean {
+  // Unregister existing shortcut if any
+  if (currentShortcut) {
+    globalShortcut.unregister(currentShortcut);
+  }
+  
+  // Register new shortcut
+  const registered = globalShortcut.register(shortcut, () => {
+    toggleOverlay();
+  });
+  
+  if (registered) {
+    currentShortcut = shortcut;
+    console.log(`[Main] Registered global shortcut: ${shortcut}`);
+  } else {
+    console.warn(`[Main] Failed to register shortcut: ${shortcut}`);
+  }
+  
+  return registered;
+}
 
 // Ensure userData directory exists
 const userDataPath = app.getPath('userData');
@@ -110,20 +134,44 @@ function createOverlayWindow() {
 }
 
 function toggleOverlay() {
-  if (!overlayWindow) {
+  if (overlayWindow && overlayWindow.isVisible()) {
+    overlayWindow.hide();
+  } else {
+    // On macOS, destroy and recreate the window each time to ensure it appears on the current workspace
+    // This prevents the window from being "bound" to the workspace where it was first created
+    if (overlayWindow) {
+      overlayWindow.destroy();
+      overlayWindow = null;
+    }
+    
+    // Create fresh window - this ensures it's created in the current workspace
     createOverlayWindow();
-  }
-  
-  if (overlayWindow) {
-    if (overlayWindow.isVisible()) {
-      overlayWindow.hide();
+    
+    // On macOS, explicitly ensure window is not visible on all workspaces
+    // and is created in the current workspace
+    if (!overlayWindow) {
+      return; // Safety check
+    }
+    
+    const currentWindow: BrowserWindow = overlayWindow;
+    if (process.platform === 'darwin') {
+      currentWindow.setVisibleOnAllWorkspaces(false);
+      // Small delay to ensure workspace assignment happens correctly
+      // Capture window reference to avoid TypeScript issues in setTimeout
+      const windowRef = currentWindow;
+      setTimeout(() => {
+        if (windowRef && !windowRef.isDestroyed()) {
+          windowRef.center();
+          windowRef.show();
+          windowRef.focus();
+          windowRef.moveTop();
+        }
+      }, 10);
     } else {
-      // Ensure window is on current workspace before showing (Raycast-like)
-      overlayWindow.setVisibleOnAllWorkspaces(false, { visibleOnFullScreen: true });
-      overlayWindow.center();
-      overlayWindow.show();
-      overlayWindow.focus();
-      overlayWindow.moveTop(); // Ensure it's on top
+      currentWindow.center();
+      currentWindow.show();
+      currentWindow.focus();
+      currentWindow.moveTop();
     }
   }
 }
@@ -209,6 +257,244 @@ ipcMain.handle('note:create', async (_event, payload) => {
   }
 });
 
+ipcMain.handle('note-taking-agent:process', async (_event, payload) => {
+  if (!backendUrl) {
+    throw new Error('Backend not initialized');
+  }
+  
+  try {
+    const response = await fetch(`${backendUrl}/api/note-taking-agent`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'Unknown error' }));
+      throw new Error(error.error || `HTTP ${response.status}`);
+    }
+    
+    return await response.json();
+  } catch (error: any) {
+    console.error('[Main] Note-taking agent error:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('quick-notes:list', async () => {
+  if (!backendUrl) {
+    throw new Error('Backend not initialized');
+  }
+  
+  try {
+    const response = await fetch(`${backendUrl}/api/quick-notes`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'Unknown error' }));
+      throw new Error(error.error || `HTTP ${response.status}`);
+    }
+    
+    return await response.json();
+  } catch (error: any) {
+    console.error('[Main] Quick notes list error:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('quick-notes:get', async (_event, id: string) => {
+  if (!backendUrl) {
+    throw new Error('Backend not initialized');
+  }
+  
+  try {
+    const response = await fetch(`${backendUrl}/api/quick-notes/${id}`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'Unknown error' }));
+      throw new Error(error.error || `HTTP ${response.status}`);
+    }
+    
+    return await response.json();
+  } catch (error: any) {
+    console.error('[Main] Quick note get error:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('quick-notes:update', async (_event, payload: { id: string; title?: string; content?: string; tags?: string[] }) => {
+  if (!backendUrl) {
+    throw new Error('Backend not initialized');
+  }
+  
+  try {
+    const response = await fetch(`${backendUrl}/api/quick-notes/${payload.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'Unknown error' }));
+      throw new Error(error.error || `HTTP ${response.status}`);
+    }
+    
+    return await response.json();
+  } catch (error: any) {
+    console.error('[Main] Quick note update error:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('quick-notes:delete', async (_event, id: string) => {
+  if (!backendUrl) {
+    throw new Error('Backend not initialized');
+  }
+  
+  try {
+    const response = await fetch(`${backendUrl}/api/quick-notes/${id}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'Unknown error' }));
+      throw new Error(error.error || `HTTP ${response.status}`);
+    }
+    
+    return await response.json();
+  } catch (error: any) {
+    console.error('[Main] Quick note delete error:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('contexts:list', async (_event, options?: { hierarchy?: boolean }) => {
+  if (!backendUrl) {
+    throw new Error('Backend not initialized');
+  }
+  
+  try {
+    const url = new URL(`${backendUrl}/api/contexts`);
+    if (options?.hierarchy) {
+      url.searchParams.set('hierarchy', 'true');
+    }
+    const response = await fetch(url.toString(), {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'Unknown error' }));
+      throw new Error(error.error || `HTTP ${response.status}`);
+    }
+    
+    return await response.json();
+  } catch (error: any) {
+    console.error('[Main] Contexts list error:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('contexts:create', async (_event, payload: { name: string; description?: string; parentId?: string | null }) => {
+  if (!backendUrl) {
+    throw new Error('Backend not initialized');
+  }
+  
+  try {
+    const response = await fetch(`${backendUrl}/api/contexts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'Unknown error' }));
+      throw new Error(error.error || `HTTP ${response.status}`);
+    }
+    
+    return await response.json();
+  } catch (error: any) {
+    console.error('[Main] Context create error:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('contexts:update', async (_event, payload: { id: string; name?: string; description?: string; parentId?: string | null }) => {
+  if (!backendUrl) {
+    throw new Error('Backend not initialized');
+  }
+  
+  try {
+    const response = await fetch(`${backendUrl}/api/contexts/${payload.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'Unknown error' }));
+      throw new Error(error.error || `HTTP ${response.status}`);
+    }
+    
+    return await response.json();
+  } catch (error: any) {
+    console.error('[Main] Context update error:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('contexts:getChildren', async (_event, parentId: string) => {
+  if (!backendUrl) {
+    throw new Error('Backend not initialized');
+  }
+  
+  try {
+    const response = await fetch(`${backendUrl}/api/contexts/${parentId}/children`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'Unknown error' }));
+      throw new Error(error.error || `HTTP ${response.status}`);
+    }
+    
+    return await response.json();
+  } catch (error: any) {
+    console.error('[Main] Context get children error:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('contexts:delete', async (_event, id: string) => {
+  if (!backendUrl) {
+    throw new Error('Backend not initialized');
+  }
+  
+  try {
+    const response = await fetch(`${backendUrl}/api/contexts/${id}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'Unknown error' }));
+      throw new Error(error.error || `HTTP ${response.status}`);
+    }
+    
+    return await response.json();
+  } catch (error: any) {
+    console.error('[Main] Context delete error:', error);
+    throw error;
+  }
+});
+
 ipcMain.handle('server:health', async () => {
   if (!backendUrl) {
     return { healthy: false, error: 'Backend not initialized' };
@@ -235,7 +521,36 @@ ipcMain.handle('config:set', (_event, key: string, value: any) => {
     // TODO: Restart backend with new env vars
   }
   
+  // If shortcut changed, re-register it
+  if (key === 'globalShortcut' && value) {
+    registerGlobalShortcut(value);
+  }
+  
   return true;
+});
+
+ipcMain.handle('shortcut:get', () => {
+  return configStore.get('globalShortcut') || 'CmdOrCtrl+Shift+Space';
+});
+
+ipcMain.handle('shortcut:set', (_event, shortcut: string) => {
+  if (!shortcut || shortcut.trim() === '') {
+    return { success: false, error: 'Shortcut cannot be empty' };
+  }
+  
+  // Validate shortcut format (basic validation)
+  const validPattern = /^(CommandOrControl|CmdOrCtrl|Command|Control|Cmd|Ctrl|Alt|Option|Shift|Super|Meta)(\+[A-Za-z0-9]+)+$/;
+  if (!validPattern.test(shortcut)) {
+    return { success: false, error: 'Invalid shortcut format. Use format like: CmdOrCtrl+Shift+Space' };
+  }
+  
+  const registered = registerGlobalShortcut(shortcut);
+  if (registered) {
+    configStore.set('globalShortcut', shortcut);
+    return { success: true };
+  } else {
+    return { success: false, error: 'Failed to register shortcut. It may be in use by another application.' };
+  }
 });
 
 ipcMain.handle('open-main-window', async () => {
@@ -264,15 +579,9 @@ app.whenReady().then(async () => {
   
   createOverlayWindow();
   
-  // Register global shortcut
-  const shortcut = 'CmdOrCtrl+Shift+Space';
-  const registered = globalShortcut.register(shortcut, () => {
-    toggleOverlay();
-  });
-  
-  if (!registered) {
-    console.warn(`[Main] Failed to register shortcut: ${shortcut}`);
-  }
+  // Register global shortcut from config or use default
+  const shortcut = (configStore.get('globalShortcut') as string | undefined) || 'CmdOrCtrl+Shift+Space';
+  registerGlobalShortcut(shortcut);
 });
 
 app.on('will-quit', async () => {
