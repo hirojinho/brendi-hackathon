@@ -11,3 +11,5 @@ server/**/*.db
 study-assistant/server/*.db
 study-assistant/server/**/*.db
 uploads/
+
+.kiro
