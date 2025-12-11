@@ -21,6 +21,7 @@ import { NotesService } from '../app/notes/NotesService.js';
 import { QuickNotesService } from '../app/quickNotes/QuickNotesService.js';
 import { ContextsService } from '../app/contexts/ContextsService.js';
 import { NoteTakingAgentService } from '../app/note-taking/NoteTakingAgentService.js';
+import { ReviewEngine } from '../app/review/ReviewEngine.js';
 
 export interface Container {
   config: AppConfig;
@@ -55,6 +56,7 @@ export interface Container {
     quickNotes: QuickNotesService;
     contexts: ContextsService;
     noteTakingAgent: NoteTakingAgentService;
+    reviewEngine: ReviewEngine;
   };
 }
 
@@ -85,6 +87,16 @@ export function buildContainer(): Container {
     storage: new FilesystemStorage(config.uploadsDir)
   };
 
+  // Create ReviewEngine first
+  const reviewEngine = new ReviewEngine(
+    repositories.quickNotes,
+    repositories.reviewSessions,
+    {
+      reviewAgeThresholdHours: config.quickNotes.reviewAgeThresholdHours,
+      maxQuickNotes: config.quickNotes.maxQuickNotes
+    }
+  );
+
   const services = {
     chat: new ChatService({
       openrouter: providers.llm.openrouter,
@@ -106,8 +118,9 @@ export function buildContainer(): Container {
       config.rag.maxEmbeddingChars
     ),
     notes: new NotesService(repositories.notes),
-    quickNotes: new QuickNotesService(repositories.quickNotes),
-    contexts: new ContextsService(repositories.contexts)
+    quickNotes: new QuickNotesService(repositories.quickNotes, reviewEngine),
+    contexts: new ContextsService(repositories.contexts),
+    reviewEngine: reviewEngine
   };
 
   // Create note-taking agent service with full container

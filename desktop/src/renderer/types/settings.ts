@@ -8,6 +8,8 @@ export interface Settings {
   modelName?: string;
   globalShortcut?: string;
   defaultMode?: 'chat' | 'note-taking';
+  maxQuickNotes?: number;
+  reviewAgeThresholdHours?: number;
 }
 
 export interface SettingsState {
@@ -16,6 +18,8 @@ export interface SettingsState {
   ollamaUrl: string;
   provider: ProviderType;
   modelName: string;
+  maxQuickNotes: number;
+  reviewAgeThresholdHours: number;
   isLoading: boolean;
   saveStatus: string;
 }

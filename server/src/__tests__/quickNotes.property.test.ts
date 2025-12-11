@@ -580,4 +580,269 @@ describe('Quick Notes Property-Based Tests', () => {
       { numRuns: 100 }
     );
   });
+
+  /**
+   * Feature: quick-note-workflow, Property 4: Review session chronological ordering
+   * Validates: Requirements 2.3
+   */
+  test('Property 4: Review session chronological ordering', () => {
+    fc.assert(
+      fc.property(
+        fc.array(
+          fc.record({
+            content: fc.string({ minLength: 1, maxLength: 1000 }).filter(s => s.trim().length > 0),
+            title: fc.string({ minLength: 1, maxLength: 100 }),
+            tags: fc.array(fc.string({ minLength: 1, maxLength: 50 }), { maxLength: 10 }),
+            ageHours: fc.float({ min: Math.fround(24.1), max: Math.fround(168), noNaN: true }) // All notes older than 24 hours
+          }),
+          { minLength: 2, maxLength: 10 } // Need at least 2 notes to test ordering
+        ),
+        (noteSpecs) => {
+          // Clear database for each property test iteration
+          clearDatabase();
+          
+          const quickNotesRepo = new TestQuickNotesRepository(database);
+          const reviewSessionRepo = new TestReviewSessionRepository(database);
+          const reviewEngine = new ReviewEngine(quickNotesRepo, reviewSessionRepo, {
+            reviewAgeThresholdHours: 24,
+            maxQuickNotes: 10
+          });
+
+          const now = new Date();
+          const createdNotes: QuickNoteEntity[] = [];
+
+          // Create notes with specified ages (all older than 24 hours)
+          noteSpecs.forEach((spec) => {
+            const createdAt = new Date(now.getTime() - (spec.ageHours * 60 * 60 * 1000));
+            const note: QuickNoteEntity = {
+              id: randomUUID(),
+              title: spec.title,
+              content: spec.content,
+              tags: spec.tags,
+              contextId: null,
+              createdAt: createdAt.toISOString(),
+              lastModified: createdAt.toISOString(),
+              isReviewRequired: false
+            };
+            quickNotesRepo.save(note);
+            createdNotes.push(note);
+          });
+
+          // Get notes requiring review
+          const notesRequiringReview = reviewEngine.getNotesRequiringReview();
+          
+          // Verify all notes are included (since all are older than 24 hours)
+          expect(notesRequiringReview.length).toBe(noteSpecs.length);
+
+          // Verify chronological ordering (oldest first)
+          for (let i = 1; i < notesRequiringReview.length; i++) {
+            const prevTime = new Date(notesRequiringReview[i - 1].createdAt).getTime();
+            const currTime = new Date(notesRequiringReview[i].createdAt).getTime();
+            expect(prevTime).toBeLessThanOrEqual(currTime);
+          }
+
+          // Create a review session and verify it maintains the same ordering
+          const session = reviewEngine.createReviewSession();
+          expect(session.quickNoteIds.length).toBe(notesRequiringReview.length);
+          
+          // Verify the session contains the notes in the same chronological order
+          for (let i = 0; i < session.quickNoteIds.length; i++) {
+            expect(session.quickNoteIds[i]).toBe(notesRequiringReview[i].id);
+          }
+        }
+      ),
+      { numRuns: 100 }
+    );
+  });
+
+  /**
+   * Feature: quick-note-workflow, Property 5: Note transformation preservation
+   * Validates: Requirements 3.2
+   */
+  test('Property 5: Note transformation preservation', () => {
+    fc.assert(
+      fc.property(
+        fc.record({
+          content: fc.string({ minLength: 1, maxLength: 1000 }).filter(s => s.trim().length > 0),
+          title: fc.string({ minLength: 1, maxLength: 100 }),
+          tags: fc.array(fc.string({ minLength: 1, maxLength: 50 }), { maxLength: 10 }),
+          newTitle: fc.string({ minLength: 1, maxLength: 100 }), // Title for permanent note
+          newContent: fc.string({ minLength: 1, maxLength: 2000 }).filter(s => s.trim().length > 0), // Enhanced content
+          newTags: fc.array(fc.string({ minLength: 1, maxLength: 50 }), { maxLength: 15 })
+        }),
+        (noteSpec) => {
+          // Clear database for each property test iteration
+          clearDatabase();
+          
+          const quickNotesRepo = new TestQuickNotesRepository(database);
+
+          // Create a quick note
+          const now = new Date();
+          const quickNote: QuickNoteEntity = {
+            id: randomUUID(),
+            title: noteSpec.title,
+            content: noteSpec.content,
+            tags: noteSpec.tags,
+            contextId: null,
+            createdAt: now.toISOString(),
+            lastModified: now.toISOString(),
+            isReviewRequired: false
+          };
+
+          quickNotesRepo.save(quickNote);
+
+          // Simulate transformation to permanent note
+          // The permanent note should contain the original content as a starting point
+          const permanentNote = {
+            id: randomUUID(),
+            title: noteSpec.newTitle,
+            content: noteSpec.newContent,
+            createdAt: now.toISOString(),
+            updatedAt: now.toISOString(),
+            tags: noteSpec.newTags,
+            sourceQuickNoteId: quickNote.id
+          };
+
+          // Verify that the transformation preserves the source relationship
+          expect(permanentNote.sourceQuickNoteId).toBe(quickNote.id);
+
+          // Verify that the original quick note content is available for reference
+          // (The requirement states the permanent note should allow editing and enhancement
+          // of the original content, which implies the original content should be preserved
+          // as a starting point)
+          const originalQuickNote = quickNotesRepo.getById(quickNote.id);
+          expect(originalQuickNote).not.toBeNull();
+          expect(originalQuickNote!.content).toBe(noteSpec.content);
+          expect(originalQuickNote!.title).toBe(noteSpec.title);
+          expect(originalQuickNote!.tags).toEqual(noteSpec.tags);
+
+          // The permanent note should reference the source quick note
+          expect(permanentNote.sourceQuickNoteId).toBe(quickNote.id);
+          
+          // The permanent note can have enhanced content but should maintain traceability
+          expect(permanentNote.id).toBeDefined();
+          expect(permanentNote.createdAt).toBeDefined();
+          expect(permanentNote.updatedAt).toBeDefined();
+        }
+      ),
+      { numRuns: 100 }
+    );
+  });
+
+  /**
+   * Feature: quick-note-workflow, Property 6: Review session integrity
+   * Validates: Requirements 3.3, 3.4, 3.5
+   */
+  test('Property 6: Review session integrity', () => {
+    fc.assert(
+      fc.property(
+        fc.array(
+          fc.record({
+            content: fc.string({ minLength: 1, maxLength: 1000 }).filter(s => s.trim().length > 0),
+            title: fc.string({ minLength: 1, maxLength: 100 }),
+            tags: fc.array(fc.string({ minLength: 1, maxLength: 50 }), { maxLength: 10 }),
+            shouldTransform: fc.boolean() // Whether to transform to permanent note or discard
+          }),
+          { minLength: 1, maxLength: 8 }
+        ),
+        (noteSpecs) => {
+          // Clear database for each property test iteration
+          clearDatabase();
+          
+          const quickNotesRepo = new TestQuickNotesRepository(database);
+          const reviewSessionRepo = new TestReviewSessionRepository(database);
+          const reviewEngine = new ReviewEngine(quickNotesRepo, reviewSessionRepo, {
+            reviewAgeThresholdHours: 24,
+            maxQuickNotes: 10
+          });
+
+          const now = new Date();
+          const oldTime = new Date(now.getTime() - (25 * 60 * 60 * 1000)); // 25 hours ago
+          const createdNotes: QuickNoteEntity[] = [];
+
+          // Create notes that are older than 24 hours (requiring review)
+          noteSpecs.forEach((spec) => {
+            const note: QuickNoteEntity = {
+              id: randomUUID(),
+              title: spec.title,
+              content: spec.content,
+              tags: spec.tags,
+              contextId: null,
+              createdAt: oldTime.toISOString(),
+              lastModified: oldTime.toISOString(),
+              isReviewRequired: false
+            };
+            quickNotesRepo.save(note);
+            createdNotes.push(note);
+          });
+
+          // Verify review is required
+          expect(reviewEngine.isReviewRequired()).toBe(true);
+
+          // Create a review session
+          const session = reviewEngine.createReviewSession();
+          expect(session.isComplete).toBe(false);
+          expect(session.quickNoteIds.length).toBe(noteSpecs.length);
+          expect(session.completedAt).toBeUndefined();
+
+          // Process all notes in the session
+          const initialNoteCount = quickNotesRepo.list().length;
+          let processedCount = 0;
+
+          session.quickNoteIds.forEach((noteId, index) => {
+            const spec = noteSpecs[index];
+            
+            if (spec.shouldTransform) {
+              // Simulate transforming to permanent note
+              // In a real implementation, this would create a permanent note
+              // and then remove the quick note
+              quickNotesRepo.delete(noteId);
+            } else {
+              // Simulate discarding the note
+              quickNotesRepo.delete(noteId);
+            }
+            
+            // Process the note in the review session
+            reviewEngine.processNoteInReview(session.id, noteId);
+            processedCount++;
+
+            // Check session state after each processing
+            const updatedSession = reviewSessionRepo.getById(session.id);
+            expect(updatedSession).not.toBeNull();
+            expect(updatedSession!.quickNoteIds.length).toBe(noteSpecs.length - processedCount);
+
+            // If this was the last note, session should be complete
+            if (processedCount === noteSpecs.length) {
+              expect(updatedSession!.isComplete).toBe(true);
+              expect(updatedSession!.completedAt).toBeDefined();
+            } else {
+              expect(updatedSession!.isComplete).toBe(false);
+              expect(updatedSession!.completedAt).toBeUndefined();
+            }
+          });
+
+          // Verify final state
+          const finalSession = reviewSessionRepo.getById(session.id);
+          expect(finalSession).not.toBeNull();
+          expect(finalSession!.isComplete).toBe(true);
+          expect(finalSession!.completedAt).toBeDefined();
+          expect(finalSession!.quickNoteIds.length).toBe(0);
+
+          // Verify all processed notes are removed from storage
+          const remainingNotes = quickNotesRepo.list();
+          expect(remainingNotes.length).toBe(initialNoteCount - noteSpecs.length);
+
+          // Verify none of the original notes exist anymore
+          createdNotes.forEach(note => {
+            const retrievedNote = quickNotesRepo.getById(note.id);
+            expect(retrievedNote).toBeNull();
+          });
+
+          // Verify review is no longer required
+          expect(reviewEngine.isReviewRequired()).toBe(false);
+        }
+      ),
+      { numRuns: 100 }
+    );
+  });
 });

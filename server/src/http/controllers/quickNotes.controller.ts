@@ -93,3 +93,28 @@ export function makeDeleteQuickNoteHandler(container: Container) {
     return sendSuccess(res, { message: 'Quick note deleted successfully' });
   });
 }
+
+export function makeGetQuickNotesStatusHandler(container: Container) {
+  return asyncHandler(async (_req: Request, res: Response) => {
+    const quickNotes = container.services.quickNotes.list();
+    const reviewEngine = container.services.reviewEngine;
+    
+    const currentCount = quickNotes.length;
+    const maxQuickNotes = container.config.quickNotes.maxQuickNotes;
+    const canCreateNew = reviewEngine.canCreateNewQuickNote();
+    const isReviewRequired = reviewEngine.isReviewRequired();
+    const notesRequiringReview = reviewEngine.getNotesRequiringReview();
+    
+    return sendSuccess(res, {
+      status: {
+        currentCount,
+        maxQuickNotes,
+        canCreateNew,
+        isReviewRequired,
+        notesRequiringReviewCount: notesRequiringReview.length,
+        isAtLimit: currentCount >= maxQuickNotes,
+        remainingSlots: Math.max(0, maxQuickNotes - currentCount)
+      }
+    });
+  });
+}

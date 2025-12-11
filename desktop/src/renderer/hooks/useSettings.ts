@@ -10,6 +10,8 @@ export function useSettings(isOpen: boolean) {
   const [modelName, setModelName] = useState('');
   const [globalShortcut, setGlobalShortcut] = useState('');
   const [defaultMode, setDefaultMode] = useState<'chat' | 'note-taking'>('chat');
+  const [maxQuickNotes, setMaxQuickNotes] = useState(10);
+  const [reviewAgeThresholdHours, setReviewAgeThresholdHours] = useState(24);
   const [isLoading, setIsLoading] = useState(false);
   const [saveStatus, setSaveStatus] = useState<string>('');
 
@@ -29,6 +31,8 @@ export function useSettings(isOpen: boolean) {
       setModelName(settings.modelName || '');
       setGlobalShortcut(settings.globalShortcut || 'CmdOrCtrl+Shift+Space');
       setDefaultMode(settings.defaultMode || 'chat');
+      setMaxQuickNotes(settings.maxQuickNotes || 10);
+      setReviewAgeThresholdHours(settings.reviewAgeThresholdHours || 24);
     } catch (error) {
       console.error('Failed to load settings:', error);
     }
@@ -47,6 +51,8 @@ export function useSettings(isOpen: boolean) {
         modelName: modelName,
         globalShortcut: globalShortcut,
         defaultMode: defaultMode,
+        maxQuickNotes: maxQuickNotes,
+        reviewAgeThresholdHours: reviewAgeThresholdHours,
       };
 
       await settingsService.saveAllSettings(settings);
@@ -61,7 +67,7 @@ export function useSettings(isOpen: boolean) {
     } finally {
       setIsLoading(false);
     }
-  }, [openaiKey, openrouterKey, ollamaUrl, provider, modelName, globalShortcut, defaultMode]);
+  }, [openaiKey, openrouterKey, ollamaUrl, provider, modelName, globalShortcut, defaultMode, maxQuickNotes, reviewAgeThresholdHours]);
 
   return {
     // State
@@ -72,6 +78,8 @@ export function useSettings(isOpen: boolean) {
     modelName,
     globalShortcut,
     defaultMode,
+    maxQuickNotes,
+    reviewAgeThresholdHours,
     isLoading,
     saveStatus,
     // Setters
@@ -82,6 +90,8 @@ export function useSettings(isOpen: boolean) {
     setModelName,
     setGlobalShortcut,
     setDefaultMode,
+    setMaxQuickNotes,
+    setReviewAgeThresholdHours,
     // Actions
     loadSettings,
     saveSettings,

@@ -11,6 +11,10 @@ export interface AppConfig {
   openrouterApiKey?: string;
   ollamaBaseUrl?: string;
   defaultMode?: 'chat' | 'note-taking';
+  quickNotes: {
+    maxQuickNotes: number;
+    reviewAgeThresholdHours: number;
+  };
   rag: {
     similarityThreshold: number;
     fallbackChunks: number;
@@ -34,6 +38,10 @@ export function loadConfig(cwd: string = process.cwd()): AppConfig {
     openrouterApiKey: process.env.OPENROUTER_API_KEY,
     ollamaBaseUrl: process.env.OLLAMA_BASE_URL,
     defaultMode: (process.env.DEFAULT_MODE as 'chat' | 'note-taking' | undefined) || 'chat',
+    quickNotes: {
+      maxQuickNotes: Number(process.env.MAX_QUICK_NOTES || 10),
+      reviewAgeThresholdHours: Number(process.env.REVIEW_AGE_THRESHOLD_HOURS || 24),
+    },
     rag: {
       similarityThreshold: Number(process.env.RAG_SIMILARITY_THRESHOLD || 0.35),
       fallbackChunks: Number(process.env.RAG_FALLBACK_CHUNKS || 5),

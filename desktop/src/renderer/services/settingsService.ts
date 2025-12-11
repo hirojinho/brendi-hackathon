@@ -13,7 +13,7 @@ export class SettingsService {
 
   async loadAllSettings(): Promise<Settings> {
     try {
-      const [openaiApiKey, openrouterApiKey, ollamaBaseUrl, provider, modelName, globalShortcut, defaultMode] = await Promise.all([
+      const [openaiApiKey, openrouterApiKey, ollamaBaseUrl, provider, modelName, globalShortcut, defaultMode, maxQuickNotes, reviewAgeThresholdHours] = await Promise.all([
         this.loadSetting('openaiApiKey'),
         this.loadSetting('openrouterApiKey'),
         this.loadSetting('ollamaBaseUrl'),
@@ -21,6 +21,8 @@ export class SettingsService {
         this.loadSetting('modelName'),
         window.electronAPI.getShortcut(),
         this.loadSetting('defaultMode'),
+        this.loadSetting('maxQuickNotes'),
+        this.loadSetting('reviewAgeThresholdHours'),
       ]);
 
       return {
@@ -31,6 +33,8 @@ export class SettingsService {
         modelName: modelName || undefined,
         globalShortcut: globalShortcut || undefined,
         defaultMode: (defaultMode as 'chat' | 'note-taking') || undefined,
+        maxQuickNotes: maxQuickNotes ? parseInt(maxQuickNotes, 10) : undefined,
+        reviewAgeThresholdHours: reviewAgeThresholdHours ? parseInt(reviewAgeThresholdHours, 10) : undefined,
       };
     } catch (error) {
       console.error('Failed to load settings:', error);
@@ -55,6 +59,8 @@ export class SettingsService {
         this.saveSetting('provider', settings.provider || ''),
         this.saveSetting('modelName', settings.modelName || ''),
         this.saveSetting('defaultMode', settings.defaultMode || ''),
+        this.saveSetting('maxQuickNotes', settings.maxQuickNotes?.toString() || '10'),
+        this.saveSetting('reviewAgeThresholdHours', settings.reviewAgeThresholdHours?.toString() || '24'),
       ]);
       
       // Save shortcut separately as it has special handling

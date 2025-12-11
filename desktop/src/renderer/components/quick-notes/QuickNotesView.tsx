@@ -9,6 +9,7 @@ import { QuickNotesHeader } from './QuickNotesHeader';
 import { QuickNotesFilters } from './QuickNotesFilters';
 import { QuickNoteCard } from './QuickNoteCard';
 import { SourcesManagementPanel } from './SourcesManagementPanel';
+import { QuickNotesStatusIndicator } from './QuickNotesStatusIndicator';
 import '../QuickNotesView.css';
 
 interface QuickNotesViewProps {
@@ -155,6 +156,8 @@ const QuickNotesView: React.FC<QuickNotesViewProps> = ({ onBack }) => {
           onDeleteContext={handleDeleteContext}
         />
       )}
+
+      <QuickNotesStatusIndicator onReload={loadData} />
 
       <QuickNotesFilters
         searchQuery={searchQuery}

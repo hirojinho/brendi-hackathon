@@ -374,6 +374,29 @@ ipcMain.handle('quick-notes:delete', async (_event, id: string) => {
   }
 });
 
+ipcMain.handle('quick-notes:status', async () => {
+  if (!backendUrl) {
+    throw new Error('Backend not initialized');
+  }
+  
+  try {
+    const response = await fetch(`${backendUrl}/api/quick-notes/status`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'Unknown error' }));
+      throw new Error(error.error || `HTTP ${response.status}`);
+    }
+    
+    return await response.json();
+  } catch (error: any) {
+    console.error('[Main] Quick notes status error:', error);
+    throw error;
+  }
+});
+
 ipcMain.handle('contexts:list', async (_event, options?: { hierarchy?: boolean }) => {
   if (!backendUrl) {
     throw new Error('Backend not initialized');

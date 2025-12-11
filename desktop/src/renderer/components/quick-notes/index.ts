@@ -3,4 +3,5 @@ export { QuickNotesHeader } from './QuickNotesHeader';
 export { QuickNotesFilters } from './QuickNotesFilters';
 export { SourcesManagementPanel } from './SourcesManagementPanel';
 export { QuickNoteCard } from './QuickNoteCard';
+export { QuickNotesStatusIndicator } from './QuickNotesStatusIndicator';
 

@@ -1,0 +1,44 @@
+.quick-notes-status-indicator {
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  margin-bottom: 12px;
+  border: 1px solid;
+  transition: all 0.2s ease;
+}
+
+.quick-notes-status-indicator.normal {
+  background-color: rgba(34, 197, 94, 0.1);
+  border-color: rgba(34, 197, 94, 0.3);
+  color: rgb(34, 197, 94);
+}
+
+.quick-notes-status-indicator.caution {
+  background-color: rgba(251, 191, 36, 0.1);
+  border-color: rgba(251, 191, 36, 0.3);
+  color: rgb(251, 191, 36);
+}
+
+.quick-notes-status-indicator.warning {
+  background-color: rgba(249, 115, 22, 0.1);
+  border-color: rgba(249, 115, 22, 0.3);
+  color: rgb(249, 115, 22);
+}
+
+.quick-notes-status-indicator.danger {
+  background-color: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: rgb(239, 68, 68);
+}
+
+.status-text {
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.remaining-slots {
+  font-size: 11px;
+  opacity: 0.8;
+  font-weight: 400;
+}

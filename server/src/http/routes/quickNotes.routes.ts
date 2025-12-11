@@ -5,12 +5,14 @@ import {
   makeListQuickNotesHandler,
   makeGetQuickNoteHandler,
   makeUpdateQuickNoteHandler,
-  makeDeleteQuickNoteHandler
+  makeDeleteQuickNoteHandler,
+  makeGetQuickNotesStatusHandler
 } from '../controllers/quickNotes.controller.js';
 
 export function registerQuickNotesRoutes(app: Express, container: Container) {
   app.post('/api/quick-notes', makeCreateQuickNoteHandler(container));
   app.get('/api/quick-notes', makeListQuickNotesHandler(container));
+  app.get('/api/quick-notes/status', makeGetQuickNotesStatusHandler(container));
   app.get('/api/quick-notes/:id', makeGetQuickNoteHandler(container));
   app.patch('/api/quick-notes/:id', makeUpdateQuickNoteHandler(container));
   app.delete('/api/quick-notes/:id', makeDeleteQuickNoteHandler(container));

@@ -16,6 +16,16 @@ export interface UpdateQuickNoteRequest {
   contextId?: string | null;
 }
 
+export interface QuickNotesStatus {
+  currentCount: number;
+  maxQuickNotes: number;
+  canCreateNew: boolean;
+  isReviewRequired: boolean;
+  notesRequiringReviewCount: number;
+  isAtLimit: boolean;
+  remainingSlots: number;
+}
+
 export class QuickNotesService {
   async list(): Promise<QuickNote[]> {
     try {
@@ -49,6 +59,15 @@ export class QuickNotesService {
       await window.electronAPI.deleteQuickNote(id);
     } catch (error: any) {
       throw new Error(`Failed to delete quick note: ${error.message || 'Unknown error'}`);
+    }
+  }
+
+  async getStatus(): Promise<QuickNotesStatus> {
+    try {
+      const result = await window.electronAPI.getQuickNotesStatus();
+      return result.status;
+    } catch (error: any) {
+      throw new Error(`Failed to get quick notes status: ${error.message || 'Unknown error'}`);
     }
   }
 }

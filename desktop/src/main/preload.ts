@@ -33,6 +33,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getQuickNote: (id: string) => ipcRenderer.invoke('quick-notes:get', id),
   updateQuickNote: (payload: { id: string; title?: string; content?: string; tags?: string[]; contextId?: string | null }) => ipcRenderer.invoke('quick-notes:update', payload),
   deleteQuickNote: (id: string) => ipcRenderer.invoke('quick-notes:delete', id),
+  getQuickNotesStatus: () => ipcRenderer.invoke('quick-notes:status'),
   
   // Contexts API
   listContexts: (options?: { hierarchy?: boolean }) => ipcRenderer.invoke('contexts:list', options),
@@ -93,6 +94,7 @@ declare global {
       getQuickNote: (id: string) => Promise<{ note: { id: string; title: string; content: string; tags: string[]; createdAt: string; lastModified: string } }>;
       updateQuickNote: (payload: { id: string; title?: string; content?: string; tags?: string[]; contextId?: string | null }) => Promise<{ note: { id: string; title: string; content: string; tags: string[]; contextId: string | null; createdAt: string; lastModified: string } }>;
       deleteQuickNote: (id: string) => Promise<{ message: string }>;
+      getQuickNotesStatus: () => Promise<{ status: { currentCount: number; maxQuickNotes: number; canCreateNew: boolean; isReviewRequired: boolean; notesRequiringReviewCount: number; isAtLimit: boolean; remainingSlots: number } }>;
       listContexts: (options?: { hierarchy?: boolean }) => Promise<{ contexts: Array<{ id: string; name: string; description: string; parentId: string | null; createdAt: string; lastModified: string; children?: any[] }> }>;
       createContext: (payload: { name: string; description?: string; parentId?: string | null }) => Promise<{ context: { id: string; name: string; description: string; parentId: string | null; createdAt: string; lastModified: string } }>;
       updateContext: (payload: { id: string; name?: string; description?: string; parentId?: string | null }) => Promise<{ context: { id: string; name: string; description: string; parentId: string | null; createdAt: string; lastModified: string } }>;
