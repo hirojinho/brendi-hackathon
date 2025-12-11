@@ -1248,3 +1248,194 @@ describe('Quick Notes Property-Based Tests', () => {
     );
   });
 });
+
+describe('Integration Tests - Application Flow', () => {
+  let database: TestQuickNotesDatabase;
+  let testDbPath: string;
+
+  beforeEach(() => {
+    testDbPath = path.join(process.cwd(), `test_integration_${Date.now()}_${Math.random()}.db`);
+    database = new TestQuickNotesDatabase(testDbPath);
+  });
+
+  afterEach(() => {
+    database.close();
+    if (fs.existsSync(testDbPath)) {
+      fs.unlinkSync(testDbPath);
+    }
+  });
+
+  test('Complete smart notes workflow integration', () => {
+    const quickNotesRepo = new TestQuickNotesRepository(database);
+    const reviewSessionRepo = new TestReviewSessionRepository(database);
+    const reviewEngine = new ReviewEngine(quickNotesRepo, reviewSessionRepo, {
+      reviewAgeThresholdHours: 24,
+      maxQuickNotes: 3 // Small limit for testing
+    });
+
+    const now = new Date();
+    
+    // Step 1: Create notes up to the limit
+    const note1: QuickNoteEntity = {
+      id: randomUUID(),
+      title: 'First Note',
+      content: 'This is my first note',
+      tags: ['test'],
+      contextId: null,
+      createdAt: now.toISOString(),
+      lastModified: now.toISOString(),
+      isReviewRequired: false
+    };
+    
+    const note2: QuickNoteEntity = {
+      id: randomUUID(),
+      title: 'Second Note',
+      content: 'This is my second note',
+      tags: ['test'],
+      contextId: null,
+      createdAt: now.toISOString(),
+      lastModified: now.toISOString(),
+      isReviewRequired: false
+    };
+    
+    const note3: QuickNoteEntity = {
+      id: randomUUID(),
+      title: 'Third Note',
+      content: 'This is my third note',
+      tags: ['test'],
+      contextId: null,
+      createdAt: now.toISOString(),
+      lastModified: now.toISOString(),
+      isReviewRequired: false
+    };
+
+    // Should be able to create notes up to limit
+    expect(reviewEngine.canCreateNewQuickNote()).toBe(true);
+    quickNotesRepo.save(note1);
+    
+    expect(reviewEngine.canCreateNewQuickNote()).toBe(true);
+    quickNotesRepo.save(note2);
+    
+    expect(reviewEngine.canCreateNewQuickNote()).toBe(true);
+    quickNotesRepo.save(note3);
+    
+    // Step 2: Verify limit enforcement
+    expect(reviewEngine.canCreateNewQuickNote()).toBe(false);
+    expect(quickNotesRepo.list().length).toBe(3);
+    
+    // Step 3: Make notes old to trigger review requirement
+    const oldTime = new Date(now.getTime() - (25 * 60 * 60 * 1000)); // 25 hours ago
+    quickNotesRepo.update(note1.id, { createdAt: oldTime.toISOString() });
+    
+    // Step 4: Verify review is required and new notes blocked
+    expect(reviewEngine.isReviewRequired()).toBe(true);
+    expect(reviewEngine.canCreateNewQuickNote()).toBe(false);
+    
+    // Step 5: Create and process review session
+    const session = reviewEngine.createReviewSession();
+    expect(session.quickNoteIds.length).toBe(1); // Only note1 is old
+    expect(session.isComplete).toBe(false);
+    
+    // Step 6: Process the old note (simulate transformation to permanent note)
+    database.savePermanentNote({
+      id: randomUUID(),
+      title: 'Enhanced First Note',
+      content: 'This is my enhanced first note with more details',
+      createdAt: now.toISOString(),
+      updatedAt: now.toISOString(),
+      tags: ['test', 'enhanced'],
+      sourceQuickNoteId: note1.id
+    });
+    
+    // Remove the quick note and process in review
+    quickNotesRepo.delete(note1.id);
+    reviewEngine.processNoteInReview(session.id, note1.id);
+    
+    // Step 7: Verify session completion and restored functionality
+    const completedSession = reviewSessionRepo.getById(session.id);
+    expect(completedSession?.isComplete).toBe(true);
+    expect(reviewEngine.isReviewRequired()).toBe(false);
+    expect(reviewEngine.canCreateNewQuickNote()).toBe(true); // Can create again since under limit
+    
+    // Step 8: Verify permanent note was created
+    const permanentNotes = database.getAllPermanentNotes();
+    expect(permanentNotes.length).toBe(1);
+    expect(permanentNotes[0].title).toBe('Enhanced First Note');
+    expect(permanentNotes[0].sourceQuickNoteId).toBe(note1.id);
+    
+    // Step 9: Verify search functionality
+    const searchResults = database.searchPermanentNotes('enhanced');
+    expect(searchResults.length).toBe(1);
+    expect(searchResults[0].title).toBe('Enhanced First Note');
+    
+    console.log('✅ Complete smart notes workflow integration test passed');
+  });
+
+  test('Settings-based configuration integration', () => {
+    // Test with different settings
+    const customConfig: ReviewEngineConfig = {
+      reviewAgeThresholdHours: 1, // 1 hour for faster testing
+      maxQuickNotes: 2
+    };
+    
+    const quickNotesRepo = new TestQuickNotesRepository(database);
+    const reviewSessionRepo = new TestReviewSessionRepository(database);
+    const reviewEngine = new ReviewEngine(quickNotesRepo, reviewSessionRepo, customConfig);
+    
+    const now = new Date();
+    const oneHourAgo = new Date(now.getTime() - (1.5 * 60 * 60 * 1000)); // 1.5 hours ago
+    
+    // Create a note that's older than the custom threshold
+    const oldNote: QuickNoteEntity = {
+      id: randomUUID(),
+      title: 'Old Note',
+      content: 'This note is old',
+      tags: [],
+      contextId: null,
+      createdAt: oneHourAgo.toISOString(),
+      lastModified: oneHourAgo.toISOString(),
+      isReviewRequired: false
+    };
+    
+    quickNotesRepo.save(oldNote);
+    
+    // Verify custom threshold is respected
+    expect(reviewEngine.isReviewRequired()).toBe(true);
+    expect(reviewEngine.canCreateNewQuickNote()).toBe(false);
+    
+    // Verify custom note limit
+    const recentNote: QuickNoteEntity = {
+      id: randomUUID(),
+      title: 'Recent Note',
+      content: 'This note is recent',
+      tags: [],
+      contextId: null,
+      createdAt: now.toISOString(),
+      lastModified: now.toISOString(),
+      isReviewRequired: false
+    };
+    
+    // Process the old note first to allow new creation
+    const session = reviewEngine.createReviewSession();
+    quickNotesRepo.delete(oldNote.id);
+    reviewEngine.processNoteInReview(session.id, oldNote.id);
+    
+    // Now should be able to create up to the custom limit
+    expect(reviewEngine.canCreateNewQuickNote()).toBe(true);
+    quickNotesRepo.save(recentNote);
+    
+    expect(reviewEngine.canCreateNewQuickNote()).toBe(true);
+    const secondNote: QuickNoteEntity = {
+      ...recentNote,
+      id: randomUUID(),
+      title: 'Second Recent Note'
+    };
+    quickNotesRepo.save(secondNote);
+    
+    // Should hit the custom limit of 2
+    expect(reviewEngine.canCreateNewQuickNote()).toBe(false);
+    expect(quickNotesRepo.list().length).toBe(2);
+    
+    console.log('✅ Settings-based configuration integration test passed');
+  });
+});

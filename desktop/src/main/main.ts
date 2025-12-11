@@ -70,10 +70,14 @@ async function startBackend() {
     const openaiKey = configStore.get('openaiApiKey') as string | undefined;
     const openrouterKey = configStore.get('openrouterApiKey') as string | undefined;
     const ollamaUrl = configStore.get('ollamaBaseUrl') as string | undefined;
+    const maxQuickNotes = configStore.get('maxQuickNotes') as number | undefined;
+    const reviewAgeThresholdHours = configStore.get('reviewAgeThresholdHours') as number | undefined;
     
     if (openaiKey) envVars.OPENAI_API_KEY = openaiKey;
     if (openrouterKey) envVars.OPENROUTER_API_KEY = openrouterKey;
     if (ollamaUrl) envVars.OLLAMA_BASE_URL = ollamaUrl;
+    if (maxQuickNotes) envVars.MAX_QUICK_NOTES = maxQuickNotes.toString();
+    if (reviewAgeThresholdHours) envVars.REVIEW_AGE_THRESHOLD_HOURS = reviewAgeThresholdHours.toString();
     
     // Initialize backend
     const result = await initializeBackend(port, envVars);
@@ -680,12 +684,24 @@ ipcMain.handle('config:get', (_event, key: string) => {
   return configStore.get(key);
 });
 
-ipcMain.handle('config:set', (_event, key: string, value: any) => {
+ipcMain.handle('config:set', async (_event, key: string, value: any) => {
   configStore.set(key, value);
   
-  // If API keys changed, backend needs restart (future enhancement)
-  if (['openaiApiKey', 'openrouterApiKey', 'ollamaBaseUrl'].includes(key)) {
-    // TODO: Restart backend with new env vars
+  // If API keys or quick notes settings changed, backend needs restart
+  if (['openaiApiKey', 'openrouterApiKey', 'ollamaBaseUrl', 'maxQuickNotes', 'reviewAgeThresholdHours'].includes(key)) {
+    try {
+      // Close existing backend
+      if (backendServer && 'close' in backendServer) {
+        await new Promise<void>((resolve) => {
+          backendServer.close(() => resolve());
+        });
+      }
+      
+      // Restart backend with new settings
+      await startBackend();
+    } catch (error) {
+      console.error('[Main] Failed to restart backend with new settings:', error);
+    }
   }
   
   // If shortcut changed, re-register it

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNoteTaking } from '../../hooks/useNoteTaking';
 import { useContexts } from '../../hooks/useContexts';
 import { useReview } from '../../hooks/useReview';
+import { useQuickNotesStatus } from '../../hooks/useQuickNotesStatus';
 import { quickNotesService } from '../../services/quickNotesService';
 import { ChatHeader } from '../layout';
 import { ChatInput } from '../chat';
@@ -43,6 +44,11 @@ const NoteTakingAgent: React.FC = () => {
     canCreateNewNote,
     loadReviewStatus
   } = useReview({ autoLoad: true });
+
+  const {
+    status: quickNotesStatus,
+    reload: reloadQuickNotesStatus
+  } = useQuickNotesStatus();
 
   const {
     input,
@@ -168,13 +174,28 @@ const NoteTakingAgent: React.FC = () => {
       return;
     }
     
+    // Check if at note limit
+    if (quickNotesStatus && !quickNotesStatus.canCreateNew) {
+      if (quickNotesStatus.isAtLimit) {
+        setNotification(`Note limit reached: ${quickNotesStatus.currentCount}/${quickNotesStatus.maxQuickNotes}. Review notes to continue.`);
+        setShowReview(true);
+        return;
+      }
+      if (quickNotesStatus.isReviewRequired) {
+        setNotification(`Review required before creating new notes`);
+        setShowReview(true);
+        return;
+      }
+    }
+    
     processInput();
   };
 
   const handleReviewComplete = () => {
     setShowReview(false);
-    // Refresh review status after completion
+    // Refresh review status and quick notes status after completion
     loadReviewStatus();
+    reloadQuickNotesStatus();
   };
 
   const handleReviewCancel = () => {
@@ -218,6 +239,16 @@ const NoteTakingAgent: React.FC = () => {
         {isReviewRequired && (
           <div className="status-indicator review-required">
             {reviewStatus?.reviewCount || 0} notes need review
+          </div>
+        )}
+        {quickNotesStatus && quickNotesStatus.isAtLimit && !isReviewRequired && (
+          <div className="status-indicator note-limit">
+            {quickNotesStatus.currentCount}/{quickNotesStatus.maxQuickNotes} notes
+          </div>
+        )}
+        {quickNotesStatus && !quickNotesStatus.isAtLimit && !isReviewRequired && quickNotesStatus.currentCount > 0 && (
+          <div className="status-indicator note-count">
+            {quickNotesStatus.currentCount}/{quickNotesStatus.maxQuickNotes}
           </div>
         )}
         {selectedContextId && (
@@ -264,10 +295,14 @@ const NoteTakingAgent: React.FC = () => {
           value={input}
           onChange={setInput}
           onSubmit={handleSubmit}
-          disabled={isLoading || isReviewRequired}
+          disabled={isLoading || isReviewRequired || (quickNotesStatus && !quickNotesStatus.canCreateNew)}
           placeholder={
             isReviewRequired 
               ? "Review required - press Tab to start review"
+              : quickNotesStatus && quickNotesStatus.isAtLimit
+              ? "Note limit reached - review notes to continue"
+              : quickNotesStatus && !quickNotesStatus.canCreateNew
+              ? "Review required before creating new notes"
               : "Capture your thoughts..."
           }
         />

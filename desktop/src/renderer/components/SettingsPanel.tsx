@@ -16,6 +16,8 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose }) => {
     modelName,
     globalShortcut,
     defaultMode,
+    maxQuickNotes,
+    reviewAgeThresholdHours,
     isLoading,
     saveStatus,
     setOpenaiKey,
@@ -25,6 +27,8 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose }) => {
     setModelName,
     setGlobalShortcut,
     setDefaultMode,
+    setMaxQuickNotes,
+    setReviewAgeThresholdHours,
     saveSettings,
   } = useSettings(isOpen);
 
@@ -156,6 +160,43 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose }) => {
               <small>
                 Chat Mode: Interactive Q&A with automatic note generation. Note-Taking Agent Mode: Quick natural language input for fast note capture.
               </small>
+            </div>
+          </div>
+
+          <div className="settings-section">
+            <h3>Smart Notes Configuration</h3>
+            <p className="settings-description">
+              Configure note limits and review settings for the smart notes workflow.
+            </p>
+
+            <div className="settings-field">
+              <label>
+                Maximum Quick Notes
+                <input
+                  type="number"
+                  value={maxQuickNotes}
+                  onChange={(e) => setMaxQuickNotes(parseInt(e.target.value, 10) || 10)}
+                  min="1"
+                  max="50"
+                  disabled={isLoading}
+                />
+              </label>
+              <small>Maximum number of quick notes before review is required (default: 10)</small>
+            </div>
+
+            <div className="settings-field">
+              <label>
+                Review Age Threshold (hours)
+                <input
+                  type="number"
+                  value={reviewAgeThresholdHours}
+                  onChange={(e) => setReviewAgeThresholdHours(parseInt(e.target.value, 10) || 24)}
+                  min="1"
+                  max="168"
+                  disabled={isLoading}
+                />
+              </label>
+              <small>Hours after which quick notes require review (default: 24 hours)</small>
             </div>
           </div>
 

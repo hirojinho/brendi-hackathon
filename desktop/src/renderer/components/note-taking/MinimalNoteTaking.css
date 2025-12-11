@@ -71,6 +71,18 @@
   border-color: rgba(0, 122, 255, 0.2);
 }
 
+.status-indicator.note-limit {
+  background: rgba(255, 149, 0, 0.1);
+  color: #ff9500;
+  border-color: rgba(255, 149, 0, 0.2);
+}
+
+.status-indicator.note-count {
+  background: rgba(142, 142, 147, 0.1);
+  color: #8e8e93;
+  border-color: rgba(142, 142, 147, 0.2);
+}
+
 /* Notification overlay */
 .notification-overlay {
   position: absolute;
