@@ -1,10 +1,24 @@
 import { QuickNotesRepository } from '../../domain/ports/repositories/index.js';
 import { QuickNoteEntity } from '../../domain/entities/index.js';
+import { ReviewEngine } from '../review/ReviewEngine.js';
 
 export class QuickNotesService {
-  constructor(private readonly quickNotesRepo: QuickNotesRepository) {}
+  constructor(
+    private readonly quickNotesRepo: QuickNotesRepository,
+    private readonly reviewEngine?: ReviewEngine
+  ) {}
 
   create(note: QuickNoteEntity): void {
+    // Validate content is not empty or whitespace only
+    if (!note.content || note.content.trim().length === 0) {
+      throw new Error('Note content cannot be empty or whitespace only');
+    }
+
+    // Check if new notes can be created (review enforcement)
+    if (this.reviewEngine && !this.reviewEngine.canCreateNewQuickNote()) {
+      throw new Error('Cannot create new quick note: review required or note limit reached');
+    }
+
     this.quickNotesRepo.save(note);
   }
 
