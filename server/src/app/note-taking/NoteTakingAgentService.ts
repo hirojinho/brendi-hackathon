@@ -209,7 +209,8 @@ export class NoteTakingAgentService {
             tags: note.tags,
             contextId: finalContextId,
             createdAt: nowIso,
-            lastModified: nowIso
+            lastModified: nowIso,
+            isReviewRequired: false
           });
           createdNoteIds.push(noteId);
         } catch (noteError: any) {

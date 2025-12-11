@@ -58,6 +58,25 @@ export interface QuickNoteEntity {
   contextId: string | null;
   createdAt: string;
   lastModified: string;
+  isReviewRequired: boolean;
+}
+
+export interface PermanentNoteEntity {
+  id: string;
+  title: string;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+  tags: string[];
+  sourceQuickNoteId?: string;
+}
+
+export interface ReviewSessionEntity {
+  id: string;
+  quickNoteIds: string[];
+  startedAt: string;
+  completedAt?: string;
+  isComplete: boolean;
 }
 
 

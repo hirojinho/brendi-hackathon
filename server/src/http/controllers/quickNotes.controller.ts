@@ -21,7 +21,8 @@ export function makeCreateQuickNoteHandler(container: Container) {
       tags: Array.isArray(tags) ? tags : [],
       contextId: contextId || null,
       createdAt: nowIso,
-      lastModified: nowIso
+      lastModified: nowIso,
+      isReviewRequired: false
     };
 
     container.services.quickNotes.create(quickNote);

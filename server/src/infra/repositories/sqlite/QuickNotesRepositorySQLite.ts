@@ -13,7 +13,8 @@ export class QuickNotesRepositorySQLite implements QuickNotesRepository {
       tags: note.tags,
       contextId: note.contextId || null,
       createdAt: new Date(note.createdAt),
-      lastModified: new Date(note.lastModified)
+      lastModified: new Date(note.lastModified),
+      isReviewRequired: note.isReviewRequired
     });
   }
 

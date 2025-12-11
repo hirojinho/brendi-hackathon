@@ -1,4 +1,4 @@
-import { DocumentEntity, DocumentChunkEntity, NoteEntity, RAGUsageEntity, QuickNoteEntity, ContextEntity } from '../../entities/index.js';
+import { DocumentEntity, DocumentChunkEntity, NoteEntity, RAGUsageEntity, QuickNoteEntity, ContextEntity, PermanentNoteEntity, ReviewSessionEntity } from '../../entities/index.js';
 
 export interface DocumentsRepository {
   save(document: Omit<DocumentEntity, 'id' | 'createdAt'>): number;
@@ -42,6 +42,24 @@ export interface ContextRepository {
   getById(id: string): ContextEntity | null;
   getChildren(parentId: string): ContextEntity[];
   delete(id: string): void;
+}
+
+export interface PermanentNotesRepository {
+  save(note: PermanentNoteEntity): void;
+  update(id: string, note: Partial<Omit<PermanentNoteEntity, 'id' | 'createdAt'>>): void;
+  list(): PermanentNoteEntity[];
+  getById(id: string): PermanentNoteEntity | null;
+  delete(id: string): void;
+  search(query: string): PermanentNoteEntity[];
+}
+
+export interface ReviewSessionRepository {
+  save(session: ReviewSessionEntity): void;
+  update(id: string, session: Partial<Omit<ReviewSessionEntity, 'id' | 'startedAt'>>): void;
+  list(): ReviewSessionEntity[];
+  getById(id: string): ReviewSessionEntity | null;
+  delete(id: string): void;
+  getActiveSession(): ReviewSessionEntity | null;
 }
 
 

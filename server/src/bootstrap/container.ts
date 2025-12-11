@@ -3,6 +3,8 @@ import { DocumentsRepositorySQLite } from '../infra/repositories/sqlite/Document
 import { DocumentChunksRepositorySQLite } from '../infra/repositories/sqlite/DocumentChunksRepositorySQLite.js';
 import { NotesRepositorySQLite } from '../infra/repositories/sqlite/NotesRepositorySQLite.js';
 import { QuickNotesRepositorySQLite } from '../infra/repositories/sqlite/QuickNotesRepositorySQLite.js';
+import { PermanentNotesRepositorySQLite } from '../infra/repositories/sqlite/PermanentNotesRepositorySQLite.js';
+import { ReviewSessionRepositorySQLite } from '../infra/repositories/sqlite/ReviewSessionRepositorySQLite.js';
 import { ContextRepositorySQLite } from '../infra/repositories/sqlite/ContextRepositorySQLite.js';
 import { UsageRepositoryFile } from '../infra/repositories/file/UsageRepositoryFile.js';
 import { OpenAIProvider } from '../infra/providers/llm/openai.js';
@@ -27,6 +29,8 @@ export interface Container {
     chunks: DocumentChunksRepositorySQLite;
     notes: NotesRepositorySQLite;
     quickNotes: QuickNotesRepositorySQLite;
+    permanentNotes: PermanentNotesRepositorySQLite;
+    reviewSessions: ReviewSessionRepositorySQLite;
     contexts: ContextRepositorySQLite;
     usage: UsageRepositoryFile;
   };
@@ -61,6 +65,8 @@ export function buildContainer(): Container {
     chunks: new DocumentChunksRepositorySQLite(),
     notes: new NotesRepositorySQLite(),
     quickNotes: new QuickNotesRepositorySQLite(),
+    permanentNotes: new PermanentNotesRepositorySQLite(),
+    reviewSessions: new ReviewSessionRepositorySQLite(),
     contexts: new ContextRepositorySQLite(),
     usage: new UsageRepositoryFile()
   };
