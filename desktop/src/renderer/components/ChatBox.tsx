@@ -14,7 +14,7 @@ const ChatBox: React.FC = () => {
     isLoading,
     currentResponse,
     model,
-    modelName,
+    // modelName, // Unused
     useRag,
     maxChunks,
     setInput,
@@ -22,7 +22,7 @@ const ChatBox: React.FC = () => {
     setUseRag,
     setMaxChunks,
     sendMessage,
-    clearChat,
+    // clearChat, // Unused
   } = useChat();
 
   const handleSubmit = (e: React.FormEvent) => {

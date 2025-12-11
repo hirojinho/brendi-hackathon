@@ -12,7 +12,7 @@ interface DesktopChatPanelProps {
 export const DesktopChatPanel: React.FC<DesktopChatPanelProps> = ({
   model,
   modelName,
-  embeddingProvider,
+  // embeddingProvider, // Unused
 }) => {
   const {
     messages,

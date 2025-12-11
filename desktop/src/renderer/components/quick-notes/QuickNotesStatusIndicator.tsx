@@ -6,7 +6,7 @@ interface QuickNotesStatusIndicatorProps {
   onReload?: () => void;
 }
 
-export const QuickNotesStatusIndicator: React.FC<QuickNotesStatusIndicatorProps> = ({ onReload }) => {
+export const QuickNotesStatusIndicator: React.FC<QuickNotesStatusIndicatorProps> = ({ /* onReload */ }) => {
   const { status, isLoading, error } = useQuickNotesStatus();
 
   if (isLoading || error || !status) {

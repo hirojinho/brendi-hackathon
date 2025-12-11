@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { DesktopSidebar } from './desktop/DesktopSidebar';
 import { DesktopChatPanel } from './desktop/DesktopChatPanel';
 import { DesktopNotesPanel } from './desktop/DesktopNotesPanel';

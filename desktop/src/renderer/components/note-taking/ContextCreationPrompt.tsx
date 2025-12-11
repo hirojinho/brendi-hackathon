@@ -36,7 +36,7 @@ export const ContextCreationPrompt: React.FC<ContextCreationPromptProps> = ({
           <label htmlFor="parent-context-select">Parent Source (optional):</label>
           <ContextSelector
             contexts={contexts}
-            value={pendingContext.parentId}
+            value={pendingContext.parentId || null}
             onChange={(parentId) => onContextChange({ parentId })}
             placeholder="No Parent (Top Level)"
             showNoneOption={true}

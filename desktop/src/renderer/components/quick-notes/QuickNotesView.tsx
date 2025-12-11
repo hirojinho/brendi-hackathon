@@ -3,8 +3,8 @@ import { quickNotesService, type QuickNote } from '../../services/quickNotesServ
 import { useContexts } from '../../hooks/useContexts';
 import { ChatHeader } from '../layout';
 import NotesGraphView from '../NotesGraphView';
-import { ContextSelector, ContextTree, ContextBadge } from '../contexts';
-import { getContextName, countNotesForContext } from '../../utils/contextUtils';
+// import { ContextSelector, ContextTree, ContextBadge } from '../contexts'; // Unused
+import { /* getContextName, */ countNotesForContext } from '../../utils/contextUtils';
 import { QuickNotesHeader } from './QuickNotesHeader';
 import { QuickNotesFilters } from './QuickNotesFilters';
 import { QuickNoteCard } from './QuickNoteCard';

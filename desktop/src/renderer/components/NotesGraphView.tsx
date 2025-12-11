@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { QuickNote } from '../services/quickNotesService';
 import { Context } from '../services/contextsService';
-import { ContextBadge } from './contexts';
+// import { ContextBadge } from './contexts'; // Unused
 import './NotesGraphView.css';
 
 interface NotesGraphViewProps {

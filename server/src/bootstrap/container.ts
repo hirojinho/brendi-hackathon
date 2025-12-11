@@ -19,6 +19,7 @@ import { RAGService } from '../app/documents/RAGService.js';
 import { DocumentIngestionService } from '../app/documents/DocumentIngestionService.js';
 import { NotesService } from '../app/notes/NotesService.js';
 import { QuickNotesService } from '../app/quickNotes/QuickNotesService.js';
+import { PermanentNotesService } from '../app/permanentNotes/PermanentNotesService.js';
 import { ContextsService } from '../app/contexts/ContextsService.js';
 import { NoteTakingAgentService } from '../app/note-taking/NoteTakingAgentService.js';
 import { ReviewEngine } from '../app/review/ReviewEngine.js';
@@ -54,6 +55,7 @@ export interface Container {
     ingestion: DocumentIngestionService;
     notes: NotesService;
     quickNotes: QuickNotesService;
+    permanentNotes: PermanentNotesService;
     contexts: ContextsService;
     noteTakingAgent: NoteTakingAgentService;
     reviewEngine: ReviewEngine;
@@ -119,6 +121,7 @@ export function buildContainer(): Container {
     ),
     notes: new NotesService(repositories.notes),
     quickNotes: new QuickNotesService(repositories.quickNotes, reviewEngine),
+    permanentNotes: new PermanentNotesService(repositories.permanentNotes, repositories.quickNotes),
     contexts: new ContextsService(repositories.contexts),
     reviewEngine: reviewEngine
   };

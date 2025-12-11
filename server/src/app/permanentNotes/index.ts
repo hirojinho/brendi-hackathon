@@ -1,0 +1,1 @@
+export { PermanentNotesService } from './PermanentNotesService.js';

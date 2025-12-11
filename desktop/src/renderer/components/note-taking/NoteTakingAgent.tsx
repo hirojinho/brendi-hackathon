@@ -6,8 +6,8 @@ import { ChatHeader } from '../layout';
 import { ChatInput } from '../chat';
 import SettingsPanel from '../SettingsPanel';
 import { QuickNotesView } from '../quick-notes';
-import { ContextSelector, ContextBadge } from '../contexts';
-import { getContextName } from '../../utils/contextUtils';
+// import { ContextSelector, ContextBadge } from '../contexts';
+// import { getContextName } from '../../utils/contextUtils';
 import { NoteTakingResult } from './NoteTakingResult';
 import { ContextCreationPrompt } from './ContextCreationPrompt';
 import { NoteTakingEmptyState } from './NoteTakingEmptyState';
@@ -27,7 +27,7 @@ const NoteTakingAgent: React.FC = () => {
 
   const {
     contexts,
-    loadContexts,
+    // loadContexts, // Unused
     createContext,
   } = useContexts({ hierarchy: true, autoLoad: true });
 

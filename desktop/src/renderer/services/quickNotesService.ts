@@ -30,7 +30,10 @@ export class QuickNotesService {
   async list(): Promise<QuickNote[]> {
     try {
       const result = await window.electronAPI.listQuickNotes();
-      return result.notes;
+      return result.notes.map((note: any) => ({
+        ...note,
+        contextId: note.contextId || null
+      }));
     } catch (error: any) {
       throw new Error(`Failed to list quick notes: ${error.message || 'Unknown error'}`);
     }
@@ -39,7 +42,10 @@ export class QuickNotesService {
   async getById(id: string): Promise<QuickNote> {
     try {
       const result = await window.electronAPI.getQuickNote(id);
-      return result.note;
+      return {
+        ...result.note,
+        contextId: (result.note as any).contextId || null
+      };
     } catch (error: any) {
       throw new Error(`Failed to get quick note: ${error.message || 'Unknown error'}`);
     }
@@ -48,7 +54,10 @@ export class QuickNotesService {
   async update(request: UpdateQuickNoteRequest): Promise<QuickNote> {
     try {
       const result = await window.electronAPI.updateQuickNote(request);
-      return result.note;
+      return {
+        ...result.note,
+        contextId: (result.note as any).contextId || null
+      };
     } catch (error: any) {
       throw new Error(`Failed to update quick note: ${error.message || 'Unknown error'}`);
     }
