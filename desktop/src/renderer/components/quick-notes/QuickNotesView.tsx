@@ -14,6 +14,7 @@ import PermanentNoteDetailView from './PermanentNoteDetailView';
 import { SourcesManagementPanel } from './SourcesManagementPanel';
 import { QuickNotesStatusIndicator } from './QuickNotesStatusIndicator';
 import '../QuickNotesView.css';
+import './MinimalQuickNotesView.css';
 
 interface QuickNotesViewProps {
   onBack?: () => void;
@@ -35,6 +36,7 @@ const QuickNotesView: React.FC<QuickNotesViewProps> = ({ onBack }) => {
   const [notesMode, setNotesMode] = useState<NotesMode>('quick');
   const [selectedPermanentNote, setSelectedPermanentNote] = useState<PermanentNote | null>(null);
   const [showDetailView, setShowDetailView] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(0);
 
   const {
     contexts,
@@ -45,6 +47,51 @@ const QuickNotesView: React.FC<QuickNotesViewProps> = ({ onBack }) => {
   useEffect(() => {
     loadData();
   }, [notesMode]);
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (document.activeElement?.tagName === 'INPUT') return;
+
+      if (e.key === 'Escape') {
+        if (onBack) {
+          onBack();
+        }
+        return;
+      }
+
+      if (filteredNotes.length === 0) return;
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setSelectedIndex(prev => Math.min(prev + 1, filteredNotes.length - 1));
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSelectedIndex(prev => Math.max(prev - 1, 0));
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        const selectedNote = filteredNotes[selectedIndex];
+        if (selectedNote) {
+          if (notesMode === 'quick') {
+            setSelectedNoteId(selectedNote.id);
+          } else {
+            handleSelectPermanentNote(selectedNote as PermanentNote);
+          }
+        }
+      } else if (e.key === 'Tab') {
+        e.preventDefault();
+        setNotesMode(notesMode === 'quick' ? 'permanent' : 'quick');
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [filteredNotes, selectedIndex, notesMode, onBack]);
+
+  // Reset selected index when notes change
+  useEffect(() => {
+    setSelectedIndex(0);
+  }, [filteredNotes]);
 
   const loadData = async () => {
     try {
@@ -248,114 +295,160 @@ const QuickNotesView: React.FC<QuickNotesViewProps> = ({ onBack }) => {
   }
 
   return (
-    <div className="quick-notes-view">
-      <ChatHeader
-        onSettingsClick={() => {}}
-        onClose={() => window.electronAPI.toggleOverlay()}
-      />
-
-      <QuickNotesHeader
-        onBack={onBack}
-        viewMode={viewMode}
-        onViewModeChange={setViewMode}
-        showSourcesManagement={showSourcesManagement}
-        onToggleSourcesManagement={() => setShowSourcesManagement(!showSourcesManagement)}
-      />
-
-      {/* Mode switcher */}
-      <div className="notes-mode-switcher">
-        <button 
-          className={`mode-button ${notesMode === 'quick' ? 'active' : ''}`}
-          onClick={() => handleModeSwitch('quick')}
-        >
-          Quick Notes
-        </button>
-        <button 
-          className={`mode-button ${notesMode === 'permanent' ? 'active' : ''}`}
-          onClick={() => handleModeSwitch('permanent')}
-        >
-          Knowledge Base
-        </button>
+    <div className="minimal-quick-notes">
+      {/* Minimal header */}
+      <div className="minimal-notes-header">
+        <h1 className="minimal-notes-title">
+          {notesMode === 'quick' ? 'Quick Notes' : 'Knowledge Base'}
+        </h1>
+        <div className="minimal-header-actions">
+          <div className="minimal-mode-switcher">
+            <button 
+              className={`minimal-mode-button ${notesMode === 'quick' ? 'active' : ''}`}
+              onClick={() => handleModeSwitch('quick')}
+            >
+              Notes
+            </button>
+            <button 
+              className={`minimal-mode-button ${notesMode === 'permanent' ? 'active' : ''}`}
+              onClick={() => handleModeSwitch('permanent')}
+            >
+              Knowledge
+            </button>
+          </div>
+          {onBack && (
+            <button onClick={onBack} className="minimal-back-btn">
+              ← Back
+            </button>
+          )}
+        </div>
       </div>
 
-      {showSourcesManagement && notesMode === 'quick' && (
-        <SourcesManagementPanel
-          contexts={contexts}
-          notes={notes}
-          onDeleteContext={handleDeleteContext}
+      {/* Search area */}
+      <div className="minimal-search-area">
+        <input
+          type="text"
+          placeholder={`Search ${notesMode === 'quick' ? 'notes' : 'knowledge base'}...`}
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="minimal-search-input"
+          autoFocus
         />
-      )}
+      </div>
 
-      {notesMode === 'quick' && <QuickNotesStatusIndicator onReload={loadData} />}
-
-      <QuickNotesFilters
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        selectedContextId={notesMode === 'quick' ? selectedContextId : null}
-        onContextChange={setSelectedContextId}
-        contexts={notesMode === 'quick' ? contexts : []}
-        showContextFilter={notesMode === 'quick'}
-      />
-
+      {/* Content area */}
       {isLoading ? (
-        <div className="quick-notes-loading">Loading {notesMode === 'quick' ? 'quick notes' : 'permanent notes'}...</div>
-      ) : viewMode === 'graph' && notesMode === 'quick' ? (
-        <NotesGraphView
-          notes={filteredNotes as QuickNote[]}
-          contexts={contexts}
-          selectedContextId={selectedContextId}
-          onNoteClick={(noteId) => {
-            setSelectedNoteId(noteId);
-            setViewMode('list');
-            // Scroll to note in list view
-            setTimeout(() => {
-              const element = document.querySelector(`[data-note-id="${noteId}"]`);
-              element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }, 100);
-          }}
-          onContextClick={(contextId) => {
-            setSelectedContextId(contextId);
-          }}
-        />
+        <div className="minimal-notes-loading">
+          Loading {notesMode === 'quick' ? 'notes' : 'knowledge base'}...
+        </div>
       ) : filteredNotes.length === 0 ? (
-        <div className="quick-notes-empty">
-          {searchQuery ? 'No notes match your search.' : 
-           notesMode === 'quick' ? 'No quick notes yet. Start taking notes in Note-Taking Agent Mode!' :
-           'No permanent notes yet. Transform some quick notes during review to build your knowledge base!'}
+        <div className="minimal-notes-empty">
+          <h3>
+            {searchQuery ? 'No matches found' : 
+             notesMode === 'quick' ? 'No notes yet' : 'No knowledge yet'}
+          </h3>
+          <p>
+            {searchQuery ? 'Try a different search term.' : 
+             notesMode === 'quick' ? 'Start capturing thoughts in the note-taking interface.' :
+             'Transform notes during review to build your knowledge base.'}
+          </p>
         </div>
       ) : (
-        <div className="quick-notes-list">
+        <div className="minimal-notes-list">
           {notesMode === 'quick' ? (
-            (filteredNotes as QuickNote[]).map((note) => (
-              <QuickNoteCard
+            (filteredNotes as QuickNote[]).map((note, index) => (
+              <div
                 key={note.id}
-                note={note}
-                contexts={contexts}
-                isEditing={editingNote?.id === note.id}
-                editingNote={editingNote}
-                isSelected={selectedNoteId === note.id}
-                onEdit={handleEdit}
-                onSave={handleSave}
-                onCancelEdit={handleCancelEdit}
-                onDelete={handleDelete}
-                onEditingNoteChange={setEditingNote}
-              />
+                className={`minimal-note-card ${selectedNoteId === note.id || selectedIndex === index ? 'highlighted' : ''}`}
+                data-note-id={note.id}
+                tabIndex={0}
+                onClick={() => {
+                  setSelectedNoteId(note.id);
+                  setSelectedIndex(index);
+                }}
+              >
+                <div className="minimal-note-header">
+                  <h3 className="minimal-note-title">{note.title}</h3>
+                  <div className="minimal-note-actions">
+                    <button 
+                      className="minimal-action-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEdit(note);
+                      }}
+                      title="Edit note"
+                    >
+                      ✏️
+                    </button>
+                    <button 
+                      className="minimal-action-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(note.id);
+                      }}
+                      title="Delete note"
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                </div>
+                <div className="minimal-note-content">{note.content}</div>
+                <div className="minimal-note-meta">
+                  <div className="minimal-note-tags">
+                    {note.tags.map((tag, index) => (
+                      <span key={index} className="minimal-note-tag">{tag}</span>
+                    ))}
+                  </div>
+                  <span>{new Date(note.createdAt).toLocaleDateString()}</span>
+                </div>
+              </div>
             ))
           ) : (
-            (filteredNotes as PermanentNote[]).map((note) => (
-              <PermanentNoteCard
+            (filteredNotes as PermanentNote[]).map((note, index) => (
+              <div
                 key={note.id}
-                note={note}
-                searchQuery={searchQuery}
-                isEditing={editingPermanentNote?.id === note.id}
-                editingNote={editingPermanentNote}
-                onEdit={handleEditPermanentNote}
-                onSave={handleSavePermanentNote}
-                onCancelEdit={handleCancelEditPermanentNote}
-                onDelete={handleDeletePermanentNote}
-                onEditingNoteChange={setEditingPermanentNote}
-                onSelect={handleSelectPermanentNote}
-              />
+                className={`minimal-note-card ${selectedIndex === index ? 'highlighted' : ''}`}
+                tabIndex={0}
+                onClick={() => {
+                  handleSelectPermanentNote(note);
+                  setSelectedIndex(index);
+                }}
+              >
+                <div className="minimal-note-header">
+                  <h3 className="minimal-note-title">{note.title}</h3>
+                  <div className="minimal-note-actions">
+                    <button 
+                      className="minimal-action-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEditPermanentNote(note);
+                      }}
+                      title="Edit note"
+                    >
+                      ✏️
+                    </button>
+                    <button 
+                      className="minimal-action-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeletePermanentNote(note.id);
+                      }}
+                      title="Delete note"
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                </div>
+                <div className="minimal-note-content">{note.content}</div>
+                <div className="minimal-note-meta">
+                  <div className="minimal-note-tags">
+                    {note.tags.map((tag, index) => (
+                      <span key={index} className="minimal-note-tag">{tag}</span>
+                    ))}
+                  </div>
+                  <span>{new Date(note.createdAt).toLocaleDateString()}</span>
+                </div>
+              </div>
             ))
           )}
         </div>

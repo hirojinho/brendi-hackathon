@@ -1,4 +1,4 @@
-import React, { FormEvent } from 'react';
+import React, { FormEvent, forwardRef } from 'react';
 
 interface ChatInputProps {
   value: string;
@@ -8,16 +8,17 @@ interface ChatInputProps {
   placeholder?: string;
 }
 
-export const ChatInput: React.FC<ChatInputProps> = ({
+export const ChatInput = forwardRef<HTMLInputElement, ChatInputProps>(({
   value,
   onChange,
   onSubmit,
   disabled,
   placeholder = 'Ask a question... (Press Enter to send)',
-}) => {
+}, ref) => {
   return (
     <form className="chat-input-form" onSubmit={onSubmit}>
       <input
+        ref={ref}
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
@@ -30,5 +31,5 @@ export const ChatInput: React.FC<ChatInputProps> = ({
       </button>
     </form>
   );
-};
+});
 

@@ -15,6 +15,7 @@ import { NoteTakingEmptyState } from './NoteTakingEmptyState';
 import { NoteTakingModeIndicator } from './NoteTakingModeIndicator';
 import { ReviewSession } from '../review';
 import '../ChatBox.css';
+import './MinimalNoteTaking.css';
 
 const NoteTakingAgent: React.FC = () => {
   const [showSettings, setShowSettings] = useState(false);

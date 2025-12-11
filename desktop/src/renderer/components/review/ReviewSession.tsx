@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useReview } from '../../hooks/useReview';
 import { NoteTransformationInterface } from './NoteTransformationInterface';
-import { ReviewProgress } from './ReviewProgress';
 import { ReviewEmptyState } from './ReviewEmptyState';
-import type { QuickNote } from '../../types/review';
 import './ReviewSession.css';
+import './MinimalReviewSession.css';
 
 interface ReviewSessionProps {
   onComplete?: () => void;
@@ -24,11 +23,11 @@ export const ReviewSession: React.FC<ReviewSessionProps> = ({
     loadActiveSession,
     createReviewSession,
     processNote,
-    completeSession,
     clearError
   } = useReview();
 
   const [isInitializing, setIsInitializing] = useState(true);
+  const [showTransformInterface, setShowTransformInterface] = useState(false);
 
   // Initialize the review session
   useEffect(() => {
@@ -52,6 +51,34 @@ export const ReviewSession: React.FC<ReviewSessionProps> = ({
 
     initializeSession();
   }, []);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') {
+        return;
+      }
+
+      if (e.key === 'Escape') {
+        if (showTransformInterface) {
+          setShowTransformInterface(false);
+        } else {
+          handleCancel();
+        }
+      } else if (e.key === 'Enter' && currentNote) {
+        e.preventDefault();
+        setShowTransformInterface(true);
+      } else if (e.key === 'Delete' && currentNote) {
+        e.preventDefault();
+        if (confirm('Are you sure you want to discard this note?')) {
+          handleDiscard(currentNote.id);
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [currentNote, showTransformInterface]);
 
   const handleTransform = async (noteId: string, permanentNoteData: {
     title?: string;
@@ -80,12 +107,7 @@ export const ReviewSession: React.FC<ReviewSessionProps> = ({
     }
   };
 
-  const handleCompleteSession = async () => {
-    const success = await completeSession();
-    if (success) {
-      onComplete?.();
-    }
-  };
+
 
   const handleCancel = () => {
     onCancel?.();
@@ -131,43 +153,38 @@ export const ReviewSession: React.FC<ReviewSessionProps> = ({
   }
 
   return (
-    <div className="review-session">
-      <div className="review-header">
-        <h2>Review Notes</h2>
+    <div className="minimal-review-session">
+      {/* Minimal header */}
+      <div className="minimal-review-header">
+        <h1 className="minimal-review-title">Review Session</h1>
+        <div className="minimal-review-progress">
+          {activeSession.notes.length - remainingNotes + 1} of {activeSession.notes.length}
+        </div>
         <button 
           onClick={handleCancel}
-          className="cancel-button"
-          title="Cancel Review"
+          className="minimal-review-cancel"
+          title="Cancel Review (Esc)"
         >
-          ×
+          Cancel
         </button>
       </div>
 
-      <ReviewProgress 
-        current={activeSession.notes.length - remainingNotes + 1}
-        total={activeSession.notes.length}
-        remaining={remainingNotes}
-      />
+      {/* Review content */}
+      <div className="minimal-review-content">
+        <NoteTransformationInterface
+          note={currentNote}
+          onTransform={(permanentNoteData) => handleTransform(currentNote.id, permanentNoteData)}
+          onDiscard={() => handleDiscard(currentNote.id)}
+          isProcessing={isLoading}
+        />
+      </div>
 
-      <NoteTransformationInterface
-        note={currentNote}
-        onTransform={(permanentNoteData) => handleTransform(currentNote.id, permanentNoteData)}
-        onDiscard={() => handleDiscard(currentNote.id)}
-        isProcessing={isLoading}
-      />
-
-      {remainingNotes === 1 && (
-        <div className="session-completion">
-          <p>This is the last note in your review session.</p>
-          <button 
-            onClick={handleCompleteSession}
-            className="btn-primary complete-session-btn"
-            disabled={isLoading}
-          >
-            Complete Review Session
-          </button>
-        </div>
-      )}
+      {/* Keyboard hints */}
+      <div className="minimal-review-hints">
+        <span>Enter: Transform</span>
+        <span>Delete: Discard</span>
+        <span>Esc: Cancel</span>
+      </div>
     </div>
   );
 };

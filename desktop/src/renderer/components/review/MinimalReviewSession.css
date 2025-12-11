@@ -1,0 +1,333 @@
+/* Minimalistic Review Session */
+.minimal-review-session {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  background: #fafafa;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  color: #1d1d1f;
+}
+
+/* Minimal header */
+.minimal-review-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  background: white;
+}
+
+.minimal-review-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin: 0;
+}
+
+.minimal-review-progress {
+  font-size: 13px;
+  color: #86868b;
+  background: rgba(0, 0, 0, 0.05);
+  padding: 4px 12px;
+  border-radius: 12px;
+}
+
+.minimal-review-cancel {
+  background: rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  color: #86868b;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.minimal-review-cancel:hover {
+  background: rgba(0, 0, 0, 0.1);
+  color: #1d1d1f;
+}
+
+/* Review content */
+.minimal-review-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 40px;
+  max-width: 700px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.minimal-review-note {
+  background: white;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 16px;
+  padding: 24px 28px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.minimal-review-note-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.minimal-review-note-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin: 0;
+  flex: 1;
+  line-height: 1.4;
+}
+
+.minimal-review-note-age {
+  font-size: 11px;
+  color: #86868b;
+  background: rgba(255, 59, 48, 0.1);
+  color: #ff3b30;
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-weight: 500;
+}
+
+.minimal-review-note-content {
+  font-size: 15px;
+  color: #1d1d1f;
+  line-height: 1.6;
+  margin-bottom: 20px;
+  white-space: pre-wrap;
+}
+
+.minimal-review-note-tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.minimal-review-note-tag {
+  padding: 4px 10px;
+  background: rgba(0, 122, 255, 0.1);
+  color: #007aff;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+/* Review actions */
+.minimal-review-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.minimal-review-btn {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s ease;
+  min-width: 120px;
+}
+
+.minimal-review-btn.transform {
+  background: #007aff;
+  color: white;
+}
+
+.minimal-review-btn.transform:hover {
+  background: #0051d5;
+  transform: translateY(-1px);
+}
+
+.minimal-review-btn.discard {
+  background: rgba(255, 59, 48, 0.1);
+  color: #ff3b30;
+  border: 1px solid rgba(255, 59, 48, 0.2);
+}
+
+.minimal-review-btn.discard:hover {
+  background: rgba(255, 59, 48, 0.15);
+  border-color: rgba(255, 59, 48, 0.3);
+}
+
+/* Transformation interface */
+.minimal-transformation {
+  background: white;
+  border: 1px solid rgba(0, 122, 255, 0.2);
+  border-radius: 16px;
+  padding: 24px 28px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 20px rgba(0, 122, 255, 0.1);
+}
+
+.minimal-transformation-header {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin-bottom: 16px;
+}
+
+.minimal-transformation-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  background: #fafafa;
+  color: #1d1d1f;
+  font-family: inherit;
+  outline: none;
+  transition: all 0.15s ease;
+  margin-bottom: 12px;
+}
+
+.minimal-transformation-input:focus {
+  border-color: #007aff;
+  background: white;
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+}
+
+.minimal-transformation-textarea {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  font-size: 14px;
+  background: #fafafa;
+  color: #1d1d1f;
+  font-family: inherit;
+  outline: none;
+  transition: all 0.15s ease;
+  resize: vertical;
+  min-height: 120px;
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
+
+.minimal-transformation-textarea:focus {
+  border-color: #007aff;
+  background: white;
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+}
+
+.minimal-transformation-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.minimal-transformation-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s ease;
+}
+
+.minimal-transformation-btn.save {
+  background: #007aff;
+  color: white;
+}
+
+.minimal-transformation-btn.save:hover {
+  background: #0051d5;
+}
+
+.minimal-transformation-btn.cancel {
+  background: rgba(0, 0, 0, 0.05);
+  color: #86868b;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.minimal-transformation-btn.cancel:hover {
+  background: rgba(0, 0, 0, 0.1);
+  color: #1d1d1f;
+}
+
+/* Empty state */
+.minimal-review-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  text-align: center;
+  color: #86868b;
+  padding: 40px 20px;
+}
+
+.minimal-review-empty h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin: 0 0 8px 0;
+}
+
+.minimal-review-empty p {
+  font-size: 14px;
+  margin: 0;
+  max-width: 300px;
+}
+
+/* Keyboard hints */
+.minimal-review-hints {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 16px;
+  font-size: 11px;
+  color: #86868b;
+}
+
+.minimal-review-hints span {
+  padding: 4px 8px;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+/* Focus states */
+.minimal-review-session *:focus {
+  outline: 2px solid #007aff;
+  outline-offset: 2px;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .minimal-review-content {
+    padding: 20px;
+  }
+  
+  .minimal-review-note,
+  .minimal-transformation {
+    padding: 16px 20px;
+  }
+  
+  .minimal-review-actions {
+    flex-direction: column;
+  }
+  
+  .minimal-review-btn {
+    width: 100%;
+  }
+}

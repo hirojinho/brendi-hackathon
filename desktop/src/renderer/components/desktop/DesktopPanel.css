@@ -54,3 +54,14 @@
   margin: 0;
 }
 
+/* Notes panel specific styling */
+.desktop-panel.notes-panel {
+  padding: 0;
+  background: #fafafa;
+}
+
+.desktop-panel.notes-panel .panel-header,
+.desktop-panel.notes-panel .panel-content {
+  display: none;
+}
+
