@@ -1,0 +1,202 @@
+.permanent-note-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.permanent-note-card:hover {
+  border-color: var(--accent-color);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.permanent-note-card.selected {
+  border-color: var(--accent-color);
+  background: var(--bg-tertiary);
+}
+
+.permanent-note-card.editing {
+  border-color: var(--accent-color);
+  cursor: default;
+}
+
+.permanent-note-header {
+  margin-bottom: 12px;
+}
+
+.permanent-note-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 8px 0;
+  line-height: 1.4;
+}
+
+.permanent-note-title mark {
+  background-color: var(--highlight-color, #ffeb3b);
+  padding: 2px 4px;
+  border-radius: 3px;
+}
+
+.permanent-note-title-input {
+  width: 100%;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+}
+
+.permanent-note-meta {
+  display: flex;
+  gap: 16px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.permanent-note-date {
+  opacity: 0.8;
+}
+
+.permanent-note-content {
+  margin-bottom: 12px;
+}
+
+.permanent-note-text {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+}
+
+.permanent-note-text mark {
+  background-color: var(--highlight-color, #ffeb3b);
+  padding: 2px 4px;
+  border-radius: 3px;
+}
+
+.permanent-note-content-input {
+  width: 100%;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 12px;
+  resize: vertical;
+  min-height: 120px;
+  font-family: inherit;
+}
+
+.expand-button {
+  background: none;
+  border: none;
+  color: var(--accent-color);
+  cursor: pointer;
+  font-size: 12px;
+  margin-top: 8px;
+  padding: 4px 0;
+  text-decoration: underline;
+}
+
+.expand-button:hover {
+  opacity: 0.8;
+}
+
+.permanent-note-tags {
+  margin-bottom: 12px;
+}
+
+.tags-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tag {
+  background: var(--accent-color);
+  color: white;
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-weight: 500;
+}
+
+.permanent-note-tags-input {
+  width: 100%;
+  font-size: 12px;
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 8px 12px;
+}
+
+.permanent-note-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.permanent-note-actions button {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.edit-button {
+  background: var(--accent-color);
+  color: white;
+}
+
+.edit-button:hover {
+  opacity: 0.9;
+}
+
+.delete-button {
+  background: var(--error-color, #f44336);
+  color: white;
+}
+
+.delete-button:hover {
+  opacity: 0.9;
+}
+
+.save-button {
+  background: var(--success-color, #4caf50);
+  color: white;
+}
+
+.save-button:hover {
+  opacity: 0.9;
+}
+
+.cancel-button {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.cancel-button:hover {
+  background: var(--bg-secondary);
+}
+
+/* Dark mode adjustments */
+@media (prefers-color-scheme: dark) {
+  .permanent-note-title mark,
+  .permanent-note-text mark {
+    background-color: var(--highlight-color, #ffc107);
+    color: #000;
+  }
+}

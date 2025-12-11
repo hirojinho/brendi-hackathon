@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNoteTaking } from '../../hooks/useNoteTaking';
 import { useContexts } from '../../hooks/useContexts';
+import { useReview } from '../../hooks/useReview';
 import { quickNotesService } from '../../services/quickNotesService';
 import { ChatHeader } from '../layout';
 import { ChatInput } from '../chat';
@@ -12,11 +13,13 @@ import { NoteTakingResult } from './NoteTakingResult';
 import { ContextCreationPrompt } from './ContextCreationPrompt';
 import { NoteTakingEmptyState } from './NoteTakingEmptyState';
 import { NoteTakingModeIndicator } from './NoteTakingModeIndicator';
+import { ReviewSession } from '../review';
 import '../ChatBox.css';
 
 const NoteTakingAgent: React.FC = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [showQuickNotes, setShowQuickNotes] = useState(false);
+  const [showReview, setShowReview] = useState(false);
   const [selectedContextId, setSelectedContextId] = useState<string | null>(null);
   const [showContextCreation, setShowContextCreation] = useState(false);
   const [pendingContext, setPendingContext] = useState<{ 
@@ -24,12 +27,21 @@ const NoteTakingAgent: React.FC = () => {
     description?: string; 
     parentId?: string | null 
   } | null>(null);
+  const [notification, setNotification] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const {
     contexts,
     // loadContexts, // Unused
     createContext,
   } = useContexts({ hierarchy: true, autoLoad: true });
+
+  const {
+    reviewStatus,
+    isReviewRequired,
+    canCreateNewNote,
+    loadReviewStatus
+  } = useReview({ autoLoad: true });
 
   const {
     input,
@@ -51,6 +63,63 @@ const NoteTakingAgent: React.FC = () => {
       setShowContextCreation(true);
     }
   }, [lastResult]);
+
+  // Auto-focus input field
+  useEffect(() => {
+    if (inputRef.current && !showReview && !showQuickNotes && !showContextCreation) {
+      inputRef.current.focus();
+    }
+  }, [showReview, showQuickNotes, showContextCreation]);
+
+  // Auto-dismiss notifications
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => {
+        setNotification(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Global shortcuts
+      if (e.key === 'Escape') {
+        if (showSettings) {
+          setShowSettings(false);
+        } else if (showQuickNotes) {
+          setShowQuickNotes(false);
+        } else if (showReview) {
+          setShowReview(false);
+        } else {
+          window.electronAPI.toggleOverlay();
+        }
+        return;
+      }
+
+      // Only handle other shortcuts when not in input
+      if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') {
+        return;
+      }
+
+      if (e.key === 'Tab' && !e.shiftKey) {
+        e.preventDefault();
+        if (isReviewRequired) {
+          setShowReview(true);
+        }
+      } else if ((e.metaKey || e.ctrlKey) && e.key === 'n') {
+        e.preventDefault();
+        setShowQuickNotes(true);
+      } else if ((e.metaKey || e.ctrlKey) && e.key === ',') {
+        e.preventDefault();
+        setShowSettings(true);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [showSettings, showQuickNotes, showReview, isReviewRequired]);
 
   const handleCreateContext = async () => {
     if (!pendingContext) return;
@@ -90,60 +159,125 @@ const NoteTakingAgent: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Check if review is required before allowing new notes
+    if (isReviewRequired) {
+      setNotification(`Review required: ${reviewStatus?.reviewCount || 0} notes need attention`);
+      setShowReview(true);
+      return;
+    }
+    
     processInput();
+  };
+
+  const handleReviewComplete = () => {
+    setShowReview(false);
+    // Refresh review status after completion
+    loadReviewStatus();
+  };
+
+  const handleReviewCancel = () => {
+    setShowReview(false);
   };
 
   if (showQuickNotes) {
     return <QuickNotesView onBack={() => setShowQuickNotes(false)} />;
   }
 
-  return (
-    <div className="chat-box">
-      <ChatHeader
-        onSettingsClick={() => setShowSettings(true)}
-        onClose={() => window.electronAPI.toggleOverlay()}
+  if (showReview) {
+    return (
+      <ReviewSession 
+        onComplete={handleReviewComplete}
+        onCancel={handleReviewCancel}
       />
+    );
+  }
 
+  return (
+    <div className="minimal-note-taking">
+      {/* Minimal header - only close button */}
+      <div className="minimal-header">
+        <button 
+          className="minimal-close-btn"
+          onClick={() => window.electronAPI.toggleOverlay()}
+          title="Close (Esc)"
+        >
+          ×
+        </button>
+      </div>
+
+      {/* Hidden settings panel */}
       <SettingsPanel 
         isOpen={showSettings}
         onClose={() => setShowSettings(false)}
       />
 
-      <NoteTakingModeIndicator
-        selectedContextId={selectedContextId}
-        contexts={contexts}
-        onContextChange={setSelectedContextId}
-        onViewNotes={() => setShowQuickNotes(true)}
-        isLoading={isLoading}
-      />
+      {/* Subtle status indicator */}
+      <div className="minimal-status">
+        {isReviewRequired && (
+          <div className="status-indicator review-required">
+            {reviewStatus?.reviewCount || 0} notes need review
+          </div>
+        )}
+        {selectedContextId && (
+          <div className="status-indicator context-active">
+            {contexts.find(c => c.id === selectedContextId)?.name || 'Context active'}
+          </div>
+        )}
+      </div>
 
-      {!lastResult && !isLoading && <NoteTakingEmptyState />}
-
-      {showContextCreation && pendingContext && (
-        <ContextCreationPrompt
-          pendingContext={pendingContext}
-          contexts={contexts}
-          onContextChange={(updates) => setPendingContext({ ...pendingContext, ...updates })}
-          onCreate={handleCreateContext}
-          onCancel={handleCancelContextCreation}
-        />
+      {/* Notification overlay */}
+      {notification && (
+        <div className="notification-overlay">
+          {notification}
+        </div>
       )}
 
-      {lastResult && (
-        <NoteTakingResult
-          result={lastResult}
-          contexts={contexts}
-          onClear={clearResult}
-        />
-      )}
+      {/* Main content area */}
+      <div className="minimal-content">
+        {!lastResult && !isLoading && <NoteTakingEmptyState />}
 
-      <ChatInput
-        value={input}
-        onChange={setInput}
-        onSubmit={handleSubmit}
-        disabled={isLoading}
-        placeholder="Type your notes here... (e.g., 'At AWS re:Invent, I learned that...' or 'From the Clean Code book...')"
-      />
+        {showContextCreation && pendingContext && (
+          <ContextCreationPrompt
+            pendingContext={pendingContext}
+            contexts={contexts}
+            onContextChange={(updates) => setPendingContext({ ...pendingContext, ...updates })}
+            onCreate={handleCreateContext}
+            onCancel={handleCancelContextCreation}
+          />
+        )}
+
+        {lastResult && (
+          <NoteTakingResult
+            result={lastResult}
+            contexts={contexts}
+            onClear={clearResult}
+          />
+        )}
+      </div>
+
+      {/* Minimal input area */}
+      <div className="minimal-input-area">
+        <ChatInput
+          ref={inputRef}
+          value={input}
+          onChange={setInput}
+          onSubmit={handleSubmit}
+          disabled={isLoading || isReviewRequired}
+          placeholder={
+            isReviewRequired 
+              ? "Review required - press Tab to start review"
+              : "Capture your thoughts..."
+          }
+        />
+        
+        {/* Keyboard shortcuts hint */}
+        <div className="keyboard-hints">
+          <span>Tab: Review</span>
+          <span>Cmd+N: Notes</span>
+          <span>Esc: Close</span>
+        </div>
+      </div>
     </div>
   );
 };

@@ -397,6 +397,150 @@ ipcMain.handle('quick-notes:status', async () => {
   }
 });
 
+// Permanent Notes IPC Handlers
+ipcMain.handle('permanent-notes:list', async () => {
+  if (!backendUrl) {
+    throw new Error('Backend not initialized');
+  }
+  
+  try {
+    const response = await fetch(`${backendUrl}/api/permanent-notes`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'Unknown error' }));
+      throw new Error(error.error || `HTTP ${response.status}`);
+    }
+    
+    return await response.json();
+  } catch (error: any) {
+    console.error('[Main] Permanent notes list error:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('permanent-notes:search', async (_event, query: string) => {
+  if (!backendUrl) {
+    throw new Error('Backend not initialized');
+  }
+  
+  try {
+    const url = new URL(`${backendUrl}/api/permanent-notes/search`);
+    url.searchParams.set('q', query);
+    
+    const response = await fetch(url.toString(), {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'Unknown error' }));
+      throw new Error(error.error || `HTTP ${response.status}`);
+    }
+    
+    return await response.json();
+  } catch (error: any) {
+    console.error('[Main] Permanent notes search error:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('permanent-notes:get', async (_event, id: string) => {
+  if (!backendUrl) {
+    throw new Error('Backend not initialized');
+  }
+  
+  try {
+    const response = await fetch(`${backendUrl}/api/permanent-notes/${id}`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'Unknown error' }));
+      throw new Error(error.error || `HTTP ${response.status}`);
+    }
+    
+    return await response.json();
+  } catch (error: any) {
+    console.error('[Main] Permanent note get error:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('permanent-notes:create', async (_event, payload: { title: string; content: string; tags?: string[]; sourceQuickNoteId?: string }) => {
+  if (!backendUrl) {
+    throw new Error('Backend not initialized');
+  }
+  
+  try {
+    const response = await fetch(`${backendUrl}/api/permanent-notes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'Unknown error' }));
+      throw new Error(error.error || `HTTP ${response.status}`);
+    }
+    
+    return await response.json();
+  } catch (error: any) {
+    console.error('[Main] Permanent note create error:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('permanent-notes:update', async (_event, payload: { id: string; title?: string; content?: string; tags?: string[] }) => {
+  if (!backendUrl) {
+    throw new Error('Backend not initialized');
+  }
+  
+  try {
+    const response = await fetch(`${backendUrl}/api/permanent-notes/${payload.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'Unknown error' }));
+      throw new Error(error.error || `HTTP ${response.status}`);
+    }
+    
+    return await response.json();
+  } catch (error: any) {
+    console.error('[Main] Permanent note update error:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('permanent-notes:delete', async (_event, id: string) => {
+  if (!backendUrl) {
+    throw new Error('Backend not initialized');
+  }
+  
+  try {
+    const response = await fetch(`${backendUrl}/api/permanent-notes/${id}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'Unknown error' }));
+      throw new Error(error.error || `HTTP ${response.status}`);
+    }
+    
+    return await response.json();
+  } catch (error: any) {
+    console.error('[Main] Permanent note delete error:', error);
+    throw error;
+  }
+});
+
 ipcMain.handle('contexts:list', async (_event, options?: { hierarchy?: boolean }) => {
   if (!backendUrl) {
     throw new Error('Backend not initialized');

@@ -1,0 +1,162 @@
+.review-session {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--bg-primary, #ffffff);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.review-session.loading,
+.review-session.error {
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+}
+
+.review-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border-color, #e5e7eb);
+  background: var(--bg-secondary, #f9fafb);
+}
+
+.review-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary, #111827);
+}
+
+.cancel-button {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--text-secondary, #6b7280);
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.cancel-button:hover {
+  background: var(--bg-hover, #f3f4f6);
+  color: var(--text-primary, #111827);
+}
+
+.loading-spinner {
+  text-align: center;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--border-color, #e5e7eb);
+  border-top: 3px solid var(--accent-color, #3b82f6);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-spinner p {
+  color: var(--text-secondary, #6b7280);
+  margin: 0;
+}
+
+.error-message {
+  text-align: center;
+  max-width: 400px;
+}
+
+.error-message h3 {
+  color: var(--error-color, #dc2626);
+  margin: 0 0 0.5rem;
+}
+
+.error-message p {
+  color: var(--text-secondary, #6b7280);
+  margin: 0 0 1.5rem;
+}
+
+.error-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+}
+
+.session-completion {
+  padding: 1.5rem;
+  text-align: center;
+  border-top: 1px solid var(--border-color, #e5e7eb);
+  background: var(--bg-secondary, #f9fafb);
+}
+
+.session-completion p {
+  margin: 0 0 1rem;
+  color: var(--text-secondary, #6b7280);
+  font-size: 0.875rem;
+}
+
+.complete-session-btn {
+  background: var(--success-color, #10b981);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.complete-session-btn:hover:not(:disabled) {
+  background: var(--success-hover, #059669);
+}
+
+.complete-session-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Button styles */
+.btn-primary {
+  background: var(--accent-color, #3b82f6);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--accent-hover, #2563eb);
+}
+
+.btn-secondary {
+  background: var(--bg-secondary, #f9fafb);
+  color: var(--text-primary, #111827);
+  border: 1px solid var(--border-color, #e5e7eb);
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: var(--bg-hover, #f3f4f6);
+}
+
+.btn-primary:disabled,
+.btn-secondary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

@@ -35,6 +35,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   deleteQuickNote: (id: string) => ipcRenderer.invoke('quick-notes:delete', id),
   getQuickNotesStatus: () => ipcRenderer.invoke('quick-notes:status'),
   
+  // Permanent Notes API
+  listPermanentNotes: () => ipcRenderer.invoke('permanent-notes:list'),
+  searchPermanentNotes: (query: string) => ipcRenderer.invoke('permanent-notes:search', query),
+  getPermanentNote: (id: string) => ipcRenderer.invoke('permanent-notes:get', id),
+  createPermanentNote: (payload: { title: string; content: string; tags?: string[]; sourceQuickNoteId?: string }) => ipcRenderer.invoke('permanent-notes:create', payload),
+  updatePermanentNote: (payload: { id: string; title?: string; content?: string; tags?: string[] }) => ipcRenderer.invoke('permanent-notes:update', payload),
+  deletePermanentNote: (id: string) => ipcRenderer.invoke('permanent-notes:delete', id),
+  
   // Contexts API
   listContexts: (options?: { hierarchy?: boolean }) => ipcRenderer.invoke('contexts:list', options),
   createContext: (payload: { name: string; description?: string; parentId?: string | null }) => ipcRenderer.invoke('contexts:create', payload),
@@ -95,6 +103,12 @@ declare global {
       updateQuickNote: (payload: { id: string; title?: string; content?: string; tags?: string[]; contextId?: string | null }) => Promise<{ note: { id: string; title: string; content: string; tags: string[]; contextId: string | null; createdAt: string; lastModified: string } }>;
       deleteQuickNote: (id: string) => Promise<{ message: string }>;
       getQuickNotesStatus: () => Promise<{ status: { currentCount: number; maxQuickNotes: number; canCreateNew: boolean; isReviewRequired: boolean; notesRequiringReviewCount: number; isAtLimit: boolean; remainingSlots: number } }>;
+      listPermanentNotes: () => Promise<{ notes: Array<{ id: string; title: string; content: string; tags: string[]; createdAt: string; updatedAt: string; sourceQuickNoteId?: string }> }>;
+      searchPermanentNotes: (query: string) => Promise<{ notes: Array<{ id: string; title: string; content: string; tags: string[]; createdAt: string; updatedAt: string; sourceQuickNoteId?: string }>; query: string; count: number }>;
+      getPermanentNote: (id: string) => Promise<{ note: { id: string; title: string; content: string; tags: string[]; createdAt: string; updatedAt: string; sourceQuickNoteId?: string } }>;
+      createPermanentNote: (payload: { title: string; content: string; tags?: string[]; sourceQuickNoteId?: string }) => Promise<{ note: { id: string; title: string; content: string; tags: string[]; createdAt: string; updatedAt: string; sourceQuickNoteId?: string } }>;
+      updatePermanentNote: (payload: { id: string; title?: string; content?: string; tags?: string[] }) => Promise<{ note: { id: string; title: string; content: string; tags: string[]; createdAt: string; updatedAt: string; sourceQuickNoteId?: string } }>;
+      deletePermanentNote: (id: string) => Promise<{ message: string }>;
       listContexts: (options?: { hierarchy?: boolean }) => Promise<{ contexts: Array<{ id: string; name: string; description: string; parentId: string | null; createdAt: string; lastModified: string; children?: any[] }> }>;
       createContext: (payload: { name: string; description?: string; parentId?: string | null }) => Promise<{ context: { id: string; name: string; description: string; parentId: string | null; createdAt: string; lastModified: string } }>;
       updateContext: (payload: { id: string; name?: string; description?: string; parentId?: string | null }) => Promise<{ context: { id: string; name: string; description: string; parentId: string | null; createdAt: string; lastModified: string } }>;

@@ -6,6 +6,7 @@ import { registerNotesRoutes } from './routes/notes.routes.js';
 import { registerQuickNotesRoutes } from './routes/quickNotes.routes.js';
 import { registerPermanentNotesRoutes } from './routes/permanentNotes.routes.js';
 import { registerContextsRoutes } from './routes/contexts.routes.js';
+import { registerReviewRoutes } from './routes/review.routes.js';
 
 export function registerAllRoutes(app: Express, container: Container) {
   registerChatRoutes(app, container);
@@ -14,6 +15,7 @@ export function registerAllRoutes(app: Express, container: Container) {
   registerQuickNotesRoutes(app, container);
   registerPermanentNotesRoutes(app, container);
   registerContextsRoutes(app, container);
+  registerReviewRoutes(app, container);
 }
 
 

@@ -9,6 +9,7 @@ interface QuickNotesFiltersProps {
   selectedContextId: string | null;
   onContextChange: (contextId: string | null) => void;
   contexts: Context[];
+  showContextFilter?: boolean;
 }
 
 export const QuickNotesFilters: React.FC<QuickNotesFiltersProps> = ({
@@ -17,6 +18,7 @@ export const QuickNotesFilters: React.FC<QuickNotesFiltersProps> = ({
   selectedContextId,
   onContextChange,
   contexts,
+  showContextFilter = true,
 }) => {
   return (
     <div className="quick-notes-filters">
@@ -29,22 +31,24 @@ export const QuickNotesFilters: React.FC<QuickNotesFiltersProps> = ({
           className="search-input"
         />
       </div>
-      <div className="quick-notes-context-filter">
-        <ContextSelector
-          contexts={contexts}
-          value={selectedContextId}
-          onChange={(contextId) => {
-            if (contextId === 'none') {
-              onContextChange('none');
-            } else {
-              onContextChange(contextId);
-            }
-          }}
-          placeholder="All Sources"
-          showNoneOption={true}
-          className="context-filter-select"
-        />
-      </div>
+      {showContextFilter && (
+        <div className="quick-notes-context-filter">
+          <ContextSelector
+            contexts={contexts}
+            value={selectedContextId}
+            onChange={(contextId) => {
+              if (contextId === 'none') {
+                onContextChange('none');
+              } else {
+                onContextChange(contextId);
+              }
+            }}
+            placeholder="All Sources"
+            showNoneOption={true}
+            className="context-filter-select"
+          />
+        </div>
+      )}
     </div>
   );
 };

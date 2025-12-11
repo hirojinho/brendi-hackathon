@@ -509,3 +509,38 @@
   background-clip: padding-box;
 }
 
+/* Notes Mode Switcher */
+.notes-mode-switcher {
+  display: flex;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 4px;
+  margin: 16px;
+  margin-bottom: 0;
+}
+
+.mode-button {
+  flex: 1;
+  padding: 8px 16px;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.6);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.mode-button:hover {
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.mode-button.active {
+  background: #2b90ff;
+  color: white;
+}
+
