@@ -212,6 +212,42 @@ function createMainWindow() {
   });
 }
 
+// Enhanced error handling helper
+function handleIpcError(error: any, operation: string): Error {
+  console.error(`[Main] ${operation} error:`, error);
+  
+  // Network errors
+  if (error.code === 'ECONNREFUSED' || error.message.includes('fetch')) {
+    return new Error('Unable to connect to backend service. Please restart the application.');
+  }
+  
+  // API errors with structured response
+  if (error.message.includes('HTTP 4')) {
+    return new Error(`Invalid request: ${error.message}`);
+  }
+  
+  if (error.message.includes('HTTP 5')) {
+    return new Error('Server error occurred. Please try again.');
+  }
+  
+  // Rate limiting
+  if (error.message.includes('rate limit') || error.message.includes('Rate limit')) {
+    return new Error('Rate limit exceeded. Please wait before trying again.');
+  }
+  
+  // Review-specific errors
+  if (error.message.includes('review') && error.message.includes('required')) {
+    return new Error('Review is required before creating new notes.');
+  }
+  
+  if (error.message.includes('limit') && error.message.includes('reached')) {
+    return new Error('Note limit reached. Please review existing notes first.');
+  }
+  
+  // Default error
+  return error instanceof Error ? error : new Error(String(error));
+}
+
 // IPC Handlers
 ipcMain.handle('chat:send', async (_event, payload) => {
   if (!backendUrl) {
@@ -232,8 +268,7 @@ ipcMain.handle('chat:send', async (_event, payload) => {
     
     return await response.json();
   } catch (error: any) {
-    console.error('[Main] Chat error:', error);
-    throw error;
+    throw handleIpcError(error, 'Chat');
   }
 });
 
@@ -256,8 +291,7 @@ ipcMain.handle('note:create', async (_event, payload) => {
     
     return await response.json();
   } catch (error: any) {
-    console.error('[Main] Note creation error:', error);
-    throw error;
+    throw handleIpcError(error, 'Note creation');
   }
 });
 
@@ -541,6 +575,126 @@ ipcMain.handle('permanent-notes:delete', async (_event, id: string) => {
     return await response.json();
   } catch (error: any) {
     console.error('[Main] Permanent note delete error:', error);
+    throw error;
+  }
+});
+
+// Review IPC Handlers
+ipcMain.handle('review:status', async () => {
+  if (!backendUrl) {
+    throw new Error('Backend not initialized');
+  }
+  
+  try {
+    const response = await fetch(`${backendUrl}/api/review/status`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'Unknown error' }));
+      throw new Error(error.error || `HTTP ${response.status}`);
+    }
+    
+    return await response.json();
+  } catch (error: any) {
+    console.error('[Main] Review status error:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('review:create-session', async () => {
+  if (!backendUrl) {
+    throw new Error('Backend not initialized');
+  }
+  
+  try {
+    const response = await fetch(`${backendUrl}/api/review/session`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'Unknown error' }));
+      throw new Error(error.error || `HTTP ${response.status}`);
+    }
+    
+    return await response.json();
+  } catch (error: any) {
+    console.error('[Main] Review create session error:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('review:get-active-session', async () => {
+  if (!backendUrl) {
+    throw new Error('Backend not initialized');
+  }
+  
+  try {
+    const response = await fetch(`${backendUrl}/api/review/session/active`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'Unknown error' }));
+      throw new Error(error.error || `HTTP ${response.status}`);
+    }
+    
+    return await response.json();
+  } catch (error: any) {
+    console.error('[Main] Review get active session error:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('review:process-note', async (_event, payload: { sessionId: string; noteId: string; action: 'transform' | 'discard'; permanentNoteData?: any }) => {
+  if (!backendUrl) {
+    throw new Error('Backend not initialized');
+  }
+  
+  try {
+    const response = await fetch(`${backendUrl}/api/review/session/${payload.sessionId}/note/${payload.noteId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: payload.action,
+        permanentNoteData: payload.permanentNoteData
+      }),
+    });
+    
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'Unknown error' }));
+      throw new Error(error.error || `HTTP ${response.status}`);
+    }
+    
+    return await response.json();
+  } catch (error: any) {
+    console.error('[Main] Review process note error:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('review:complete-session', async (_event, sessionId: string) => {
+  if (!backendUrl) {
+    throw new Error('Backend not initialized');
+  }
+  
+  try {
+    const response = await fetch(`${backendUrl}/api/review/session/${sessionId}/complete`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'Unknown error' }));
+      throw new Error(error.error || `HTTP ${response.status}`);
+    }
+    
+    return await response.json();
+  } catch (error: any) {
+    console.error('[Main] Review complete session error:', error);
     throw error;
   }
 });

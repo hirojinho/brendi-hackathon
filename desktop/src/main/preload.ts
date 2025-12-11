@@ -43,6 +43,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
   updatePermanentNote: (payload: { id: string; title?: string; content?: string; tags?: string[] }) => ipcRenderer.invoke('permanent-notes:update', payload),
   deletePermanentNote: (id: string) => ipcRenderer.invoke('permanent-notes:delete', id),
   
+  // Review API
+  review: {
+    getStatus: () => ipcRenderer.invoke('review:status'),
+    createSession: () => ipcRenderer.invoke('review:create-session'),
+    getActiveSession: () => ipcRenderer.invoke('review:get-active-session'),
+    processNote: (payload: { sessionId: string; noteId: string; action: 'transform' | 'discard'; permanentNoteData?: any }) => ipcRenderer.invoke('review:process-note', payload),
+    completeSession: (sessionId: string) => ipcRenderer.invoke('review:complete-session', sessionId),
+  },
+  
   // Contexts API
   listContexts: (options?: { hierarchy?: boolean }) => ipcRenderer.invoke('contexts:list', options),
   createContext: (payload: { name: string; description?: string; parentId?: string | null }) => ipcRenderer.invoke('contexts:create', payload),

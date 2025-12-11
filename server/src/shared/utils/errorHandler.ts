@@ -20,6 +20,21 @@ export class ConflictError extends Error implements AppError {
   code = 'CONFLICT';
 }
 
+export class ReviewRequiredError extends Error implements AppError {
+  statusCode = 423; // Locked
+  code = 'REVIEW_REQUIRED';
+}
+
+export class NoteLimitError extends Error implements AppError {
+  statusCode = 429; // Too Many Requests
+  code = 'NOTE_LIMIT_REACHED';
+}
+
+export class ReviewSessionError extends Error implements AppError {
+  statusCode = 400;
+  code = 'REVIEW_SESSION_ERROR';
+}
+
 export function handleError(err: unknown, res: Response): Response {
   console.error('[HTTP] Error:', err);
 
@@ -40,6 +55,27 @@ export function handleError(err: unknown, res: Response): Response {
   if (err instanceof ConflictError) {
     return res.status(err.statusCode).json({ 
       error: err.message || 'Conflict',
+      code: err.code
+    });
+  }
+
+  if (err instanceof ReviewRequiredError) {
+    return res.status(err.statusCode).json({ 
+      error: err.message || 'Review required before creating new notes',
+      code: err.code
+    });
+  }
+
+  if (err instanceof NoteLimitError) {
+    return res.status(err.statusCode).json({ 
+      error: err.message || 'Note limit reached',
+      code: err.code
+    });
+  }
+
+  if (err instanceof ReviewSessionError) {
+    return res.status(err.statusCode).json({ 
+      error: err.message || 'Review session error',
       code: err.code
     });
   }
