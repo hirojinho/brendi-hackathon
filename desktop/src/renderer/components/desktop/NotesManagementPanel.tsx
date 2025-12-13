@@ -3,11 +3,14 @@ import { QuickNote, quickNotesService } from '../../services/quickNotesService';
 import { PermanentNote, permanentNotesService } from '../../services/permanentNotesService';
 import { Context, contextsService } from '../../services/contextsService';
 import { SearchAndFilterBar, NoteFilters, SortOption } from './SearchAndFilterBar';
-import { SearchHighlighter, calculateRelevanceScore, findSearchMatches, SearchMatch } from '../common/SearchHighlighter';
+import { calculateRelevanceScore, findSearchMatches, SearchMatch } from '../common/SearchHighlighter';
+import { OptimizedNotesList } from './OptimizedNotesList';
+import { performanceMonitor } from '../../utils/performanceMonitor';
 import { useReview } from '../../hooks/useReview';
 import { ReviewSession } from '../review/ReviewSession';
 import { NoteTransformationInterface } from '../review/NoteTransformationInterface';
 import { IntegratedChatPanel } from './IntegratedChatPanel';
+import { PerformanceDashboard } from './PerformanceDashboard';
 import { useSettings } from '../../hooks/useSettings';
 import './NotesManagementPanel.css';
 
@@ -61,6 +64,9 @@ export const NotesManagementPanel: React.FC = () => {
   const [chatPanelVisible, setChatPanelVisible] = useState(false);
   const [chatContextNoteIds, setChatContextNoteIds] = useState<string[]>([]);
   
+  // Performance monitoring state
+  const [performanceDashboardVisible, setPerformanceDashboardVisible] = useState(false);
+  
   // Use review hook for status and session management
   const {
     reviewStatus,
@@ -92,15 +98,22 @@ export const NotesManagementPanel: React.FC = () => {
       setLoading(true);
       setError(null);
       
-      const [quickNotesData, permanentNotesData, contextsData] = await Promise.all([
-        quickNotesService.list(),
-        permanentNotesService.list(),
-        contextsService.list()
-      ]);
+      const { result } = await performanceMonitor.timeAsyncOperation(
+        'load-notes-data',
+        async () => {
+          const [quickNotesData, permanentNotesData, contextsData] = await Promise.all([
+            quickNotesService.list(),
+            permanentNotesService.list(),
+            contextsService.list()
+          ]);
+          
+          return { quickNotesData, permanentNotesData, contextsData };
+        }
+      );
       
-      setQuickNotes(quickNotesData);
-      setPermanentNotes(permanentNotesData);
-      setContexts(contextsData);
+      setQuickNotes(result.quickNotesData);
+      setPermanentNotes(result.permanentNotesData);
+      setContexts(result.contextsData);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load notes');
     } finally {
@@ -185,82 +198,90 @@ export const NotesManagementPanel: React.FC = () => {
 
   // Filter and sort notes based on current settings
   const filteredAndSortedNotes = useMemo(() => {
-    let allNotes = convertToDisplayItems(quickNotes, permanentNotes, contexts, searchQuery);
+    const { result } = performanceMonitor.timeOperation(
+      'filter-and-sort-notes',
+      () => {
+        let allNotes = convertToDisplayItems(quickNotes, permanentNotes, contexts, searchQuery);
 
-    // Apply display mode filter
-    if (displayMode === 'quick-only') {
-      allNotes = allNotes.filter(note => note.type === 'quick');
-    } else if (displayMode === 'permanent-only') {
-      allNotes = allNotes.filter(note => note.type === 'permanent');
-    }
+        // Apply display mode filter
+        if (displayMode === 'quick-only') {
+          allNotes = allNotes.filter(note => note.type === 'quick');
+        } else if (displayMode === 'permanent-only') {
+          allNotes = allNotes.filter(note => note.type === 'permanent');
+        }
 
-    // Apply note type filter
-    if (filters.noteType !== 'all') {
-      allNotes = allNotes.filter(note => note.type === filters.noteType);
-    }
+        // Apply note type filter
+        if (filters.noteType !== 'all') {
+          allNotes = allNotes.filter(note => note.type === filters.noteType);
+        }
 
-    // Apply context filter
-    if (filters.contextIds.length > 0) {
-      allNotes = allNotes.filter(note => 
-        note.contextId && filters.contextIds.includes(note.contextId)
-      );
-    }
+        // Apply context filter
+        if (filters.contextIds.length > 0) {
+          allNotes = allNotes.filter(note => 
+            note.contextId && filters.contextIds.includes(note.contextId)
+          );
+        }
 
-    // Apply tags filter
-    if (filters.tags.length > 0) {
-      allNotes = allNotes.filter(note =>
-        filters.tags.some(tag => note.tags.includes(tag))
-      );
-    }
+        // Apply tags filter
+        if (filters.tags.length > 0) {
+          allNotes = allNotes.filter(note =>
+            filters.tags.some(tag => note.tags.includes(tag))
+          );
+        }
 
-    // Apply review status filter
-    if (filters.reviewStatus.length > 0) {
-      allNotes = allNotes.filter(note =>
-        note.reviewStatus && filters.reviewStatus.includes(note.reviewStatus)
-      );
-    }
+        // Apply review status filter
+        if (filters.reviewStatus.length > 0) {
+          allNotes = allNotes.filter(note =>
+            note.reviewStatus && filters.reviewStatus.includes(note.reviewStatus)
+          );
+        }
 
-    // Apply date range filter
-    if (filters.dateRange) {
-      allNotes = allNotes.filter(note => {
-        const noteDate = note.updatedAt;
-        return noteDate >= filters.dateRange!.start && noteDate <= filters.dateRange!.end;
-      });
-    }
+        // Apply date range filter
+        if (filters.dateRange) {
+          allNotes = allNotes.filter(note => {
+            const noteDate = note.updatedAt;
+            return noteDate >= filters.dateRange!.start && noteDate <= filters.dateRange!.end;
+          });
+        }
 
-    // Apply search filter
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      allNotes = allNotes.filter(note =>
-        note.title.toLowerCase().includes(query) ||
-        note.content.toLowerCase().includes(query) ||
-        note.tags.some(tag => tag.toLowerCase().includes(query))
-      );
-    }
+        // Apply search filter
+        if (searchQuery.trim()) {
+          const query = searchQuery.toLowerCase();
+          allNotes = allNotes.filter(note =>
+            note.title.toLowerCase().includes(query) ||
+            note.content.toLowerCase().includes(query) ||
+            note.tags.some(tag => tag.toLowerCase().includes(query))
+          );
+        }
 
-    // Apply sorting
-    allNotes.sort((a, b) => {
-      let comparison = 0;
-      
-      switch (sortOptions.field) {
-        case 'title':
-          comparison = a.title.localeCompare(b.title);
-          break;
-        case 'createdAt':
-          comparison = a.createdAt.getTime() - b.createdAt.getTime();
-          break;
-        case 'updatedAt':
-          comparison = a.updatedAt.getTime() - b.updatedAt.getTime();
-          break;
-        case 'relevance':
-          comparison = (b.relevanceScore || 0) - (a.relevanceScore || 0);
-          break;
-      }
-      
-      return sortOptions.direction === 'desc' ? -comparison : comparison;
-    });
+        // Apply sorting
+        allNotes.sort((a, b) => {
+          let comparison = 0;
+          
+          switch (sortOptions.field) {
+            case 'title':
+              comparison = a.title.localeCompare(b.title);
+              break;
+            case 'createdAt':
+              comparison = a.createdAt.getTime() - b.createdAt.getTime();
+              break;
+            case 'updatedAt':
+              comparison = a.updatedAt.getTime() - b.updatedAt.getTime();
+              break;
+            case 'relevance':
+              comparison = (b.relevanceScore || 0) - (a.relevanceScore || 0);
+              break;
+          }
+          
+          return sortOptions.direction === 'desc' ? -comparison : comparison;
+        });
 
-    return allNotes;
+        return allNotes;
+      },
+      quickNotes.length + permanentNotes.length
+    );
+
+    return result;
   }, [quickNotes, permanentNotes, contexts, displayMode, filters, sortOptions, searchQuery]);
 
   const handleSearchChange = (query: string) => {
@@ -373,6 +394,11 @@ export const NotesManagementPanel: React.FC = () => {
     setChatContextNoteIds(noteIds);
   };
 
+  // Performance dashboard handlers
+  const handleTogglePerformanceDashboard = () => {
+    setPerformanceDashboardVisible(!performanceDashboardVisible);
+  };
+
   // Get selected notes for chat context
   const chatContextNotes = useMemo(() => {
     return filteredAndSortedNotes.filter(note => chatContextNoteIds.includes(note.id));
@@ -459,6 +485,17 @@ export const NotesManagementPanel: React.FC = () => {
             >
               💬 Chat
             </button>
+            
+            {/* Performance Dashboard Toggle (Development Mode) */}
+            {process.env.NODE_ENV === 'development' && (
+              <button 
+                onClick={handleTogglePerformanceDashboard}
+                className={`performance-button ${performanceDashboardVisible ? 'active' : ''}`}
+                title="Performance Dashboard"
+              >
+                📊 Performance
+              </button>
+            )}
             
             <button onClick={loadData} className="refresh-button" title="Refresh">
               🔄
@@ -587,37 +624,23 @@ export const NotesManagementPanel: React.FC = () => {
 
         {/* Notes List */}
         {!showReviewSession && !showBulkReviewInterface && (
-          <>
-            {filteredAndSortedNotes.length === 0 ? (
-              <div className="empty-state">
-                <div className="empty-icon">📝</div>
-                <h2>No Notes Found</h2>
-                <p>
-                  {searchQuery || filters.tags.length > 0 || filters.contextIds.length > 0 || filters.reviewStatus.length > 0 || filters.dateRange
-                    ? 'Try adjusting your search or filters'
-                    : 'Start taking notes to see them here'
-                  }
-                </p>
-              </div>
-            ) : (
-              <div className="notes-list">
-                {filteredAndSortedNotes.map(note => (
-                  <NoteCard 
-                    key={`${note.type}-${note.id}`} 
-                    note={note}
-                    searchQuery={searchQuery}
-                    bulkSelectionMode={bulkSelectionMode}
-                    isSelected={selectedNotes.has(note.id)}
-                    onSelectionChange={(selected) => handleNoteSelection(note.id, selected)}
-                    onNoteClick={(note) => {
-                      // TODO: Implement note detail view or editing
-                      console.log('Note clicked:', note);
-                    }}
-                  />
-                ))}
-              </div>
-            )}
-          </>
+          <OptimizedNotesList
+            notes={filteredAndSortedNotes}
+            searchQuery={searchQuery}
+            bulkSelectionMode={bulkSelectionMode}
+            selectedNotes={selectedNotes}
+            onNoteClick={(note) => {
+              // TODO: Implement note detail view or editing
+              console.log('Note clicked:', note);
+            }}
+            onSelectionChange={handleNoteSelection}
+            onSelectAll={handleSelectAll}
+            onDeselectAll={handleDeselectAll}
+            containerHeight={600}
+            enableVirtualScrolling={filteredAndSortedNotes.length > 100}
+            enablePagination={filteredAndSortedNotes.length > 50}
+            itemsPerPage={50}
+          />
         )}
         </div>
       </div>
@@ -632,127 +655,14 @@ export const NotesManagementPanel: React.FC = () => {
         modelName={modelName}
         embeddingProvider={'openai'}
       />
+
+      {/* Performance Dashboard */}
+      <PerformanceDashboard
+        isVisible={performanceDashboardVisible}
+        onClose={() => setPerformanceDashboardVisible(false)}
+        itemCount={quickNotes.length + permanentNotes.length}
+      />
     </div>
   );
 };
 
-interface NoteCardProps {
-  note: NoteDisplayItem;
-  searchQuery: string;
-  bulkSelectionMode?: boolean;
-  isSelected?: boolean;
-  onSelectionChange?: (selected: boolean) => void;
-  onNoteClick?: (note: NoteDisplayItem) => void;
-}
-
-const NoteCard: React.FC<NoteCardProps> = ({ 
-  note, 
-  searchQuery, 
-  bulkSelectionMode = false,
-  isSelected = false,
-  onSelectionChange,
-  onNoteClick 
-}) => {
-  const formatDate = (date: Date) => {
-    return new Intl.DateTimeFormat('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    }).format(date);
-  };
-
-  const handleClick = () => {
-    if (bulkSelectionMode && note.type === 'quick' && note.reviewStatus === 'pending') {
-      // In bulk selection mode, toggle selection for reviewable notes
-      if (onSelectionChange) {
-        onSelectionChange(!isSelected);
-      }
-    } else if (onNoteClick) {
-      onNoteClick(note);
-    }
-  };
-
-  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    e.stopPropagation();
-    if (onSelectionChange) {
-      onSelectionChange(e.target.checked);
-    }
-  };
-
-  return (
-    <div 
-      className={`note-card ${note.type}-note ${bulkSelectionMode ? 'bulk-mode' : ''} ${isSelected ? 'selected' : ''}`}
-      onClick={handleClick}
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          handleClick();
-        }
-      }}
-    >
-      <div className="note-header">
-        {/* Bulk Selection Checkbox */}
-        {bulkSelectionMode && note.type === 'quick' && note.reviewStatus === 'pending' && (
-          <div className="bulk-selection-checkbox">
-            <input
-              type="checkbox"
-              checked={isSelected}
-              onChange={handleCheckboxChange}
-              onClick={(e) => e.stopPropagation()}
-            />
-          </div>
-        )}
-        
-        <h3 className="note-title">
-          <SearchHighlighter 
-            text={note.title} 
-            searchQuery={searchQuery}
-            maxLength={100}
-          />
-        </h3>
-        <div className="note-meta">
-          <span className={`note-type-badge ${note.type}`}>
-            {note.type === 'quick' ? 'Quick' : 'Permanent'}
-          </span>
-          {note.reviewStatus && (
-            <span className={`review-status ${note.reviewStatus}`}>
-              {note.reviewStatus === 'pending' ? '⏳ Needs Review' : 
-               note.reviewStatus === 'reviewed' ? '✅ Reviewed' : 
-               '🔄 Transformed'}
-            </span>
-          )}
-        </div>
-      </div>
-      
-      <div className="note-content">
-        <p className="note-excerpt">
-          <SearchHighlighter 
-            text={note.content} 
-            searchQuery={searchQuery}
-            maxLength={150}
-            contextLength={50}
-          />
-        </p>
-      </div>
-      
-      <div className="note-footer">
-        <div className="note-tags">
-          {note.tags.map(tag => (
-            <span key={tag} className="tag">{tag}</span>
-          ))}
-        </div>
-        
-        <div className="note-info">
-          {note.contextName && (
-            <span className="context-name">{note.contextName}</span>
-          )}
-          <span className="note-date">{formatDate(note.updatedAt)}</span>
-        </div>
-      </div>
-    </div>
-  );
-};

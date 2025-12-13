@@ -1,0 +1,34 @@
+.virtual-scroll-list {
+  position: relative;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.virtual-scroll-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.virtual-scroll-list::-webkit-scrollbar-track {
+  background: var(--color-background-secondary);
+  border-radius: 4px;
+}
+
+.virtual-scroll-list::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 4px;
+}
+
+.virtual-scroll-list::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-secondary);
+}
+
+/* Smooth scrolling for better UX */
+.virtual-scroll-list {
+  scroll-behavior: smooth;
+}
+
+/* Performance optimization: use GPU acceleration */
+.virtual-scroll-list > div {
+  transform: translateZ(0);
+  will-change: transform;
+}

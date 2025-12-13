@@ -1,0 +1,137 @@
+.pagination {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  border-top: 1px solid var(--color-border);
+  background: var(--color-background);
+}
+
+.pagination-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.item-count {
+  font-weight: 500;
+}
+
+.page-size-selector {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.page-size-selector label {
+  font-weight: 500;
+}
+
+.page-size-select {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-sm);
+  background: var(--color-background);
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+}
+
+.page-size-select:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 2px var(--color-accent-alpha);
+}
+
+.pagination-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.pagination-button {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-sm);
+  background: var(--color-background);
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 40px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pagination-button:hover:not(:disabled) {
+  background: var(--color-background-secondary);
+  border-color: var(--color-accent);
+}
+
+.pagination-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pagination-button.active {
+  background: var(--color-accent);
+  color: var(--color-background);
+  border-color: var(--color-accent);
+}
+
+.pagination-button.ellipsis {
+  border: none;
+  background: transparent;
+  cursor: default;
+}
+
+.pagination-button.ellipsis:hover {
+  background: transparent;
+  border: none;
+}
+
+.prev-button,
+.next-button {
+  min-width: auto;
+  padding: var(--spacing-xs) var(--spacing-md);
+}
+
+.page-numbers {
+  display: flex;
+  gap: var(--spacing-xs);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .pagination {
+    gap: var(--spacing-sm);
+  }
+  
+  .pagination-info {
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    align-items: flex-start;
+  }
+  
+  .pagination-controls {
+    flex-wrap: wrap;
+    gap: var(--spacing-xs);
+  }
+  
+  .prev-button,
+  .next-button {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: var(--font-size-xs);
+  }
+  
+  .pagination-button {
+    min-width: 32px;
+    height: 32px;
+    font-size: var(--font-size-xs);
+  }
+}
