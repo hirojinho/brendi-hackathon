@@ -10,11 +10,11 @@ declare global {
   interface Window {
     electronAPI: {
       review: {
-        getStatus: () => Promise<{ data: ReviewStatus }>;
-        createSession: () => Promise<{ data: { session: ReviewSession } }>;
-        getActiveSession: () => Promise<{ data: ActiveReviewSessionData }>;
-        processNote: (payload: { sessionId: string; noteId: string; action: 'transform' | 'discard'; permanentNoteData?: any }) => Promise<{ data: ProcessNoteResponse }>;
-        completeSession: (sessionId: string) => Promise<{ data: { canCreateNewNotes: boolean } }>;
+        getStatus: () => Promise<ReviewStatus>;
+        createSession: () => Promise<{ session: ReviewSession }>;
+        getActiveSession: () => Promise<ActiveReviewSessionData>;
+        processNote: (payload: { sessionId: string; noteId: string; action: 'transform' | 'discard'; permanentNoteData?: any }) => Promise<ProcessNoteResponse>;
+        completeSession: (sessionId: string) => Promise<{ canCreateNewNotes: boolean }>;
       };
     };
   }
@@ -24,7 +24,7 @@ export class ReviewService {
   async getReviewStatus(): Promise<ReviewStatus> {
     try {
       const result = await window.electronAPI.review.getStatus();
-      return result.data;
+      return result;
     } catch (error) {
       console.error('Failed to get review status:', error);
       throw new Error(`Failed to get review status: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -34,7 +34,7 @@ export class ReviewService {
   async createReviewSession(): Promise<ReviewSession> {
     try {
       const result = await window.electronAPI.review.createSession();
-      return result.data.session;
+      return result.session;
     } catch (error) {
       console.error('Failed to create review session:', error);
       throw new Error(`Failed to create review session: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -44,7 +44,7 @@ export class ReviewService {
   async getActiveReviewSession(): Promise<ActiveReviewSessionData> {
     try {
       const result = await window.electronAPI.review.getActiveSession();
-      return result.data;
+      return result;
     } catch (error) {
       console.error('Failed to get active review session:', error);
       if (error instanceof Error && error.message.includes('404')) {
@@ -66,7 +66,7 @@ export class ReviewService {
         action: request.action,
         permanentNoteData: request.permanentNoteData
       });
-      return result.data;
+      return result;
     } catch (error) {
       console.error('Failed to process note in review:', error);
       throw new Error(`Failed to process note: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -76,7 +76,7 @@ export class ReviewService {
   async completeReviewSession(sessionId: string): Promise<{ canCreateNewNotes: boolean }> {
     try {
       const result = await window.electronAPI.review.completeSession(sessionId);
-      return result.data;
+      return result;
     } catch (error) {
       console.error('Failed to complete review session:', error);
       throw new Error(`Failed to complete review session: ${error instanceof Error ? error.message : 'Unknown error'}`);

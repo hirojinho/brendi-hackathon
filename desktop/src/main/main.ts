@@ -664,7 +664,7 @@ ipcMain.handle('review:process-note', async (_event, payload: { sessionId: strin
   }
   
   try {
-    const response = await fetch(`${backendUrl}/api/review/session/${payload.sessionId}/note/${payload.noteId}`, {
+    const response = await fetch(`${backendUrl}/api/review/session/${payload.sessionId}/notes/${payload.noteId}/process`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
