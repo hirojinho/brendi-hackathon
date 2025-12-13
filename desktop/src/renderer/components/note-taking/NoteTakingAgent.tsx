@@ -290,6 +290,31 @@ const NoteTakingAgent: React.FC = () => {
 
       {/* Minimal input area */}
       <div className="minimal-input-area">
+        {/* Review button when review is required */}
+        {(isReviewRequired || (quickNotesStatus && !quickNotesStatus.canCreateNew)) && (
+          <div className="review-prompt">
+            <button 
+              className="review-button"
+              onClick={() => setShowReview(true)}
+            >
+              {isReviewRequired 
+                ? `Review ${reviewStatus?.reviewCount || 0} Notes`
+                : quickNotesStatus && quickNotesStatus.isAtLimit
+                ? `Review Notes (${quickNotesStatus.currentCount}/${quickNotesStatus.maxQuickNotes})`
+                : "Review Required"
+              }
+            </button>
+            <p className="review-prompt-text">
+              {isReviewRequired 
+                ? "Some notes need your attention before you can create new ones."
+                : quickNotesStatus && quickNotesStatus.isAtLimit
+                ? "You've reached the note limit. Review existing notes to continue."
+                : "Review is required before creating new notes."
+              }
+            </p>
+          </div>
+        )}
+        
         <ChatInput
           ref={inputRef}
           value={input}
@@ -298,7 +323,7 @@ const NoteTakingAgent: React.FC = () => {
           disabled={isLoading || isReviewRequired || (quickNotesStatus && !quickNotesStatus.canCreateNew)}
           placeholder={
             isReviewRequired 
-              ? "Review required - press Tab to start review"
+              ? "Review required - click button above or press Tab"
               : quickNotesStatus && quickNotesStatus.isAtLimit
               ? "Note limit reached - review notes to continue"
               : quickNotesStatus && !quickNotesStatus.canCreateNew

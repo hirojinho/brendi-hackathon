@@ -144,6 +144,50 @@
   backdrop-filter: blur(20px);
 }
 
+/* Review prompt */
+.review-prompt {
+  text-align: center;
+  margin-bottom: 16px;
+  max-width: 580px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.review-button {
+  background: linear-gradient(135deg, #ff453a 0%, #ff3b30 100%);
+  border: none;
+  color: white;
+  padding: 14px 28px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 16px rgba(255, 69, 58, 0.4);
+  font-family: inherit;
+  margin-bottom: 8px;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.review-button:hover {
+  background: linear-gradient(135deg, #ff3b30 0%, #d70015 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(255, 69, 58, 0.5);
+}
+
+.review-button:active {
+  transform: translateY(0);
+}
+
+.review-prompt-text {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 0;
+  line-height: 1.4;
+}
+
 .minimal-input-area .chat-input-form {
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.15);
