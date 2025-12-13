@@ -180,9 +180,14 @@ describe('UnifiedNotesList', () => {
   it('highlights search terms when provided', () => {
     render(<UnifiedNotesList {...defaultProps} searchQuery="quick" highlightMatches={true} />);
     
-    // The SearchHighlighter mock should add <mark> tags
-    const titleElement = screen.getByText('Quick Note 1').closest('.note-title');
-    expect(titleElement?.innerHTML).toContain('<mark>');
+    // The SearchHighlighter should highlight the search term "Quick" in the title
+    expect(screen.getByText('Quick')).toBeInTheDocument();
+    expect(screen.getByText('Quick').tagName).toBe('MARK');
+    
+    // Also check that "quick" is highlighted in the content
+    const quickMarks = screen.getAllByText('quick');
+    expect(quickMarks.length).toBeGreaterThan(0);
+    expect(quickMarks[0].tagName).toBe('MARK');
   });
 
   it('supports keyboard navigation', () => {

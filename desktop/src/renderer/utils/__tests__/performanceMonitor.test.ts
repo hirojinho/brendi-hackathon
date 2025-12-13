@@ -59,11 +59,11 @@ describe('PerformanceMonitor', () => {
 
   describe('performance analysis', () => {
     it('identifies performance concerns for large datasets', () => {
-      const concerns = monitor.isPerformanceConcerning(5000);
+      const concerns = monitor.isPerformanceConcerning(5001);
 
-      expect(concerns.filter).toBe(true); // 5000 > 5000 threshold
-      expect(concerns.search).toBe(true); // 5000 > 2000 threshold
-      expect(concerns.render).toBe(true); // 5000 > 1500 threshold
+      expect(concerns.filter).toBe(true); // 5001 > 5000 threshold
+      expect(concerns.search).toBe(true); // 5001 > 2000 threshold
+      expect(concerns.render).toBe(true); // 5001 > 1500 threshold
     });
 
     it('provides optimization suggestions', () => {

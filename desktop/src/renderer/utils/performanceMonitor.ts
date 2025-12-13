@@ -95,6 +95,11 @@ export class PerformanceMonitor {
     this.metrics.push(metric);
     this.checkThreshold(metric);
 
+    // Keep only last 100 metrics to prevent memory leaks
+    if (this.metrics.length > 100) {
+      this.metrics = this.metrics.slice(-100);
+    }
+
     return { result, metrics: metric };
   }
 
@@ -121,6 +126,11 @@ export class PerformanceMonitor {
 
     this.metrics.push(metric);
     this.checkThreshold(metric);
+
+    // Keep only last 100 metrics to prevent memory leaks
+    if (this.metrics.length > 100) {
+      this.metrics = this.metrics.slice(-100);
+    }
 
     return { result, metrics: metric };
   }

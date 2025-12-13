@@ -61,7 +61,8 @@ describe('Search and Filter Integration', () => {
         note.tags.some(tag => tag.toLowerCase().includes(query.toLowerCase()))
       );
 
-      expect(results).toHaveLength(2); // One in title, one in tags
+      expect(results).toHaveLength(1); // Note 2 matches in title, content, and tags
+      expect(results[0].title).toBe('Project Documentation');
     });
 
     it('should find notes by tags', () => {

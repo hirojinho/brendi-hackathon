@@ -165,9 +165,15 @@ export class NotesSearchIndex {
   }
 
   private getCandidateNotes(searchTerms: string[]): Set<string> {
-    const candidates = new Set<string>();
-    
-    for (const term of searchTerms) {
+    if (searchTerms.length === 0) {
+      return new Set<string>();
+    }
+
+    // For single term, use OR logic (find all notes containing the term)
+    if (searchTerms.length === 1) {
+      const candidates = new Set<string>();
+      const term = searchTerms[0];
+      
       const exactMatches = this.wordToNotes.get(term);
       if (exactMatches) {
         exactMatches.forEach(id => candidates.add(id));
@@ -179,9 +185,38 @@ export class NotesSearchIndex {
           noteIds.forEach(id => candidates.add(id));
         }
       }
+      
+      return candidates;
     }
 
-    return candidates;
+    // For multiple terms, use AND logic (find notes containing ALL terms)
+    let candidates: Set<string> | null = null;
+    
+    for (const term of searchTerms) {
+      const termCandidates = new Set<string>();
+      
+      const exactMatches = this.wordToNotes.get(term);
+      if (exactMatches) {
+        exactMatches.forEach(id => termCandidates.add(id));
+      }
+
+      // Also check for partial matches (prefix search)
+      for (const [word, noteIds] of this.wordToNotes.entries()) {
+        if (word.includes(term)) {
+          noteIds.forEach(id => termCandidates.add(id));
+        }
+      }
+
+      // For the first term, initialize candidates
+      if (candidates === null) {
+        candidates = termCandidates;
+      } else {
+        // For subsequent terms, keep only notes that match this term too (AND logic)
+        candidates = new Set([...candidates].filter(id => termCandidates.has(id)));
+      }
+    }
+
+    return candidates || new Set<string>();
   }
 
   private scoreNote(
@@ -191,13 +226,17 @@ export class NotesSearchIndex {
   ): SearchResult {
     let totalScore = 0;
     const matches = { title: 0, content: 0, tags: 0 };
+    const termsFound = new Set<string>();
 
     for (const term of searchTerms) {
+      let termFound = false;
+
       // Title matches (highest weight)
       const titleMatches = this.countMatches(searchIndex.title, term);
       if (titleMatches > 0) {
         matches.title += titleMatches;
         totalScore += titleMatches * 10; // Title matches are worth 10x
+        termFound = true;
       }
 
       // Tag matches (high weight)
@@ -207,6 +246,7 @@ export class NotesSearchIndex {
       if (tagMatches > 0) {
         matches.tags += tagMatches;
         totalScore += tagMatches * 5; // Tag matches are worth 5x
+        termFound = true;
       }
 
       // Content matches (base weight)
@@ -214,7 +254,21 @@ export class NotesSearchIndex {
       if (contentMatches > 0) {
         matches.content += contentMatches;
         totalScore += contentMatches * 1; // Content matches are base weight
+        termFound = true;
       }
+
+      if (termFound) {
+        termsFound.add(term);
+      }
+    }
+
+    // For multi-word searches, require ALL terms to be found (AND logic)
+    if (searchTerms.length > 1 && termsFound.size < searchTerms.length) {
+      return {
+        item: note,
+        score: 0, // No score if not all terms are found
+        matches: { title: 0, content: 0, tags: 0 }
+      };
     }
 
     // Boost score for exact phrase matches
