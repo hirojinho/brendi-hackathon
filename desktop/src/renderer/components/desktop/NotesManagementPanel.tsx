@@ -2,21 +2,11 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { QuickNote, quickNotesService } from '../../services/quickNotesService';
 import { PermanentNote, permanentNotesService } from '../../services/permanentNotesService';
 import { Context, contextsService } from '../../services/contextsService';
+import { SearchAndFilterBar, NoteFilters, SortOption, DateRange, ReviewStatus } from './SearchAndFilterBar';
+import { SearchHighlighter, calculateRelevanceScore, findSearchMatches, SearchMatch } from '../common/SearchHighlighter';
 import './NotesManagementPanel.css';
 
 export type DisplayMode = 'unified' | 'quick-only' | 'permanent-only';
-
-export interface NoteFilters {
-  noteType: 'all' | 'quick' | 'permanent';
-  contextIds: string[];
-  tags: string[];
-  searchQuery: string;
-}
-
-export interface SortOptions {
-  field: 'createdAt' | 'updatedAt' | 'title';
-  direction: 'asc' | 'desc';
-}
 
 export interface NoteDisplayItem {
   id: string;
@@ -30,6 +20,8 @@ export interface NoteDisplayItem {
   createdAt: Date;
   updatedAt: Date;
   reviewStatus?: 'pending' | 'reviewed' | 'transformed';
+  searchMatches?: SearchMatch[];
+  relevanceScore?: number;
 }
 
 export const NotesManagementPanel: React.FC = () => {
@@ -37,16 +29,19 @@ export const NotesManagementPanel: React.FC = () => {
   const [quickNotes, setQuickNotes] = useState<QuickNote[]>([]);
   const [permanentNotes, setPermanentNotes] = useState<PermanentNote[]>([]);
   const [contexts, setContexts] = useState<Context[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<NoteFilters>({
     noteType: 'all',
     contextIds: [],
     tags: [],
-    searchQuery: ''
+    dateRange: null,
+    reviewStatus: []
   });
-  const [sortOptions, setSortOptions] = useState<SortOptions>({
+  const [sortOptions, setSortOptions] = useState<SortOption>({
     field: 'createdAt',
     direction: 'desc'
   });
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -80,44 +75,69 @@ export const NotesManagementPanel: React.FC = () => {
   const convertToDisplayItems = (
     quickNotes: QuickNote[], 
     permanentNotes: PermanentNote[], 
-    contexts: Context[]
+    contexts: Context[],
+    searchQuery: string
   ): NoteDisplayItem[] => {
     const contextMap = new Map(contexts.map(c => [c.id, c.name]));
     
-    const quickDisplayItems: NoteDisplayItem[] = quickNotes.map(note => ({
-      id: note.id,
-      type: 'quick' as const,
-      title: note.title,
-      content: note.content,
-      excerpt: note.content.substring(0, 150) + (note.content.length > 150 ? '...' : ''),
-      tags: note.tags,
-      contextId: note.contextId,
-      contextName: note.contextId ? contextMap.get(note.contextId) : undefined,
-      createdAt: new Date(note.createdAt),
-      updatedAt: new Date(note.lastModified),
-      reviewStatus: 'pending' // Quick notes are always pending review
-    }));
+    const quickDisplayItems: NoteDisplayItem[] = quickNotes.map(note => {
+      const titleMatches = findSearchMatches(note.title, searchQuery, 'title');
+      const contentMatches = findSearchMatches(note.content, searchQuery, 'content');
+      const relevanceScore = calculateRelevanceScore(note.title, note.content, note.tags, searchQuery);
+      
+      return {
+        id: note.id,
+        type: 'quick' as const,
+        title: note.title,
+        content: note.content,
+        excerpt: note.content.substring(0, 150) + (note.content.length > 150 ? '...' : ''),
+        tags: note.tags,
+        contextId: note.contextId,
+        contextName: note.contextId ? contextMap.get(note.contextId) : undefined,
+        createdAt: new Date(note.createdAt),
+        updatedAt: new Date(note.lastModified),
+        reviewStatus: 'pending' as const,
+        searchMatches: [...titleMatches, ...contentMatches],
+        relevanceScore
+      };
+    });
 
-    const permanentDisplayItems: NoteDisplayItem[] = permanentNotes.map(note => ({
-      id: note.id,
-      type: 'permanent' as const,
-      title: note.title,
-      content: note.content,
-      excerpt: note.content.substring(0, 150) + (note.content.length > 150 ? '...' : ''),
-      tags: note.tags,
-      contextId: null, // Permanent notes don't have contexts in current implementation
-      contextName: undefined,
-      createdAt: new Date(note.createdAt),
-      updatedAt: new Date(note.updatedAt),
-      reviewStatus: 'reviewed' // Permanent notes are considered reviewed
-    }));
+    const permanentDisplayItems: NoteDisplayItem[] = permanentNotes.map(note => {
+      const titleMatches = findSearchMatches(note.title, searchQuery, 'title');
+      const contentMatches = findSearchMatches(note.content, searchQuery, 'content');
+      const relevanceScore = calculateRelevanceScore(note.title, note.content, note.tags, searchQuery);
+      
+      return {
+        id: note.id,
+        type: 'permanent' as const,
+        title: note.title,
+        content: note.content,
+        excerpt: note.content.substring(0, 150) + (note.content.length > 150 ? '...' : ''),
+        tags: note.tags,
+        contextId: null, // Permanent notes don't have contexts in current implementation
+        contextName: undefined,
+        createdAt: new Date(note.createdAt),
+        updatedAt: new Date(note.updatedAt),
+        reviewStatus: 'reviewed' as const,
+        searchMatches: [...titleMatches, ...contentMatches],
+        relevanceScore
+      };
+    });
 
     return [...quickDisplayItems, ...permanentDisplayItems];
   };
 
+  // Get all available tags for filtering
+  const availableTags = useMemo(() => {
+    const tagSet = new Set<string>();
+    quickNotes.forEach(note => note.tags.forEach(tag => tagSet.add(tag)));
+    permanentNotes.forEach(note => note.tags.forEach(tag => tagSet.add(tag)));
+    return Array.from(tagSet).sort();
+  }, [quickNotes, permanentNotes]);
+
   // Filter and sort notes based on current settings
   const filteredAndSortedNotes = useMemo(() => {
-    let allNotes = convertToDisplayItems(quickNotes, permanentNotes, contexts);
+    let allNotes = convertToDisplayItems(quickNotes, permanentNotes, contexts, searchQuery);
 
     // Apply display mode filter
     if (displayMode === 'quick-only') {
@@ -145,9 +165,24 @@ export const NotesManagementPanel: React.FC = () => {
       );
     }
 
+    // Apply review status filter
+    if (filters.reviewStatus.length > 0) {
+      allNotes = allNotes.filter(note =>
+        note.reviewStatus && filters.reviewStatus.includes(note.reviewStatus)
+      );
+    }
+
+    // Apply date range filter
+    if (filters.dateRange) {
+      allNotes = allNotes.filter(note => {
+        const noteDate = note.updatedAt;
+        return noteDate >= filters.dateRange!.start && noteDate <= filters.dateRange!.end;
+      });
+    }
+
     // Apply search filter
-    if (filters.searchQuery.trim()) {
-      const query = filters.searchQuery.toLowerCase();
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
       allNotes = allNotes.filter(note =>
         note.title.toLowerCase().includes(query) ||
         note.content.toLowerCase().includes(query) ||
@@ -169,20 +204,27 @@ export const NotesManagementPanel: React.FC = () => {
         case 'updatedAt':
           comparison = a.updatedAt.getTime() - b.updatedAt.getTime();
           break;
+        case 'relevance':
+          comparison = (b.relevanceScore || 0) - (a.relevanceScore || 0);
+          break;
       }
       
       return sortOptions.direction === 'desc' ? -comparison : comparison;
     });
 
     return allNotes;
-  }, [quickNotes, permanentNotes, contexts, displayMode, filters, sortOptions]);
+  }, [quickNotes, permanentNotes, contexts, displayMode, filters, sortOptions, searchQuery]);
 
   const handleSearchChange = (query: string) => {
-    setFilters(prev => ({ ...prev, searchQuery: query }));
+    setSearchQuery(query);
   };
 
-  const handleSortChange = (newSort: Partial<SortOptions>) => {
-    setSortOptions(prev => ({ ...prev, ...newSort }));
+  const handleFilterChange = (newFilters: NoteFilters) => {
+    setFilters(newFilters);
+  };
+
+  const handleSortChange = (newSort: SortOption) => {
+    setSortOptions(newSort);
   };
 
   if (loading) {
@@ -245,40 +287,21 @@ export const NotesManagementPanel: React.FC = () => {
           </button>
         </div>
 
-        {/* Search and Filters */}
-        <div className="search-and-filters">
-          <div className="search-bar">
-            <input
-              type="text"
-              placeholder="Search notes..."
-              value={filters.searchQuery}
-              onChange={(e) => handleSearchChange(e.target.value)}
-              className="search-input"
-            />
-          </div>
-          
-          <div className="filters-row">
-            <select
-              value={sortOptions.field}
-              onChange={(e) => handleSortChange({ field: e.target.value as SortOptions['field'] })}
-              className="sort-select"
-            >
-              <option value="createdAt">Sort by Created</option>
-              <option value="updatedAt">Sort by Modified</option>
-              <option value="title">Sort by Title</option>
-            </select>
-            
-            <button
-              onClick={() => handleSortChange({ 
-                direction: sortOptions.direction === 'asc' ? 'desc' : 'asc' 
-              })}
-              className="sort-direction-button"
-              title={`Sort ${sortOptions.direction === 'asc' ? 'Descending' : 'Ascending'}`}
-            >
-              {sortOptions.direction === 'asc' ? '↑' : '↓'}
-            </button>
-          </div>
-        </div>
+        {/* Enhanced Search and Filters */}
+        <SearchAndFilterBar
+          searchQuery={searchQuery}
+          onSearchChange={handleSearchChange}
+          filters={filters}
+          onFilterChange={handleFilterChange}
+          sortBy={sortOptions}
+          onSortChange={handleSortChange}
+          showAdvancedFilters={showAdvancedFilters}
+          onToggleAdvancedFilters={setShowAdvancedFilters}
+          contexts={contexts}
+          availableTags={availableTags}
+          totalNotesCount={quickNotes.length + permanentNotes.length}
+          filteredNotesCount={filteredAndSortedNotes.length}
+        />
       </div>
 
       <div className="panel-content">
@@ -287,7 +310,7 @@ export const NotesManagementPanel: React.FC = () => {
             <div className="empty-icon">📝</div>
             <h2>No Notes Found</h2>
             <p>
-              {filters.searchQuery || filters.tags.length > 0 || filters.contextIds.length > 0
+              {searchQuery || filters.tags.length > 0 || filters.contextIds.length > 0 || filters.reviewStatus.length > 0 || filters.dateRange
                 ? 'Try adjusting your search or filters'
                 : 'Start taking notes to see them here'
               }
@@ -299,6 +322,7 @@ export const NotesManagementPanel: React.FC = () => {
               <NoteCard 
                 key={`${note.type}-${note.id}`} 
                 note={note}
+                searchQuery={searchQuery}
                 onNoteClick={(note) => {
                   // TODO: Implement note detail view or editing
                   console.log('Note clicked:', note);
@@ -314,10 +338,11 @@ export const NotesManagementPanel: React.FC = () => {
 
 interface NoteCardProps {
   note: NoteDisplayItem;
+  searchQuery: string;
   onNoteClick?: (note: NoteDisplayItem) => void;
 }
 
-const NoteCard: React.FC<NoteCardProps> = ({ note, onNoteClick }) => {
+const NoteCard: React.FC<NoteCardProps> = ({ note, searchQuery, onNoteClick }) => {
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat('en-US', {
       month: 'short',
@@ -348,7 +373,13 @@ const NoteCard: React.FC<NoteCardProps> = ({ note, onNoteClick }) => {
       }}
     >
       <div className="note-header">
-        <h3 className="note-title">{note.title}</h3>
+        <h3 className="note-title">
+          <SearchHighlighter 
+            text={note.title} 
+            searchQuery={searchQuery}
+            maxLength={100}
+          />
+        </h3>
         <div className="note-meta">
           <span className={`note-type-badge ${note.type}`}>
             {note.type === 'quick' ? 'Quick' : 'Permanent'}
@@ -362,7 +393,14 @@ const NoteCard: React.FC<NoteCardProps> = ({ note, onNoteClick }) => {
       </div>
       
       <div className="note-content">
-        <p className="note-excerpt">{note.excerpt}</p>
+        <p className="note-excerpt">
+          <SearchHighlighter 
+            text={note.content} 
+            searchQuery={searchQuery}
+            maxLength={150}
+            contextLength={50}
+          />
+        </p>
       </div>
       
       <div className="note-footer">

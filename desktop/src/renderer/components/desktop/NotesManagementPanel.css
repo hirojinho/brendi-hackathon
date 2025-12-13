@@ -1,3 +1,12 @@
+/* Search highlighting */
+.search-highlight {
+  background: var(--accent-color-alpha, rgba(0, 122, 255, 0.2));
+  color: var(--accent-color, #007aff);
+  padding: 1px 2px;
+  border-radius: 2px;
+  font-weight: 500;
+}
+
 .notes-management-panel {
   display: flex;
   flex-direction: column;
