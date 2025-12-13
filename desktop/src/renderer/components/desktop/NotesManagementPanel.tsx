@@ -7,6 +7,8 @@ import { SearchHighlighter, calculateRelevanceScore, findSearchMatches, SearchMa
 import { useReview } from '../../hooks/useReview';
 import { ReviewSession } from '../review/ReviewSession';
 import { NoteTransformationInterface } from '../review/NoteTransformationInterface';
+import { IntegratedChatPanel } from './IntegratedChatPanel';
+import { useSettings } from '../../hooks/useSettings';
 import './NotesManagementPanel.css';
 
 export type DisplayMode = 'unified' | 'quick-only' | 'permanent-only';
@@ -55,6 +57,10 @@ export const NotesManagementPanel: React.FC = () => {
   const [showBulkReviewInterface, setShowBulkReviewInterface] = useState(false);
   const [currentBulkReviewNote, setCurrentBulkReviewNote] = useState<NoteDisplayItem | null>(null);
   
+  // Chat functionality state
+  const [chatPanelVisible, setChatPanelVisible] = useState(false);
+  const [chatContextNoteIds, setChatContextNoteIds] = useState<string[]>([]);
+  
   // Use review hook for status and session management
   const {
     reviewStatus,
@@ -65,6 +71,9 @@ export const NotesManagementPanel: React.FC = () => {
     createReviewSession,
     processNote
   } = useReview({ autoLoad: true });
+
+  // Use settings hook for chat configuration
+  const { provider, modelName } = useSettings(true);
 
   // Load data on component mount
   useEffect(() => {
@@ -355,6 +364,20 @@ export const NotesManagementPanel: React.FC = () => {
     setSelectedNotes(new Set());
   };
 
+  // Chat functionality handlers
+  const handleToggleChatPanel = () => {
+    setChatPanelVisible(!chatPanelVisible);
+  };
+
+  const handleChatContextChange = (noteIds: string[]) => {
+    setChatContextNoteIds(noteIds);
+  };
+
+  // Get selected notes for chat context
+  const chatContextNotes = useMemo(() => {
+    return filteredAndSortedNotes.filter(note => chatContextNoteIds.includes(note.id));
+  }, [filteredAndSortedNotes, chatContextNoteIds]);
+
   if (loading) {
     return (
       <div className="notes-management-panel">
@@ -382,8 +405,9 @@ export const NotesManagementPanel: React.FC = () => {
   }
 
   return (
-    <div className="notes-management-panel">
-      <div className="panel-header">
+    <div className={`notes-management-panel ${chatPanelVisible ? 'with-chat' : ''}`}>
+      <div className="notes-main-content">
+        <div className="panel-header">
         <div className="header-top">
           <h1>Notes</h1>
           <div className="header-actions">
@@ -426,6 +450,14 @@ export const NotesManagementPanel: React.FC = () => {
               title="Bulk Selection Mode"
             >
               {bulkSelectionMode ? '✓ Bulk Mode' : '☐ Bulk Select'}
+            </button>
+            
+            <button 
+              onClick={handleToggleChatPanel}
+              className={`chat-toggle-button ${chatPanelVisible ? 'active' : ''}`}
+              title="Toggle Chat Panel"
+            >
+              💬 Chat
             </button>
             
             <button onClick={loadData} className="refresh-button" title="Refresh">
@@ -587,7 +619,19 @@ export const NotesManagementPanel: React.FC = () => {
             )}
           </>
         )}
+        </div>
       </div>
+
+      {/* Integrated Chat Panel */}
+      <IntegratedChatPanel
+        isVisible={chatPanelVisible}
+        onToggleVisibility={handleToggleChatPanel}
+        selectedNotes={chatContextNotes}
+        onNoteContextChange={handleChatContextChange}
+        model={provider || 'openai'}
+        modelName={modelName}
+        embeddingProvider={'openai'}
+      />
     </div>
   );
 };
