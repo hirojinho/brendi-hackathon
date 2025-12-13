@@ -4,6 +4,7 @@ import { NoteTakingAgent } from './components/note-taking';
 import { StatusMessage } from './components/layout';
 import { useBackendHealth } from './hooks/useBackendHealth';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
+import { useSystemPreferences } from './hooks/useSystemPreferences';
 import { settingsService } from './services/settingsService';
 import './App.css';
 
@@ -11,7 +12,10 @@ function App() {
   const { isReady, isChecking } = useBackendHealth();
   const overlayRef = useRef<HTMLDivElement>(null);
   const [mode, setMode] = useState<'chat' | 'note-taking'>('chat');
-
+  
+  // Initialize system preferences support
+  useSystemPreferences();
+  
   useKeyboardShortcuts();
 
   // Load default mode from settings on mount

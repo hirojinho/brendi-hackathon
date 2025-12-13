@@ -5,6 +5,7 @@ import { DesktopNotesPanel } from './desktop/DesktopNotesPanel';
 import { DesktopDocumentsPanel } from './desktop/DesktopDocumentsPanel';
 import { DesktopReviewPanel } from './desktop/DesktopReviewPanel';
 import { DesktopZettelkastenPanel } from './desktop/DesktopZettelkastenPanel';
+import { useSystemPreferences } from '../hooks/useSystemPreferences';
 import './DesktopApp.css';
 
 type TabType = 'chat' | 'notes' | 'zettelkasten' | 'review' | 'documents';
@@ -15,6 +16,9 @@ export const DesktopApp: React.FC = () => {
   const [openrouterModelName, setOpenrouterModelName] = useState<string>('qwen/qwen3-14b:free');
   const [ollamaModelName, setOllamaModelName] = useState<string>('phi3:latest');
   const [embeddingProvider, setEmbeddingProvider] = useState<'openai' | 'ollama'>('ollama');
+  
+  // Initialize system preferences support
+  useSystemPreferences();
 
   return (
     <div className="desktop-app">

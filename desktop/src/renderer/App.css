@@ -1,3 +1,4 @@
+/* Overlay Interface Styles */
 .overlay-container {
   width: 100%;
   height: 100%;
@@ -12,21 +13,22 @@
   max-width: 90vw;
   height: 520px;
   max-height: 90vh;
-  background: linear-gradient(135deg, #1a1a1a 0%, #1e1e1e 100%);
-  border-radius: 12px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--color-surface-primary);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-2xl);
+  border: 1px solid var(--color-border-secondary);
   display: flex;
   flex-direction: column;
   overflow: hidden;
   min-height: 0;
-  animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: overlaySlideUp var(--transition-slow);
+  backdrop-filter: blur(20px);
 }
 
-@keyframes slideUp {
+@keyframes overlaySlideUp {
   from {
     opacity: 0;
-    transform: translateY(20px) scale(0.95);
+    transform: translateY(var(--spacing-6)) scale(0.95);
   }
   to {
     opacity: 1;
@@ -34,21 +36,127 @@
   }
 }
 
+/* Status Messages */
 .status-message {
-  padding: 3rem 2rem;
+  padding: var(--spacing-12) var(--spacing-8);
   text-align: center;
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 14px;
-  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-subheadline);
+  font-family: var(--font-family-system);
+  line-height: var(--line-height-relaxed);
 }
 
 .status-message p {
   margin: 0;
+  font-weight: var(--font-weight-medium);
 }
 
 .status-error {
-  font-size: 12px;
-  margin-top: 8px;
-  color: rgba(255, 255, 255, 0.5);
-  font-weight: 400;
+  font-size: var(--font-size-caption-1);
+  margin-top: var(--spacing-3);
+  color: var(--color-text-tertiary);
+  font-weight: var(--font-weight-regular);
+}
+
+/* Desktop App Styles */
+.desktop-app {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-background-primary);
+  font-family: var(--font-family-system);
+}
+
+.desktop-app-content {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+/* Window Controls (macOS Style) */
+.window-controls {
+  display: flex;
+  align-items: center;
+  padding: var(--spacing-4) var(--spacing-5);
+  background: var(--color-surface-secondary);
+  border-bottom: 1px solid var(--color-border-secondary);
+  -webkit-app-region: drag;
+}
+
+.window-controls-buttons {
+  display: flex;
+  gap: var(--spacing-3);
+  -webkit-app-region: no-drag;
+}
+
+.window-control-button {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.window-control-button--close {
+  background: #ff5f57;
+}
+
+.window-control-button--minimize {
+  background: #ffbd2e;
+}
+
+.window-control-button--maximize {
+  background: #28ca42;
+}
+
+.window-control-button:hover {
+  transform: scale(1.1);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .overlay-content {
+    width: 95vw;
+    height: 85vh;
+    border-radius: var(--radius-xl);
+  }
+  
+  .status-message {
+    padding: var(--spacing-8) var(--spacing-6);
+    font-size: var(--font-size-footnote);
+  }
+}
+
+/* Dark Mode Specific Adjustments */
+@media (prefers-color-scheme: dark) {
+  .overlay-content {
+    backdrop-filter: blur(40px);
+    background: rgba(28, 28, 30, 0.95);
+  }
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+  .overlay-content {
+    border-width: 2px;
+    box-shadow: var(--shadow-xl);
+  }
+  
+  .window-control-button {
+    border: 1px solid var(--color-border-primary);
+  }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .overlay-content {
+    animation: none;
+  }
+  
+  .window-control-button:hover {
+    transform: none;
+  }
 }

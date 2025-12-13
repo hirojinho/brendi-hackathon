@@ -5,4 +5,5 @@ export * from './useKeyboardShortcuts';
 export * from './useSettings';
 export * from './useQuickNotesStatus';
 export * from './useReview';
+export * from './useSystemPreferences';
 

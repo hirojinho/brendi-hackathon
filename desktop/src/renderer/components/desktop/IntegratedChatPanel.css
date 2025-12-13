@@ -2,10 +2,11 @@
 .integrated-chat-panel {
   display: flex;
   flex-direction: column;
-  background: var(--background-primary, #ffffff);
-  border-left: 1px solid var(--border-color, #e5e5e7);
-  transition: all 0.3s ease;
+  background: var(--color-background-primary);
+  border-left: 1px solid var(--color-border-secondary);
+  transition: all var(--transition-slow);
   position: relative;
+  font-family: var(--font-family-system);
 }
 
 .integrated-chat-panel.collapsed {
@@ -13,7 +14,7 @@
   min-width: 60px;
   justify-content: flex-start;
   align-items: center;
-  padding: 16px 0;
+  padding: var(--spacing-5) 0;
 }
 
 .integrated-chat-panel.expanded {
@@ -25,23 +26,25 @@
 
 /* Chat Toggle Button (when collapsed) */
 .chat-toggle-button {
-  background: var(--accent-color, #007aff);
-  color: white;
+  background: var(--color-accent);
+  color: var(--color-text-inverse);
   border: none;
-  border-radius: 12px;
+  border-radius: var(--radius-xl);
   width: 44px;
   height: 44px;
-  font-size: 18px;
+  font-size: var(--font-size-headline);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all var(--transition-fast);
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: var(--shadow-md);
 }
 
 .chat-toggle-button:hover {
-  background: var(--accent-color-hover, #0056cc);
+  background: var(--color-accent-hover);
   transform: scale(1.05);
+  box-shadow: var(--shadow-lg);
 }
 
 /* Chat Header */
@@ -49,29 +52,29 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--border-color, #e5e5e7);
-  background: var(--background-secondary, #f8f9fa);
+  padding: var(--spacing-5) var(--spacing-6);
+  border-bottom: 1px solid var(--color-border-secondary);
+  background: var(--color-surface-secondary);
   min-height: 60px;
 }
 
 .chat-header-left {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--spacing-4);
   flex: 1;
 }
 
 .chat-header-right {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--spacing-3);
 }
 
 .chat-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--text-primary, #1d1d1f);
+  font-size: var(--font-size-callout);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
   margin: 0;
   white-space: nowrap;
   overflow: hidden;
@@ -84,35 +87,35 @@
 .context-button,
 .new-chat-button,
 .close-button {
-  background: none;
+  background: transparent;
   border: none;
-  padding: 8px;
-  border-radius: 8px;
+  padding: var(--spacing-3);
+  border-radius: var(--radius-large);
   cursor: pointer;
-  font-size: 14px;
-  color: var(--text-secondary, #86868b);
-  transition: all 0.2s ease;
+  font-size: var(--font-size-subheadline);
+  color: var(--color-text-secondary);
+  transition: all var(--transition-fast);
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--spacing-1);
 }
 
 .sessions-button:hover,
 .context-button:hover,
 .new-chat-button:hover,
 .close-button:hover {
-  background: var(--background-tertiary, #f0f0f0);
-  color: var(--text-primary, #1d1d1f);
+  background: var(--color-hover-overlay);
+  color: var(--color-text-primary);
 }
 
 .context-button.has-context {
-  background: var(--accent-color, #007aff);
-  color: white;
-  font-weight: 500;
+  background: var(--color-accent);
+  color: var(--color-text-inverse);
+  font-weight: var(--font-weight-medium);
 }
 
 .context-button.has-context:hover {
-  background: var(--accent-color-hover, #0056cc);
+  background: var(--color-accent-hover);
 }
 
 /* Chat Sessions List */

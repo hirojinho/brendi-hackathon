@@ -1,0 +1,346 @@
+/* 
+ * macOS Design System Tokens
+ * Following Apple's Human Interface Guidelines
+ * https://developer.apple.com/design/human-interface-guidelines/macos
+ */
+
+:root {
+  /* Typography - SF Pro Font Family */
+  --font-family-system: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', system-ui, sans-serif;
+  --font-family-mono: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+  
+  /* Font Weights */
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  
+  /* Font Sizes - Apple's Type Scale */
+  --font-size-caption-2: 11px;
+  --font-size-caption-1: 12px;
+  --font-size-footnote: 13px;
+  --font-size-subheadline: 15px;
+  --font-size-callout: 16px;
+  --font-size-body: 17px;
+  --font-size-headline: 17px;
+  --font-size-title-3: 20px;
+  --font-size-title-2: 22px;
+  --font-size-title-1: 28px;
+  --font-size-large-title: 34px;
+  
+  /* Line Heights */
+  --line-height-tight: 1.2;
+  --line-height-normal: 1.4;
+  --line-height-relaxed: 1.6;
+  
+  /* Letter Spacing */
+  --letter-spacing-tight: -0.4px;
+  --letter-spacing-normal: 0;
+  --letter-spacing-wide: 0.5px;
+  
+  /* Spacing Scale - 8pt Grid System */
+  --spacing-1: 2px;   /* 0.25 * 8 */
+  --spacing-2: 4px;   /* 0.5 * 8 */
+  --spacing-3: 8px;   /* 1 * 8 */
+  --spacing-4: 12px;  /* 1.5 * 8 */
+  --spacing-5: 16px;  /* 2 * 8 */
+  --spacing-6: 20px;  /* 2.5 * 8 */
+  --spacing-7: 24px;  /* 3 * 8 */
+  --spacing-8: 32px;  /* 4 * 8 */
+  --spacing-9: 40px;  /* 5 * 8 */
+  --spacing-10: 48px; /* 6 * 8 */
+  --spacing-11: 56px; /* 7 * 8 */
+  --spacing-12: 64px; /* 8 * 8 */
+  
+  /* Border Radius */
+  --radius-small: 4px;
+  --radius-medium: 6px;
+  --radius-large: 8px;
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
+  --radius-full: 9999px;
+  
+  /* Shadows - macOS Style */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 2px 4px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 4px 8px rgba(0, 0, 0, 0.12), 0 2px 4px rgba(0, 0, 0, 0.08);
+  --shadow-xl: 0 8px 16px rgba(0, 0, 0, 0.15), 0 4px 8px rgba(0, 0, 0, 0.1);
+  --shadow-2xl: 0 20px 40px rgba(0, 0, 0, 0.2), 0 8px 16px rgba(0, 0, 0, 0.15);
+  
+  /* Transitions - macOS Easing */
+  --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  
+  /* Z-Index Scale */
+  --z-dropdown: 1000;
+  --z-sticky: 1020;
+  --z-fixed: 1030;
+  --z-modal-backdrop: 1040;
+  --z-modal: 1050;
+  --z-popover: 1060;
+  --z-tooltip: 1070;
+  --z-toast: 1080;
+}
+
+/* Light Mode Colors - macOS System Colors */
+:root {
+  /* System Colors */
+  --color-system-red: #ff3b30;
+  --color-system-orange: #ff9500;
+  --color-system-yellow: #ffcc00;
+  --color-system-green: #34c759;
+  --color-system-mint: #00c7be;
+  --color-system-teal: #30b0c7;
+  --color-system-cyan: #32ade6;
+  --color-system-blue: #007aff;
+  --color-system-indigo: #5856d6;
+  --color-system-purple: #af52de;
+  --color-system-pink: #ff2d92;
+  --color-system-brown: #a2845e;
+  
+  /* Semantic Colors */
+  --color-accent: var(--color-system-blue);
+  --color-accent-hover: #0056cc;
+  --color-accent-pressed: #004499;
+  --color-accent-disabled: #b3d9ff;
+  
+  --color-success: var(--color-system-green);
+  --color-warning: var(--color-system-orange);
+  --color-error: var(--color-system-red);
+  --color-info: var(--color-system-cyan);
+  
+  /* Background Colors */
+  --color-background-primary: #ffffff;
+  --color-background-secondary: #f5f5f7;
+  --color-background-tertiary: #f0f0f0;
+  --color-background-quaternary: #e5e5e7;
+  
+  /* Surface Colors */
+  --color-surface-primary: #ffffff;
+  --color-surface-secondary: #f8f9fa;
+  --color-surface-tertiary: #f1f3f4;
+  --color-surface-overlay: rgba(0, 0, 0, 0.4);
+  
+  /* Text Colors */
+  --color-text-primary: #1d1d1f;
+  --color-text-secondary: #86868b;
+  --color-text-tertiary: #a1a1a6;
+  --color-text-quaternary: #c7c7cc;
+  --color-text-inverse: #ffffff;
+  --color-text-accent: var(--color-accent);
+  --color-text-success: #1e7e34;
+  --color-text-warning: #856404;
+  --color-text-error: #721c24;
+  
+  /* Border Colors */
+  --color-border-primary: #d2d2d7;
+  --color-border-secondary: #e5e5e7;
+  --color-border-tertiary: #f0f0f0;
+  --color-border-accent: var(--color-accent);
+  --color-border-success: #28a745;
+  --color-border-warning: #ffc107;
+  --color-border-error: #dc3545;
+  
+  /* Interactive States */
+  --color-hover-overlay: rgba(0, 0, 0, 0.04);
+  --color-pressed-overlay: rgba(0, 0, 0, 0.08);
+  --color-focus-ring: rgba(0, 122, 255, 0.25);
+  --color-selection: rgba(0, 122, 255, 0.15);
+  
+  /* Component-specific Colors */
+  --color-input-background: #ffffff;
+  --color-input-border: var(--color-border-secondary);
+  --color-input-border-focus: var(--color-accent);
+  --color-input-placeholder: var(--color-text-tertiary);
+  
+  --color-button-primary-background: var(--color-accent);
+  --color-button-primary-text: #ffffff;
+  --color-button-secondary-background: var(--color-background-tertiary);
+  --color-button-secondary-text: var(--color-text-primary);
+  
+  --color-card-background: #ffffff;
+  --color-card-border: var(--color-border-secondary);
+  --color-card-shadow: rgba(0, 0, 0, 0.08);
+}
+
+/* Dark Mode Colors */
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* System Colors - Dark Mode Variants */
+    --color-system-red: #ff453a;
+    --color-system-orange: #ff9f0a;
+    --color-system-yellow: #ffd60a;
+    --color-system-green: #32d74b;
+    --color-system-mint: #63e6e2;
+    --color-system-teal: #40c8e0;
+    --color-system-cyan: #64d2ff;
+    --color-system-blue: #0a84ff;
+    --color-system-indigo: #5e5ce6;
+    --color-system-purple: #bf5af2;
+    --color-system-pink: #ff375f;
+    --color-system-brown: #ac8e68;
+    
+    /* Semantic Colors */
+    --color-accent: var(--color-system-blue);
+    --color-accent-hover: #409cff;
+    --color-accent-pressed: #66b3ff;
+    --color-accent-disabled: #1e3a5f;
+    
+    --color-success: var(--color-system-green);
+    --color-warning: var(--color-system-orange);
+    --color-error: var(--color-system-red);
+    --color-info: var(--color-system-cyan);
+    
+    /* Background Colors */
+    --color-background-primary: #1c1c1e;
+    --color-background-secondary: #2c2c2e;
+    --color-background-tertiary: #3a3a3c;
+    --color-background-quaternary: #48484a;
+    
+    /* Surface Colors */
+    --color-surface-primary: #1c1c1e;
+    --color-surface-secondary: #2c2c2e;
+    --color-surface-tertiary: #3a3a3c;
+    --color-surface-overlay: rgba(0, 0, 0, 0.6);
+    
+    /* Text Colors */
+    --color-text-primary: #ffffff;
+    --color-text-secondary: #98989d;
+    --color-text-tertiary: #636366;
+    --color-text-quaternary: #48484a;
+    --color-text-inverse: #1d1d1f;
+    --color-text-accent: var(--color-accent);
+    --color-text-success: #32d74b;
+    --color-text-warning: #ff9f0a;
+    --color-text-error: #ff453a;
+    
+    /* Border Colors */
+    --color-border-primary: #38383a;
+    --color-border-secondary: #48484a;
+    --color-border-tertiary: #58585a;
+    --color-border-accent: var(--color-accent);
+    --color-border-success: #32d74b;
+    --color-border-warning: #ff9f0a;
+    --color-border-error: #ff453a;
+    
+    /* Interactive States */
+    --color-hover-overlay: rgba(255, 255, 255, 0.08);
+    --color-pressed-overlay: rgba(255, 255, 255, 0.16);
+    --color-focus-ring: rgba(10, 132, 255, 0.4);
+    --color-selection: rgba(10, 132, 255, 0.25);
+    
+    /* Component-specific Colors */
+    --color-input-background: var(--color-background-tertiary);
+    --color-input-border: var(--color-border-secondary);
+    --color-input-border-focus: var(--color-accent);
+    --color-input-placeholder: var(--color-text-tertiary);
+    
+    --color-button-primary-background: var(--color-accent);
+    --color-button-primary-text: #ffffff;
+    --color-button-secondary-background: var(--color-background-tertiary);
+    --color-button-secondary-text: var(--color-text-primary);
+    
+    --color-card-background: var(--color-surface-secondary);
+    --color-card-border: var(--color-border-secondary);
+    --color-card-shadow: rgba(0, 0, 0, 0.3);
+    
+    /* Shadows - Adjusted for Dark Mode */
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
+    --shadow-md: 0 2px 4px rgba(0, 0, 0, 0.25), 0 1px 2px rgba(0, 0, 0, 0.2);
+    --shadow-lg: 0 4px 8px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.25);
+    --shadow-xl: 0 8px 16px rgba(0, 0, 0, 0.35), 0 4px 8px rgba(0, 0, 0, 0.3);
+    --shadow-2xl: 0 20px 40px rgba(0, 0, 0, 0.4), 0 8px 16px rgba(0, 0, 0, 0.35);
+  }
+}
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: high) {
+  :root {
+    --color-border-primary: #000000;
+    --color-border-secondary: #333333;
+    --color-text-primary: #000000;
+    --color-text-secondary: #333333;
+  }
+  
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --color-border-primary: #ffffff;
+      --color-border-secondary: #cccccc;
+      --color-text-primary: #ffffff;
+      --color-text-secondary: #cccccc;
+    }
+  }
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --transition-fast: none;
+    --transition-normal: none;
+    --transition-slow: none;
+  }
+}
+
+/* Component Base Styles */
+.macos-component {
+  font-family: var(--font-family-system);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Focus Ring Utility */
+.focus-ring {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
+}
+
+/* Scrollbar Styling */
+.macos-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.macos-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.macos-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--color-text-quaternary);
+  border-radius: var(--radius-full);
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+.macos-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-tertiary);
+  background-clip: content-box;
+}
+
+/* Utility Classes */
+.text-primary { color: var(--color-text-primary); }
+.text-secondary { color: var(--color-text-secondary); }
+.text-tertiary { color: var(--color-text-tertiary); }
+.text-accent { color: var(--color-text-accent); }
+.text-success { color: var(--color-text-success); }
+.text-warning { color: var(--color-text-warning); }
+.text-error { color: var(--color-text-error); }
+
+.bg-primary { background-color: var(--color-background-primary); }
+.bg-secondary { background-color: var(--color-background-secondary); }
+.bg-tertiary { background-color: var(--color-background-tertiary); }
+.bg-surface { background-color: var(--color-surface-primary); }
+
+.border-primary { border-color: var(--color-border-primary); }
+.border-secondary { border-color: var(--color-border-secondary); }
+.border-accent { border-color: var(--color-border-accent); }
+
+.shadow-sm { box-shadow: var(--shadow-sm); }
+.shadow-md { box-shadow: var(--shadow-md); }
+.shadow-lg { box-shadow: var(--shadow-lg); }
+.shadow-xl { box-shadow: var(--shadow-xl); }
+
+.transition-fast { transition: all var(--transition-fast); }
+.transition-normal { transition: all var(--transition-normal); }
+.transition-slow { transition: all var(--transition-slow); }
