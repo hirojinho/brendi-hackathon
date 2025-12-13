@@ -485,3 +485,36 @@
     padding: 12px 20px 16px;
   }
 }
+/* View Notes Section */
+.view-notes-section {
+  margin: 8px 0;
+  display: flex;
+  justify-content: center;
+}
+
+.view-notes-button {
+  background: rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 8px;
+  color: #60a5fa;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.view-notes-button:hover {
+  background: rgba(59, 130, 246, 0.25);
+  border-color: rgba(59, 130, 246, 0.5);
+  color: #93c5fd;
+  transform: translateY(-1px);
+}
+
+.view-notes-button:active {
+  transform: translateY(0);
+}
