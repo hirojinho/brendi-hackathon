@@ -4,16 +4,12 @@ import { useContexts } from '../../hooks/useContexts';
 import { useReview } from '../../hooks/useReview';
 import { useQuickNotesStatus } from '../../hooks/useQuickNotesStatus';
 import { quickNotesService } from '../../services/quickNotesService';
-import { ChatHeader } from '../layout';
 import { ChatInput } from '../chat';
 import SettingsPanel from '../SettingsPanel';
 import { QuickNotesView } from '../quick-notes';
-// import { ContextSelector, ContextBadge } from '../contexts';
-// import { getContextName } from '../../utils/contextUtils';
 import { NoteTakingResult } from './NoteTakingResult';
 import { ContextCreationPrompt } from './ContextCreationPrompt';
 import { NoteTakingEmptyState } from './NoteTakingEmptyState';
-import { NoteTakingModeIndicator } from './NoteTakingModeIndicator';
 import { ReviewSession } from '../review';
 import '../ChatBox.css';
 import './MinimalNoteTaking.css';
@@ -22,7 +18,7 @@ const NoteTakingAgent: React.FC = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [showQuickNotes, setShowQuickNotes] = useState(false);
   const [showReview, setShowReview] = useState(false);
-  const [selectedContextId, setSelectedContextId] = useState<string | null>(null);
+  const [selectedContextId] = useState<string | null>(null);
   const [showContextCreation, setShowContextCreation] = useState(false);
   const [pendingContext, setPendingContext] = useState<{ 
     name: string; 
@@ -34,14 +30,12 @@ const NoteTakingAgent: React.FC = () => {
 
   const {
     contexts,
-    // loadContexts, // Unused
     createContext,
   } = useContexts({ hierarchy: true, autoLoad: true });
 
   const {
     reviewStatus,
     isReviewRequired,
-    canCreateNewNote,
     loadReviewStatus
   } = useReview({ autoLoad: true });
 
@@ -330,7 +324,7 @@ const NoteTakingAgent: React.FC = () => {
           value={input}
           onChange={setInput}
           onSubmit={handleSubmit}
-          disabled={isLoading || isReviewRequired || (quickNotesStatus && !quickNotesStatus.canCreateNew)}
+          disabled={Boolean(isLoading || isReviewRequired || (quickNotesStatus && !quickNotesStatus.canCreateNew))}
           placeholder={
             isReviewRequired 
               ? "Review required - click button above or press Tab"

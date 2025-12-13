@@ -6,6 +6,7 @@ import type {
   ReviewSession 
 } from '../types/review';
 
+// Extend the existing global interface instead of overriding it
 declare global {
   interface Window {
     electronAPI: {
@@ -16,6 +17,10 @@ declare global {
         processNote: (payload: { sessionId: string; noteId: string; action: 'transform' | 'discard'; permanentNoteData?: any }) => Promise<ProcessNoteResponse>;
         completeSession: (sessionId: string) => Promise<{ canCreateNewNotes: boolean }>;
       };
+      // Other methods are defined in preload.ts
+      toggleOverlay: () => Promise<void>;
+      openMainWindow: () => Promise<boolean>;
+      [key: string]: any; // Allow other properties
     };
   }
 }
