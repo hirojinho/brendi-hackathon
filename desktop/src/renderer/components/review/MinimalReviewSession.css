@@ -1,13 +1,13 @@
-/* Minimalistic Review Session */
+/* Minimalistic Review Session - Dark Mode */
 .minimal-review-session {
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  width: 100vw;
-  background: #fafafa;
+  height: 100%;
+  width: 100%;
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', sans-serif;
   -webkit-font-smoothing: antialiased;
-  color: #1d1d1f;
+  color: #ffffff;
+  overflow: hidden;
 }
 
 /* Minimal header */
@@ -16,41 +16,46 @@
   align-items: center;
   justify-content: space-between;
   padding: 16px 20px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-  background: white;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(20px);
+  flex-shrink: 0;
 }
 
 .minimal-review-title {
   font-size: 18px;
   font-weight: 600;
-  color: #1d1d1f;
+  color: #ffffff;
   margin: 0;
 }
 
 .minimal-review-progress {
   font-size: 13px;
-  color: #86868b;
-  background: rgba(0, 0, 0, 0.05);
-  padding: 4px 12px;
-  border-radius: 12px;
+  color: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.08);
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-weight: 600;
 }
 
 .minimal-review-cancel {
-  background: rgba(0, 0, 0, 0.05);
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  color: #86868b;
-  padding: 6px 12px;
-  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.7);
+  padding: 8px 16px;
+  border-radius: 8px;
   cursor: pointer;
   font-size: 13px;
-  font-weight: 500;
-  transition: all 0.15s ease;
+  font-weight: 600;
+  transition: all 0.2s ease;
   font-family: inherit;
 }
 
 .minimal-review-cancel:hover {
-  background: rgba(0, 0, 0, 0.1);
-  color: #1d1d1f;
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  transform: translateY(-1px);
 }
 
 /* Review content */
@@ -58,20 +63,23 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  padding: 40px;
-  max-width: 700px;
+  justify-content: flex-start;
+  padding: 16px 24px;
+  max-width: 600px;
   margin: 0 auto;
   width: 100%;
+  overflow-y: auto;
+  min-height: 0;
 }
 
 .minimal-review-note {
-  background: white;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 16px;
-  padding: 24px 28px;
-  margin-bottom: 24px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(20px);
 }
 
 .minimal-review-note-header {
@@ -84,7 +92,7 @@
 .minimal-review-note-title {
   font-size: 18px;
   font-weight: 600;
-  color: #1d1d1f;
+  color: #ffffff;
   margin: 0;
   flex: 1;
   line-height: 1.4;
@@ -92,19 +100,20 @@
 
 .minimal-review-note-age {
   font-size: 11px;
-  color: #86868b;
-  background: rgba(255, 59, 48, 0.1);
-  color: #ff3b30;
-  padding: 4px 8px;
+  background: rgba(255, 69, 58, 0.15);
+  color: #ff453a;
+  padding: 6px 10px;
   border-radius: 8px;
-  font-weight: 500;
+  font-weight: 600;
+  border: 1px solid rgba(255, 69, 58, 0.3);
+  box-shadow: 0 0 20px rgba(255, 69, 58, 0.2);
 }
 
 .minimal-review-note-content {
-  font-size: 15px;
-  color: #1d1d1f;
-  line-height: 1.6;
-  margin-bottom: 20px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.5;
+  margin-bottom: 16px;
   white-space: pre-wrap;
 }
 
@@ -144,24 +153,27 @@
 }
 
 .minimal-review-btn.transform {
-  background: #007aff;
+  background: linear-gradient(135deg, #0a84ff 0%, #007aff 100%);
   color: white;
+  box-shadow: 0 4px 16px rgba(10, 132, 255, 0.3);
 }
 
 .minimal-review-btn.transform:hover {
-  background: #0051d5;
-  transform: translateY(-1px);
+  background: linear-gradient(135deg, #007aff 0%, #0051d5 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(10, 132, 255, 0.4);
 }
 
 .minimal-review-btn.discard {
-  background: rgba(255, 59, 48, 0.1);
-  color: #ff3b30;
-  border: 1px solid rgba(255, 59, 48, 0.2);
+  background: rgba(255, 69, 58, 0.15);
+  color: #ff453a;
+  border: 1px solid rgba(255, 69, 58, 0.3);
 }
 
 .minimal-review-btn.discard:hover {
-  background: rgba(255, 59, 48, 0.15);
-  border-color: rgba(255, 59, 48, 0.3);
+  background: rgba(255, 69, 58, 0.25);
+  border-color: rgba(255, 69, 58, 0.4);
+  transform: translateY(-2px);
 }
 
 /* Transformation interface */

@@ -12,6 +12,8 @@ body {
   margin: 0;
   padding: 0;
   overflow: hidden;
+  background: #1a1a1a;
+  color: #ffffff;
 }
 
 html {
@@ -22,5 +24,23 @@ html {
 #root {
   width: 100vw;
   height: 100vh;
+}
+
+/* Dark mode scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
 }
 

@@ -1,10 +1,11 @@
 .note-taking-mode-indicator {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 8px 16px;
-  background: rgba(43, 144, 255, 0.1);
-  border-bottom: 1px solid rgba(43, 144, 255, 0.2);
+  gap: 10px;
+  padding: 12px 20px;
+  background: rgba(10, 132, 255, 0.1);
+  border-bottom: 1px solid rgba(10, 132, 255, 0.2);
+  backdrop-filter: blur(20px);
 }
 
 .mode-header {
@@ -40,7 +41,7 @@
 .mode-badge {
   font-size: 12px;
   font-weight: 600;
-  color: #2b90ff;
+  color: #0a84ff;
   letter-spacing: 0.3px;
   text-transform: uppercase;
   white-space: nowrap;
@@ -50,15 +51,16 @@
 .review-required-badge {
   font-size: 11px;
   font-weight: 600;
-  color: #dc2626;
-  background: rgba(220, 38, 38, 0.1);
-  border: 1px solid rgba(220, 38, 38, 0.2);
-  padding: 2px 8px;
-  border-radius: 4px;
+  color: #ff453a;
+  background: rgba(255, 69, 58, 0.15);
+  border: 1px solid rgba(255, 69, 58, 0.3);
+  padding: 4px 10px;
+  border-radius: 6px;
   text-transform: uppercase;
   letter-spacing: 0.3px;
   white-space: nowrap;
   flex-shrink: 0;
+  box-shadow: 0 0 20px rgba(255, 69, 58, 0.2);
 }
 
 .action-buttons {
@@ -69,40 +71,42 @@
 }
 
 .review-btn {
-  background: rgba(220, 38, 38, 0.2);
-  border: 1px solid rgba(220, 38, 38, 0.3);
-  color: #dc2626;
-  padding: 4px 10px;
-  border-radius: 6px;
+  background: rgba(255, 69, 58, 0.15);
+  border: 1px solid rgba(255, 69, 58, 0.3);
+  color: #ff453a;
+  padding: 6px 12px;
+  border-radius: 8px;
   cursor: pointer;
   font-size: 11px;
-  font-weight: 500;
-  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  font-weight: 600;
+  transition: all 0.2s ease;
   font-family: inherit;
   white-space: nowrap;
 }
 
 .review-btn:hover {
-  background: rgba(220, 38, 38, 0.3);
-  border-color: rgba(220, 38, 38, 0.5);
+  background: rgba(255, 69, 58, 0.25);
+  border-color: rgba(255, 69, 58, 0.4);
+  transform: translateY(-1px);
 }
 
 .view-notes-btn {
-  background: rgba(43, 144, 255, 0.2);
-  border: 1px solid rgba(43, 144, 255, 0.3);
-  color: #2b90ff;
-  padding: 4px 10px;
-  border-radius: 6px;
+  background: rgba(10, 132, 255, 0.15);
+  border: 1px solid rgba(10, 132, 255, 0.3);
+  color: #0a84ff;
+  padding: 6px 12px;
+  border-radius: 8px;
   cursor: pointer;
   font-size: 11px;
-  font-weight: 500;
-  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  font-weight: 600;
+  transition: all 0.2s ease;
   font-family: inherit;
   white-space: nowrap;
 }
 
 .view-notes-btn:hover {
-  background: rgba(43, 144, 255, 0.3);
-  border-color: rgba(43, 144, 255, 0.5);
+  background: rgba(10, 132, 255, 0.25);
+  border-color: rgba(10, 132, 255, 0.4);
+  transform: translateY(-1px);
 }
 

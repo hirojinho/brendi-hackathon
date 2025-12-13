@@ -234,7 +234,7 @@ describe('Smart Notes Workflow Integration Tests', () => {
       // 4. Test search with permanent notes
       const searchAfterTransform = testDb.searchPermanentNotes('Legacy');
       expect(searchAfterTransform).toHaveLength(1);
-      expect(searchAfterTransform[0].title).toBe('Generated Title');
+      expect((searchAfterTransform[0] as any).title).toBe('Generated Title');
 
       // 5. Test data integrity
       expect(testDb.getAllPermanentNotes()).toHaveLength(1);
@@ -311,7 +311,7 @@ describe('Smart Notes Workflow Integration Tests', () => {
 
       const searchResults = testDb.searchPermanentNotes('Test');
       expect(searchResults).toHaveLength(1);
-      expect(searchResults[0].title).toBe('Test Note');
+      expect((searchResults[0] as any).title).toBe('Test Note');
 
       console.log('✅ Distraction-free user experience validation passed');
     });

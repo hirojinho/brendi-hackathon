@@ -56,6 +56,8 @@ app.setPath('userData', userDataPath);
 
 async function startBackend() {
   const userDataPath = app.getPath('userData');
+  console.log('[Main] Starting backend initialization...');
+  console.log('[Main] User data path:', userDataPath);
   
   // Override cwd so backend databases are created in userData
   const originalCwd = process.cwd();
@@ -63,7 +65,9 @@ async function startBackend() {
   
   try {
     // Get available port
+    console.log('[Main] Getting available port...');
     const port = await getPort({ port: 3001 });
+    console.log('[Main] Using port:', port);
     
     // Load environment variables from store
     const envVars: Record<string, string> = {};
@@ -79,10 +83,15 @@ async function startBackend() {
     if (maxQuickNotes) envVars.MAX_QUICK_NOTES = maxQuickNotes.toString();
     if (reviewAgeThresholdHours) envVars.REVIEW_AGE_THRESHOLD_HOURS = reviewAgeThresholdHours.toString();
     
+    console.log('[Main] Environment variables configured');
+    
     // Initialize backend
+    console.log('[Main] Initializing backend...');
     const result = await initializeBackend(port, envVars);
     backendUrl = `http://127.0.0.1:${port}`;
     backendServer = result.app;
+    
+    console.log('[Main] Backend started successfully on:', backendUrl);
     
   } catch (error) {
     console.error('[Main] Failed to start backend:', error);
@@ -821,6 +830,7 @@ ipcMain.handle('contexts:delete', async (_event, id: string) => {
 });
 
 ipcMain.handle('server:health', async () => {
+  console.log('[Main] Health check requested, backendUrl:', backendUrl);
   if (!backendUrl) {
     return { healthy: false, error: 'Backend not initialized' };
   }

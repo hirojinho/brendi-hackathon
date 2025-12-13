@@ -373,7 +373,9 @@ describe('Quick Notes Property-Based Tests', () => {
 
   afterEach(() => {
     // Clean up test database
-    database.close();
+    if (database && typeof database.close === 'function') {
+      database.close();
+    }
     if (fs.existsSync(testDbPath)) {
       fs.unlinkSync(testDbPath);
     }
@@ -381,7 +383,9 @@ describe('Quick Notes Property-Based Tests', () => {
 
   // Helper function to clear database between property test iterations
   const clearDatabase = () => {
-    database.close();
+    if (database && typeof database.close === 'function') {
+      database.close();
+    }
     if (fs.existsSync(testDbPath)) {
       fs.unlinkSync(testDbPath);
     }
@@ -1259,7 +1263,9 @@ describe('Integration Tests - Application Flow', () => {
   });
 
   afterEach(() => {
-    database.close();
+    if (database && typeof database.close === 'function') {
+      database.close();
+    }
     if (fs.existsSync(testDbPath)) {
       fs.unlinkSync(testDbPath);
     }
@@ -1325,7 +1331,9 @@ describe('Integration Tests - Application Flow', () => {
     
     // Step 3: Make notes old to trigger review requirement
     const oldTime = new Date(now.getTime() - (25 * 60 * 60 * 1000)); // 25 hours ago
-    quickNotesRepo.update(note1.id, { createdAt: oldTime.toISOString() });
+    // Update the note directly in the database to change its creation time
+    const oldNote1 = { ...note1, createdAt: oldTime.toISOString(), lastModified: oldTime.toISOString() };
+    quickNotesRepo.save(oldNote1);
     
     // Step 4: Verify review is required and new notes blocked
     expect(reviewEngine.isReviewRequired()).toBe(true);

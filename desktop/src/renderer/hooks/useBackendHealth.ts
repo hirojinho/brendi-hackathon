@@ -4,7 +4,7 @@ interface HealthStatus {
   healthy: boolean;
 }
 
-const MAX_RETRIES = 30;
+const MAX_RETRIES = 60; // Increased from 30 to 60 (30 seconds total)
 const RETRY_INTERVAL = 500; // milliseconds
 
 export function useBackendHealth() {
@@ -17,6 +17,7 @@ export function useBackendHealth() {
     const checkHealth = async (): Promise<boolean> => {
       try {
         const health: HealthStatus = await window.electronAPI.checkHealth();
+        console.log(`Health check attempt ${retryCount + 1}:`, health);
         if (health.healthy) {
           setIsReady(true);
           setIsChecking(false);
