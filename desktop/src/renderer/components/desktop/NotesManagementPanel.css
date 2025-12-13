@@ -435,3 +435,290 @@
     align-items: flex-start;
   }
 }
+
+/* Review Functionality Styles */
+
+/* Review Status Indicator */
+.review-status-indicator {
+  display: flex;
+  align-items: center;
+  margin-right: 12px;
+}
+
+.review-badge {
+  background: #ff9500;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Review Action Buttons */
+.review-session-button,
+.active-review-button {
+  background: #007aff;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  margin-right: 8px;
+}
+
+.review-session-button:hover,
+.active-review-button:hover {
+  background: #0056cc;
+}
+
+.review-session-button:disabled {
+  background: #86868b;
+  cursor: not-allowed;
+}
+
+.active-review-button {
+  background: #ff9500;
+}
+
+.active-review-button:hover {
+  background: #e6850e;
+}
+
+/* Bulk Selection */
+.bulk-selection-button {
+  background: none;
+  border: 1px solid #d2d2d7;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1d1d1f;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-right: 8px;
+}
+
+.bulk-selection-button:hover {
+  background: #f5f5f7;
+}
+
+.bulk-selection-button.active {
+  background: #007aff;
+  color: white;
+  border-color: #007aff;
+}
+
+.bulk-selection-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: #f5f5f7;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.bulk-selection-info {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1d1d1f;
+}
+
+.bulk-selection-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.bulk-action-button {
+  background: none;
+  border: 1px solid #d2d2d7;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #1d1d1f;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.bulk-action-button:hover {
+  background: #ffffff;
+  border-color: #007aff;
+  color: #007aff;
+}
+
+.bulk-review-button {
+  background: #007aff;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.bulk-review-button:hover {
+  background: #0056cc;
+}
+
+/* Note Card Bulk Selection */
+.note-card.bulk-mode {
+  position: relative;
+  padding-left: 60px;
+}
+
+.note-card.bulk-mode.selected {
+  border-color: #007aff;
+  background: rgba(0, 122, 255, 0.02);
+}
+
+.bulk-selection-checkbox {
+  position: absolute;
+  left: 20px;
+  top: 20px;
+}
+
+.bulk-selection-checkbox input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+/* Review Status Enhanced */
+.review-status.pending {
+  background: #fff3e0;
+  color: #e65100;
+  border: 1px solid #ffcc80;
+}
+
+.review-status.reviewed {
+  background: #e8f5e8;
+  color: #2e7d32;
+  border: 1px solid #a5d6a7;
+}
+
+.review-status.transformed {
+  background: #e3f2fd;
+  color: #1565c0;
+  border: 1px solid #90caf9;
+}
+
+/* Review Session Overlay */
+.review-session-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.review-session-overlay .minimal-review-session {
+  background: white;
+  border-radius: 12px;
+  max-width: 800px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+}
+
+/* Bulk Review Overlay */
+.bulk-review-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  z-index: 1000;
+}
+
+.bulk-review-header {
+  background: white;
+  padding: 16px 24px;
+  border-bottom: 1px solid #e5e5e7;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.bulk-review-header h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1d1d1f;
+}
+
+.cancel-bulk-review {
+  background: none;
+  border: 1px solid #d2d2d7;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1d1d1f;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cancel-bulk-review:hover {
+  background: #f5f5f7;
+  border-color: #007aff;
+  color: #007aff;
+}
+
+.bulk-review-overlay .note-transformation-interface {
+  flex: 1;
+  background: white;
+  overflow-y: auto;
+}
+
+/* Responsive adjustments for review features */
+@media (max-width: 768px) {
+  .header-actions {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  
+  .review-badge {
+    font-size: 11px;
+    padding: 4px 8px;
+  }
+  
+  .review-session-button,
+  .active-review-button {
+    font-size: 12px;
+    padding: 6px 12px;
+  }
+  
+  .bulk-selection-controls {
+    flex-direction: column;
+    gap: 8px;
+    align-items: stretch;
+  }
+  
+  .bulk-selection-actions {
+    justify-content: center;
+  }
+  
+  .note-card.bulk-mode {
+    padding-left: 50px;
+  }
+  
+  .bulk-selection-checkbox {
+    left: 16px;
+  }
+}
