@@ -18,10 +18,17 @@ export class ReviewEngine {
   ) {}
 
   /**
-   * Check if review is required based on note ages
+   * Check if review is required based on note ages OR note limit
    */
   isReviewRequired(): boolean {
     const quickNotes = this.quickNotesRepo.list();
+    
+    // Review is required if at or over the note limit
+    if (quickNotes.length >= this.config.maxQuickNotes) {
+      return true;
+    }
+
+    // Review is also required if any notes are older than threshold
     const now = new Date();
     const thresholdMs = this.config.reviewAgeThresholdHours * 60 * 60 * 1000;
 
@@ -50,13 +57,24 @@ export class ReviewEngine {
   }
 
   /**
-   * Get notes that require review (older than threshold)
+   * Get notes that require review (older than threshold OR when at note limit)
    */
   getNotesRequiringReview(): QuickNoteEntity[] {
     const quickNotes = this.quickNotesRepo.list();
     const now = new Date();
     const thresholdMs = this.config.reviewAgeThresholdHours * 60 * 60 * 1000;
 
+    // If we're at or over the note limit, include oldest notes for review
+    // even if they haven't reached the age threshold
+    const isAtLimit = quickNotes.length >= this.config.maxQuickNotes;
+
+    if (isAtLimit) {
+      // Return all notes sorted by age (oldest first) when at limit
+      return quickNotes
+        .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    }
+
+    // Normal case: only notes older than threshold
     return quickNotes
       .filter(note => {
         const noteAge = now.getTime() - new Date(note.createdAt).getTime();

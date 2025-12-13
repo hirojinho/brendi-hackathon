@@ -62,7 +62,12 @@ export function useReview(options: UseReviewOptions = {}) {
       
       return session;
     } catch (err: any) {
-      setError(err.message || 'Failed to create review session');
+      // Handle specific error cases
+      if (err.message.includes('No notes require review')) {
+        setError('No notes require review at this time');
+      } else {
+        setError(err.message || 'Failed to create review session');
+      }
       return null;
     } finally {
       setIsLoading(false);

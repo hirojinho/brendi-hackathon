@@ -37,20 +37,33 @@ export const ReviewSession: React.FC<ReviewSessionProps> = ({
         
         // First try to load existing active session
         await loadActiveSession();
-        
-        // If no active session, create one
-        if (!activeSession) {
-          await createReviewSession();
-        }
       } catch (err) {
-        console.error('Failed to initialize review session:', err);
+        console.error('Failed to load active session:', err);
       } finally {
         setIsInitializing(false);
       }
     };
 
     initializeSession();
-  }, []);
+  }, [loadActiveSession]);
+
+  // Create session if none exists after loading
+  useEffect(() => {
+    const createSessionIfNeeded = async () => {
+      if (!isInitializing && !activeSession && !error) {
+        try {
+          setIsInitializing(true);
+          await createReviewSession();
+        } catch (err) {
+          console.error('Failed to create review session:', err);
+        } finally {
+          setIsInitializing(false);
+        }
+      }
+    };
+
+    createSessionIfNeeded();
+  }, [isInitializing, activeSession, error, createReviewSession]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -125,17 +138,21 @@ export const ReviewSession: React.FC<ReviewSessionProps> = ({
   }
 
   if (error) {
+    const isNoNotesError = error.includes('No notes require review');
+    
     return (
       <div className="review-session error">
         <div className="error-message">
-          <h3>Review Session Error</h3>
-          <p>{error}</p>
+          <h3>{isNoNotesError ? 'No Review Needed' : 'Review Session Error'}</h3>
+          <p>{isNoNotesError ? 'All your notes are up to date! No review is required at this time.' : error}</p>
           <div className="error-actions">
-            <button onClick={clearError} className="btn-secondary">
-              Try Again
-            </button>
+            {!isNoNotesError && (
+              <button onClick={clearError} className="btn-secondary">
+                Try Again
+              </button>
+            )}
             <button onClick={handleCancel} className="btn-primary">
-              Cancel Review
+              {isNoNotesError ? 'Continue' : 'Cancel Review'}
             </button>
           </div>
         </div>

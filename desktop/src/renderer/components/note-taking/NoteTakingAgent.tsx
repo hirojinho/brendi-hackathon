@@ -306,11 +306,18 @@ const NoteTakingAgent: React.FC = () => {
             </button>
             <p className="review-prompt-text">
               {isReviewRequired 
-                ? "Some notes need your attention before you can create new ones."
+                ? `${reviewStatus?.reviewCount || 0} notes need your attention before you can create new ones.`
                 : quickNotesStatus && quickNotesStatus.isAtLimit
                 ? "You've reached the note limit. Review existing notes to continue."
                 : "Review is required before creating new notes."
               }
+            </p>
+            {/* Debug info */}
+            <p className="review-debug-info" style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', marginTop: '4px' }}>
+              Debug: isReviewRequired={isReviewRequired ? 'true' : 'false'}, 
+              reviewCount={reviewStatus?.reviewCount || 0}, 
+              canCreateNew={quickNotesStatus?.canCreateNew ? 'true' : 'false'},
+              currentCount={quickNotesStatus?.currentCount || 0}
             </p>
           </div>
         )}
