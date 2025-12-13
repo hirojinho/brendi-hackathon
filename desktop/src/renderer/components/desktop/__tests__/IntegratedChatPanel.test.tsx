@@ -5,7 +5,7 @@ import { IntegratedChatPanel } from '../IntegratedChatPanel';
 import { NoteDisplayItem } from '../NotesManagementPanel';
 
 // Mock the hooks and services
-jest.mock('../../hooks/useChat', () => ({
+jest.mock('../../../hooks/useChat', () => ({
   useChat: () => ({
     messages: [],
     input: '',
@@ -23,7 +23,7 @@ jest.mock('../../hooks/useChat', () => ({
   }),
 }));
 
-jest.mock('../common/MarkdownRenderer', () => ({
+jest.mock('../../common/MarkdownRenderer', () => ({
   MarkdownRenderer: ({ content }: { content: string }) => <div>{content}</div>,
 }));
 
@@ -159,10 +159,34 @@ describe('IntegratedChatPanel', () => {
   });
 
   it('shows RAG toggle and controls', () => {
+    // Mock useChat with RAG enabled for this test
+    const mockUseChatWithRag = jest.fn(() => ({
+      messages: [],
+      input: '',
+      isLoading: false,
+      currentResponse: '',
+      useRag: true, // Enable RAG for this test
+      maxChunks: 5,
+      setInput: jest.fn(),
+      setModel: jest.fn(),
+      setModelName: jest.fn(),
+      setUseRag: jest.fn(),
+      setMaxChunks: jest.fn(),
+      sendMessage: jest.fn(),
+      clearChat: jest.fn(),
+    }));
+
+    // Temporarily override the mock
+    const originalMock = require('../../../hooks/useChat').useChat;
+    require('../../../hooks/useChat').useChat = mockUseChatWithRag;
+
     render(<IntegratedChatPanel {...defaultProps} />);
 
     expect(screen.getByText('Use Document Retrieval (RAG)')).toBeInTheDocument();
     expect(screen.getByDisplayValue('5')).toBeInTheDocument(); // Max chunks input
+
+    // Restore original mock
+    require('../../../hooks/useChat').useChat = originalMock;
   });
 
   it('has proper placeholder text based on context selection', () => {
