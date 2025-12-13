@@ -62,6 +62,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Overlay controls
   toggleOverlay: () => ipcRenderer.invoke('overlay:toggle'),
   
+  // Window management
+  focusMainWindow: () => ipcRenderer.invoke('window:focus-main'),
+  getFocusedWindow: () => ipcRenderer.invoke('window:get-focused'),
+  
+  // State management
+  getState: (key?: string) => ipcRenderer.invoke('state:get', key),
+  setState: (key: string, value: any) => ipcRenderer.invoke('state:set', key, value),
+  
   // Server health
   checkHealth: () => ipcRenderer.invoke('server:health'),
   
@@ -74,13 +82,27 @@ contextBridge.exposeInMainWorld('electronAPI', {
   setShortcut: (shortcut: string) => ipcRenderer.invoke('shortcut:set', shortcut),
   
   // Main window
-  openMainWindow: () => ipcRenderer.invoke('open-main-window'),
+  openMainWindow: (options?: { initialTab?: string; fromOverlay?: boolean }) => ipcRenderer.invoke('open-main-window', options),
 });
 
 // Also expose as window.api for overlay compatibility
 contextBridge.exposeInMainWorld('api', {
-  openMainWindow: () => ipcRenderer.invoke('open-main-window'),
+  openMainWindow: (options?: { initialTab?: string; fromOverlay?: boolean }) => ipcRenderer.invoke('open-main-window', options),
 });
+
+// Add navigation event listener for main window
+if (typeof window !== 'undefined') {
+  ipcRenderer.on('navigate-to-tab', (_event, tabName) => {
+    // Dispatch custom event that React components can listen to
+    window.dispatchEvent(new CustomEvent('navigate-to-tab', { detail: { tabName } }));
+  });
+  
+  // Add state synchronization listener
+  ipcRenderer.on('state-updated', (_event, stateUpdate) => {
+    // Dispatch custom event that React components can listen to
+    window.dispatchEvent(new CustomEvent('state-updated', { detail: stateUpdate }));
+  });
+}
 } catch (error) {
   console.error('[Preload] Failed to expose electronAPI:', error);
 }
@@ -124,12 +146,16 @@ declare global {
       getContextChildren: (parentId: string) => Promise<{ contexts: Array<{ id: string; name: string; description: string; parentId: string | null; createdAt: string; lastModified: string }> }>;
       deleteContext: (id: string) => Promise<{ message: string }>;
       toggleOverlay: () => Promise<void>;
+      focusMainWindow: () => Promise<boolean>;
+      getFocusedWindow: () => Promise<'main' | 'overlay' | null>;
+      getState: (key?: string) => Promise<any>;
+      setState: (key: string, value: any) => Promise<boolean>;
       checkHealth: () => Promise<{ healthy: boolean; url?: string; error?: string }>;
       getConfig: (key: string) => Promise<any>;
       setConfig: (key: string, value: any) => Promise<boolean>;
       getShortcut: () => Promise<string>;
       setShortcut: (shortcut: string) => Promise<{ success: boolean; error?: string }>;
-      openMainWindow: () => Promise<boolean>;
+      openMainWindow: (options?: { initialTab?: string; fromOverlay?: boolean }) => Promise<boolean>;
     };
   }
 }

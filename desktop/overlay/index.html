@@ -21,7 +21,7 @@
     <script>
       const openBtn = document.getElementById('open-main');
       openBtn?.addEventListener('click', async () => {
-        try { await window.api.openMainWindow(); } catch {}
+        try { await window.api.openMainWindow({ initialTab: 'notes', fromOverlay: true }); } catch {}
       });
     </script>
   </body>

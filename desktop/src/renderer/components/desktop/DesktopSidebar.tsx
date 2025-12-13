@@ -151,6 +151,20 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
             <option value="ollama">Ollama (e5-base-v2)</option>
           </select>
         </div>
+        
+        <div className="settings-section">
+          <div className="keyboard-shortcuts">
+            <div className="shortcuts-title">Keyboard Shortcuts</div>
+            <div className="shortcut-item">
+              <span className="shortcut-keys">⌘⇧Space</span>
+              <span className="shortcut-desc">Toggle Overlay</span>
+            </div>
+            <div className="shortcut-item">
+              <span className="shortcut-keys">⌘1-5</span>
+              <span className="shortcut-desc">Switch Tabs</span>
+            </div>
+          </div>
+        </div>
       </div>
     </aside>
   );

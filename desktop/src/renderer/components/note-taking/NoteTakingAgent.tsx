@@ -114,7 +114,7 @@ const NoteTakingAgent: React.FC = () => {
         setShowQuickNotes(true);
       } else if ((e.metaKey || e.ctrlKey) && e.key === 'o') {
         e.preventDefault();
-        window.electronAPI.openMainWindow();
+        window.electronAPI.openMainWindow({ initialTab: 'notes', fromOverlay: true });
       } else if ((e.metaKey || e.ctrlKey) && e.key === ',') {
         e.preventDefault();
         setShowSettings(true);
@@ -340,7 +340,7 @@ const NoteTakingAgent: React.FC = () => {
         <div className="view-notes-section">
           <button 
             className="view-notes-button"
-            onClick={() => window.electronAPI.openMainWindow()}
+            onClick={() => window.electronAPI.openMainWindow({ initialTab: 'notes', fromOverlay: true })}
             title="Open main window to view all your notes"
           >
             📚 View All Notes

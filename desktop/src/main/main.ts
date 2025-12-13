@@ -28,6 +28,16 @@ let backendServer: any = null;
 let currentShortcut: string | null = null;
 const configStore = new Store<ConfigStore>() as unknown as StoreInterface;
 
+// Application state that should be synchronized between windows
+interface AppState {
+  lastActiveTab?: string;
+  lastUsedModel?: string;
+  lastUsedModelName?: string;
+  lastEmbeddingProvider?: string;
+}
+
+let appState: AppState = {};
+
 // Function to register global shortcut
 function registerGlobalShortcut(shortcut: string): boolean {
   // Unregister existing shortcut if any
@@ -149,7 +159,15 @@ function createOverlayWindow() {
 function toggleOverlay() {
   if (overlayWindow && overlayWindow.isVisible()) {
     overlayWindow.hide();
+    
+    // If main window exists and was previously focused, restore focus to it
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.focus();
+    }
   } else {
+    // Store reference to currently focused window for potential restoration
+    const previouslyFocusedWindow = BrowserWindow.getFocusedWindow();
+    
     // On macOS, destroy and recreate the window each time to ensure it appears on the current workspace
     // This prevents the window from being "bound" to the workspace where it was first created
     if (overlayWindow) {
@@ -167,6 +185,16 @@ function toggleOverlay() {
     }
     
     const currentWindow: BrowserWindow = overlayWindow;
+    
+    // Store reference to previously focused window for restoration when overlay closes
+    if (previouslyFocusedWindow && previouslyFocusedWindow === mainWindow) {
+      currentWindow.once('hide', () => {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.focus();
+        }
+      });
+    }
+    
     if (process.platform === 'darwin') {
       currentWindow.setVisibleOnAllWorkspaces(false);
       // Small delay to ensure workspace assignment happens correctly
@@ -189,10 +217,22 @@ function toggleOverlay() {
   }
 }
 
-function createMainWindow() {
+function createMainWindow(options?: { initialTab?: string; fromOverlay?: boolean }) {
   if (mainWindow) {
     mainWindow.show();
     mainWindow.focus();
+    
+    // If opening from overlay with specific tab, send navigation event
+    if (options?.initialTab && options?.fromOverlay) {
+      mainWindow.webContents.once('did-finish-load', () => {
+        mainWindow?.webContents.send('navigate-to-tab', options.initialTab);
+      });
+      
+      // If already loaded, send immediately
+      if (mainWindow.webContents.isLoading() === false) {
+        mainWindow.webContents.send('navigate-to-tab', options.initialTab);
+      }
+    }
     return;
   }
 
@@ -216,8 +256,24 @@ function createMainWindow() {
   console.log('[Main] Loading web app from:', webAppPath);
   mainWindow.loadFile(webAppPath);
 
+  // Send initial navigation after window loads
+  if (options?.initialTab) {
+    mainWindow.webContents.once('did-finish-load', () => {
+      mainWindow?.webContents.send('navigate-to-tab', options.initialTab);
+    });
+  }
+
   mainWindow.on('closed', () => {
     mainWindow = null;
+  });
+
+  // Register window-specific keyboard shortcuts
+  mainWindow.webContents.on('before-input-event', (event, input) => {
+    // Cmd/Ctrl + Shift + Space to toggle overlay from main window
+    if ((input.meta || input.control) && input.shift && input.key === ' ') {
+      event.preventDefault();
+      toggleOverlay();
+    }
   });
 }
 
@@ -844,6 +900,53 @@ ipcMain.handle('overlay:toggle', () => {
   toggleOverlay();
 });
 
+ipcMain.handle('window:focus-main', () => {
+  if (mainWindow) {
+    if (mainWindow.isMinimized()) {
+      mainWindow.restore();
+    }
+    mainWindow.show();
+    mainWindow.focus();
+    return true;
+  }
+  return false;
+});
+
+ipcMain.handle('window:get-focused', () => {
+  const focusedWindow = BrowserWindow.getFocusedWindow();
+  if (focusedWindow === mainWindow) {
+    return 'main';
+  } else if (focusedWindow === overlayWindow) {
+    return 'overlay';
+  }
+  return null;
+});
+
+// State synchronization handlers
+ipcMain.handle('state:get', (_event, key?: string) => {
+  if (key) {
+    return appState[key as keyof AppState];
+  }
+  return appState;
+});
+
+ipcMain.handle('state:set', (_event, key: string, value: any) => {
+  appState[key as keyof AppState] = value;
+  
+  // Broadcast state changes to all windows
+  const stateUpdate = { [key]: value };
+  
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('state-updated', stateUpdate);
+  }
+  
+  if (overlayWindow && !overlayWindow.isDestroyed()) {
+    overlayWindow.webContents.send('state-updated', stateUpdate);
+  }
+  
+  return true;
+});
+
 ipcMain.handle('config:get', (_event, key: string) => {
   return configStore.get(key);
 });
@@ -900,10 +1003,10 @@ ipcMain.handle('shortcut:set', (_event, shortcut: string) => {
   }
 });
 
-ipcMain.handle('open-main-window', async () => {
-  console.log('[Main] open-main-window IPC called');
+ipcMain.handle('open-main-window', async (_event, options?: { initialTab?: string; fromOverlay?: boolean }) => {
+  console.log('[Main] open-main-window IPC called with options:', options);
   try {
-    createMainWindow();
+    createMainWindow(options);
     console.log('[Main] Main window created successfully');
     return true;
   } catch (error) {
