@@ -19,6 +19,58 @@ export class QuickNotesDatabase {
     console.warn('[Database] Using mock database implementation');
     this.db = new MockDatabase();
     this.fallbackMode = true; // Always use fallback mode with mock
+    this.initializeSampleData();
+  }
+
+  private initializeSampleData() {
+    // Add some sample quick notes for demonstration
+    const sampleQuickNotes = [
+      {
+        id: 'quick-1',
+        title: 'Welcome to Your Notes System',
+        content: 'This is your new notes management system! You can create, edit, and organize your notes here. The system supports both quick notes for rapid capture and permanent notes for long-term storage.',
+        tags: ['welcome', 'getting-started'],
+        context_id: null,
+        created_at: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
+        last_modified: new Date(Date.now() - 86400000).toISOString(),
+        is_review_required: 0
+      },
+      {
+        id: 'quick-2',
+        title: 'Project Ideas',
+        content: 'Some ideas for future projects:\n- Build a personal knowledge management system\n- Create a habit tracking app\n- Develop a reading list organizer\n- Design a simple task manager',
+        tags: ['projects', 'ideas', 'brainstorming'],
+        context_id: null,
+        created_at: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
+        last_modified: new Date(Date.now() - 3600000).toISOString(),
+        is_review_required: 1
+      },
+      {
+        id: 'quick-3',
+        title: 'Meeting Notes - Team Sync',
+        content: 'Key points from today\'s team meeting:\n- Q4 goals discussion\n- New feature prioritization\n- Resource allocation for next sprint\n- Action items: Review design docs, Update project timeline',
+        tags: ['meeting', 'team', 'work'],
+        context_id: null,
+        created_at: new Date(Date.now() - 7200000).toISOString(), // 2 hours ago
+        last_modified: new Date(Date.now() - 7200000).toISOString(),
+        is_review_required: 1
+      }
+    ];
+
+    const samplePermanentNotes = [
+      {
+        id: 'perm-1',
+        title: 'Effective Note-Taking Strategies',
+        content: 'Research-backed strategies for effective note-taking:\n\n1. **Active Listening**: Focus on understanding rather than transcribing\n2. **Cornell Method**: Divide notes into sections for cues, notes, and summary\n3. **Mind Mapping**: Visual representation of information and connections\n4. **Spaced Repetition**: Review notes at increasing intervals\n5. **Synthesis**: Connect new information with existing knowledge\n\nRegular review and organization of notes significantly improves retention and understanding.',
+        tags: ['productivity', 'learning', 'research'],
+        created_at: new Date(Date.now() - 604800000).toISOString(), // 1 week ago
+        updated_at: new Date(Date.now() - 604800000).toISOString(),
+        source_quick_note_id: null
+      }
+    ];
+
+    this.memoryStore.quickNotes = sampleQuickNotes;
+    this.memoryStore.permanentNotes = samplePermanentNotes;
   }
 
   private initializeTables(): void {
