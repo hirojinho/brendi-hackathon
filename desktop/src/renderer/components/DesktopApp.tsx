@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { DesktopSidebar } from './layout';
 import { DesktopChatPanel, DesktopDocumentsPanel, DesktopReviewPanel, NotesManagementPanel } from './panels';
-import { TestNotesPanel } from './desktop/TestNotesPanel';
 import { useSystemPreferences } from '../hooks/useSystemPreferences';
 import { ErrorBoundary, NotificationProvider } from './common';
 import { EnhancedErrorBoundary, MacOSFadeTransition } from './integration';
