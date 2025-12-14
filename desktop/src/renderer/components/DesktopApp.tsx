@@ -6,7 +6,16 @@ import { DesktopDocumentsPanel } from './desktop/DesktopDocumentsPanel';
 import { DesktopReviewPanel } from './desktop/DesktopReviewPanel';
 import { DesktopZettelkastenPanel } from './desktop/DesktopZettelkastenPanel';
 import { useSystemPreferences } from '../hooks/useSystemPreferences';
+import { ErrorBoundary } from './common/ErrorBoundary';
+import { NotificationProvider } from './common/NotificationSystem';
+import { FadeTransition } from './common/Transitions';
+import { ApplicationIntegration } from './integration/ApplicationIntegration';
+import { EnhancedErrorBoundary } from './integration/EnhancedErrorHandling';
+import { MacOSFadeTransition } from './integration/EnhancedTransitions';
+import { WorkflowValidator } from './integration/WorkflowValidator';
 import './DesktopApp.css';
+import './integration/EnhancedTransitions.css';
+import './integration/WorkflowValidator.css';
 
 type TabType = 'chat' | 'notes' | 'zettelkasten' | 'review' | 'documents';
 
@@ -16,6 +25,7 @@ export const DesktopApp: React.FC = () => {
   const [openrouterModelName, setOpenrouterModelName] = useState<string>('qwen/qwen3-14b:free');
   const [ollamaModelName, setOllamaModelName] = useState<string>('phi3:latest');
   const [embeddingProvider, setEmbeddingProvider] = useState<'openai' | 'ollama'>('ollama');
+  const [showWorkflowValidator, setShowWorkflowValidator] = useState(false);
   
   // Initialize system preferences support
   useSystemPreferences();
@@ -114,6 +124,14 @@ export const DesktopApp: React.FC = () => {
           setActiveTab(tabMap[event.key]);
         }
       }
+
+      // Development shortcuts for integration testing
+      if (process.env.NODE_ENV === 'development' && (event.metaKey || event.ctrlKey) && event.shiftKey) {
+        if (event.key === 'V') {
+          event.preventDefault();
+          setShowWorkflowValidator(true);
+        }
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
@@ -160,38 +178,70 @@ export const DesktopApp: React.FC = () => {
   };
 
   return (
-    <div className="desktop-app">
-      <DesktopSidebar
-        activeTab={activeTab}
-        onTabChange={handleTabChange}
-        model={model}
-        onModelChange={handleModelChange}
-        openrouterModelName={openrouterModelName}
-        onOpenrouterModelChange={handleOpenrouterModelChange}
-        ollamaModelName={ollamaModelName}
-        onOllamaModelChange={handleOllamaModelChange}
-        embeddingProvider={embeddingProvider}
-        onEmbeddingProviderChange={handleEmbeddingProviderChange}
-      />
-      <div className="desktop-main-content">
-        {activeTab === 'chat' && (
-          <DesktopChatPanel
-            model={model}
-            modelName={model === 'openrouter' ? openrouterModelName : model === 'ollama' ? ollamaModelName : undefined}
-            embeddingProvider={embeddingProvider}
-          />
-        )}
-        {activeTab === 'notes' && <DesktopNotesPanel />}
-        {activeTab === 'zettelkasten' && <DesktopZettelkastenPanel />}
-        {activeTab === 'review' && (
-          <DesktopReviewPanel
-            model={model}
-            modelName={model === 'openrouter' ? openrouterModelName : model === 'ollama' ? ollamaModelName : undefined}
-          />
-        )}
-        {activeTab === 'documents' && <DesktopDocumentsPanel embeddingProvider={embeddingProvider} />}
-      </div>
-    </div>
+    <EnhancedErrorBoundary
+      enableRecovery={true}
+      maxRetries={3}
+      showErrorDetails={process.env.NODE_ENV === 'development'}
+      onError={(errorDetails) => {
+        console.error('[DesktopApp] Application error:', errorDetails);
+        // Could send to error reporting service here
+      }}
+    >
+      <NotificationProvider>
+        <ApplicationIntegration>
+          <div className="desktop-app">
+            <DesktopSidebar
+              activeTab={activeTab}
+              onTabChange={handleTabChange}
+              model={model}
+              onModelChange={handleModelChange}
+              openrouterModelName={openrouterModelName}
+              onOpenrouterModelChange={handleOpenrouterModelChange}
+              ollamaModelName={ollamaModelName}
+              onOllamaModelChange={handleOllamaModelChange}
+              embeddingProvider={embeddingProvider}
+              onEmbeddingProviderChange={handleEmbeddingProviderChange}
+            />
+            <div className="desktop-main-content">
+              <MacOSFadeTransition isVisible={activeTab === 'chat'} duration={250}>
+                <DesktopChatPanel
+                  model={model}
+                  modelName={model === 'openrouter' ? openrouterModelName : model === 'ollama' ? ollamaModelName : undefined}
+                  embeddingProvider={embeddingProvider}
+                />
+              </MacOSFadeTransition>
+              
+              <MacOSFadeTransition isVisible={activeTab === 'notes'} duration={250}>
+                <DesktopNotesPanel />
+              </MacOSFadeTransition>
+              
+              <MacOSFadeTransition isVisible={activeTab === 'zettelkasten'} duration={250}>
+                <DesktopZettelkastenPanel />
+              </MacOSFadeTransition>
+              
+              <MacOSFadeTransition isVisible={activeTab === 'review'} duration={250}>
+                <DesktopReviewPanel
+                  model={model}
+                  modelName={model === 'openrouter' ? openrouterModelName : model === 'ollama' ? ollamaModelName : undefined}
+                />
+              </MacOSFadeTransition>
+              
+              <MacOSFadeTransition isVisible={activeTab === 'documents'} duration={250}>
+                <DesktopDocumentsPanel embeddingProvider={embeddingProvider} />
+              </MacOSFadeTransition>
+            </div>
+          </div>
+
+          {/* Development Tools */}
+          {process.env.NODE_ENV === 'development' && (
+            <WorkflowValidator
+              isVisible={showWorkflowValidator}
+              onClose={() => setShowWorkflowValidator(false)}
+            />
+          )}
+        </ApplicationIntegration>
+      </NotificationProvider>
+    </EnhancedErrorBoundary>
   );
 };
 

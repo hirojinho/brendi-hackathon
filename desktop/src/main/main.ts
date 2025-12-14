@@ -69,9 +69,11 @@ async function startBackend() {
   console.log('[Main] Starting backend initialization...');
   console.log('[Main] User data path:', userDataPath);
   
-  // Override cwd so backend databases are created in userData
+  // Keep track of original cwd for server files, but set userData for databases
   const originalCwd = process.cwd();
-  process.chdir(userDataPath);
+  
+  // Set environment variable for database path instead of changing cwd
+  process.env.DATABASE_PATH = userDataPath;
   
   try {
     // Get available port
@@ -108,9 +110,6 @@ async function startBackend() {
     backendUrl = null; // Ensure it's null on failure
     backendServer = null;
     throw error;
-  } finally {
-    // Restore original cwd if needed elsewhere
-    process.chdir(originalCwd);
   }
 }
 
@@ -250,11 +249,11 @@ function createMainWindow(options?: { initialTab?: string; fromOverlay?: boolean
     }
   });
 
-  // Load the embedded web app (React UI) from the bundled files
-  // __dirname is dist/main/, so go up one level to dist/web/
-  const webAppPath = path.join(__dirname, '..', 'web', 'index.html');
-  console.log('[Main] Loading web app from:', webAppPath);
-  mainWindow.loadFile(webAppPath);
+  // Load the desktop React app (same as overlay but for main window)
+  // __dirname is dist/main/, so go up one level to dist/renderer/
+  const desktopAppPath = path.join(__dirname, '../renderer/desktop.html');
+  console.log('[Main] Loading desktop app from:', desktopAppPath);
+  mainWindow.loadFile(desktopAppPath);
 
   // Send initial navigation after window loads
   if (options?.initialTab) {
@@ -1021,17 +1020,18 @@ app.whenReady().then(async () => {
     app.dock.hide();
   }
   
-  try {
-    await startBackend();
-  } catch (error) {
+  // Start backend in background - don't block app startup
+  startBackend().catch(error => {
     console.error('[Main] Failed to start backend, app will continue but may not function:', error);
-  }
+  });
   
   createOverlayWindow();
   
-  // Register global shortcut from config or use default
-  const shortcut = (configStore.get('globalShortcut') as string | undefined) || 'CmdOrCtrl+Shift+Space';
-  registerGlobalShortcut(shortcut);
+  // Register global shortcut from config or use default (with small delay to ensure app is ready)
+  setTimeout(() => {
+    const shortcut = (configStore.get('globalShortcut') as string | undefined) || 'CmdOrCtrl+Shift+Space';
+    registerGlobalShortcut(shortcut);
+  }, 100);
 });
 
 app.on('will-quit', async () => {

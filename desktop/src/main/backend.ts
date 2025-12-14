@@ -9,8 +9,11 @@ const __dirname = path.dirname(__filename);
 
 // Resolve server dist path (server must be built)
 // From desktop/dist/main/ we need to go up to workspace root, then to server/dist
+// Use __dirname which is always relative to the built file location
 const workspaceRoot = path.resolve(__dirname, '../../../');
 const serverDistPath = path.resolve(workspaceRoot, 'server/dist');
+
+
 
 // Use dynamic import to load server modules from dist
 // This allows us to handle the case where server might not be built yet

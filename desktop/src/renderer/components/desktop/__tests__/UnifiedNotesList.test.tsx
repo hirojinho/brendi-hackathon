@@ -95,7 +95,8 @@ describe('UnifiedNotesList', () => {
   it('displays context information for quick notes', () => {
     render(<UnifiedNotesList {...defaultProps} />);
     
-    expect(screen.getByText('📁 Work')).toBeInTheDocument();
+    expect(screen.getByText('Work')).toBeInTheDocument();
+    expect(screen.getByLabelText('Context: Work')).toBeInTheDocument();
   });
 
   it('handles note click events', () => {
@@ -132,19 +133,28 @@ describe('UnifiedNotesList', () => {
 
   it('handles delete button clicks', () => {
     const onNoteDelete = jest.fn();
+    const confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(true);
+    
     render(<UnifiedNotesList {...defaultProps} onNoteDelete={onNoteDelete} />);
     
     const deleteButtons = screen.getAllByTitle('Delete note');
     fireEvent.click(deleteButtons[0]);
     
+    expect(confirmSpy).toHaveBeenCalled();
     expect(onNoteDelete).toHaveBeenCalledWith('quick1');
+    
+    confirmSpy.mockRestore();
   });
 
   it('shows bulk selection mode correctly', () => {
     render(<UnifiedNotesList {...defaultProps} bulkSelectionMode={true} />);
     
-    const checkboxes = screen.getAllByRole('checkbox');
-    expect(checkboxes).toHaveLength(2);
+    const checkboxInputs = screen.getAllByRole('checkbox').filter(el => el.tagName === 'INPUT');
+    expect(checkboxInputs).toHaveLength(2);
+    
+    // Verify articles have checkbox role in bulk mode
+    const noteCards = screen.getAllByRole('checkbox').filter(el => el.tagName === 'ARTICLE');
+    expect(noteCards).toHaveLength(2);
   });
 
   it('handles bulk selection', () => {

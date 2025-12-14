@@ -96,7 +96,7 @@
   border-radius: 6px;
   font-size: 13px;
   font-family: inherit;
-  background: #ffffff;
+  background: var(--color-background-primary);
   color: #1d1d1f;
   transition: border-color 0.15s ease;
   outline: none;
@@ -116,7 +116,7 @@
 }
 
 .settings-select option {
-  background: white;
+  background: var(--color-surface-primary);
   color: #1d1d1f;
 }
 

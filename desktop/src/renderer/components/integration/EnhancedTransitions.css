@@ -1,0 +1,427 @@
+/* Enhanced macOS-style transitions */
+
+/* macOS Fade Transition */
+.macos-fade-transition {
+  transition: opacity var(--transition-duration, 250ms) cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.macos-fade-transition--visible {
+  opacity: 1;
+}
+
+.macos-fade-transition--hidden {
+  opacity: 0;
+}
+
+/* macOS Slide Transition */
+.macos-slide-transition {
+  transition: transform var(--transition-duration, 350ms) cubic-bezier(0.32, 0.72, 0, 1),
+              opacity var(--transition-duration, 350ms) cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.macos-slide-transition--hidden {
+  transform: var(--slide-distance, translateY(20px));
+  opacity: 0;
+}
+
+.macos-slide-transition--visible {
+  transform: translateY(0) translateX(0);
+  opacity: 1;
+}
+
+/* macOS Spring Transition */
+.macos-spring-transition {
+  transition: transform var(--transition-duration, 400ms) cubic-bezier(0.175, 0.885, 0.32, 1.275),
+              opacity var(--transition-duration, 400ms) cubic-bezier(0.32, 0.72, 0, 1);
+  transform-origin: center;
+}
+
+.macos-spring-transition--hidden {
+  transform: scale(0.9);
+  opacity: 0;
+}
+
+.macos-spring-transition--visible {
+  transform: scale(1);
+  opacity: 1;
+}
+
+/* Staggered List Transition */
+.staggered-list-transition {
+  /* Container for staggered items */
+}
+
+.staggered-list-item {
+  animation-fill-mode: both;
+}
+
+@keyframes staggerFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.staggered-list-item.macos-fade-transition--visible {
+  animation: staggerFadeIn 300ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* Page Transition */
+.page-transition {
+  position: relative;
+  overflow: hidden;
+}
+
+.page-transition-content {
+  transition: transform var(--transition-duration, 300ms) cubic-bezier(0.32, 0.72, 0, 1),
+              opacity var(--transition-duration, 300ms) cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.page-transition--horizontal .page-transition-content--previous {
+  transform: translateX(-100%);
+  opacity: 0;
+}
+
+.page-transition--horizontal .page-transition-content--active {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.page-transition--vertical .page-transition-content--previous {
+  transform: translateY(-100%);
+  opacity: 0;
+}
+
+.page-transition--vertical .page-transition-content--active {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+/* Morph Transition */
+.morph-transition {
+  transition: opacity var(--transition-duration, 250ms) cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.morph-transition--transitioning {
+  opacity: 0.7;
+}
+
+/* Parallax Transition */
+.parallax-transition {
+  will-change: transform;
+}
+
+/* Error Recovery Styles */
+.error-recovery {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  padding: var(--spacing-8);
+}
+
+.error-recovery-content {
+  text-align: center;
+  color: var(--color-text-secondary);
+}
+
+.recovery-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--color-border-tertiary);
+  border-top: 3px solid var(--color-accent);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto var(--spacing-4);
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Enhanced Error Boundary Styles */
+.enhanced-error-boundary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  padding: var(--spacing-8);
+  background: var(--color-background-primary);
+}
+
+.error-content {
+  max-width: 600px;
+  width: 100%;
+  text-align: center;
+}
+
+.error-header {
+  margin-bottom: var(--spacing-8);
+}
+
+.error-icon {
+  font-size: 48px;
+  margin-bottom: var(--spacing-4);
+}
+
+.error-title {
+  font-size: var(--font-size-title-2);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin: 0 0 var(--spacing-2);
+}
+
+.error-subtitle {
+  font-size: var(--font-size-body);
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.error-details-summary {
+  background: var(--color-surface-secondary);
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-large);
+  padding: var(--spacing-6);
+  margin: var(--spacing-6) 0;
+  text-align: left;
+}
+
+.error-message {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-footnote);
+  color: var(--color-text-primary);
+  margin: 0 0 var(--spacing-4);
+  word-break: break-word;
+}
+
+.retry-info {
+  font-size: var(--font-size-caption-1);
+  color: var(--color-text-tertiary);
+  margin: 0;
+}
+
+.error-actions {
+  display: flex;
+  gap: var(--spacing-4);
+  justify-content: center;
+  flex-wrap: wrap;
+  margin: var(--spacing-6) 0;
+}
+
+/* Error Details Panel */
+.error-details-panel {
+  margin-top: var(--spacing-8);
+  text-align: left;
+}
+
+.error-details-toggle {
+  background: none;
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-medium);
+  padding: var(--spacing-3) var(--spacing-4);
+  font-size: var(--font-size-footnote);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.error-details-toggle:hover {
+  background: var(--color-hover-overlay);
+  border-color: var(--color-border-primary);
+}
+
+.error-details-content {
+  margin-top: var(--spacing-4);
+  padding: var(--spacing-6);
+  background: var(--color-surface-tertiary);
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-large);
+}
+
+.error-detail-section {
+  margin-bottom: var(--spacing-6);
+}
+
+.error-detail-section:last-child {
+  margin-bottom: 0;
+}
+
+.error-detail-section h4 {
+  font-size: var(--font-size-subheadline);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin: 0 0 var(--spacing-3);
+}
+
+.error-detail-item {
+  margin-bottom: var(--spacing-2);
+  font-size: var(--font-size-footnote);
+  color: var(--color-text-secondary);
+}
+
+.error-detail-item strong {
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-medium);
+}
+
+.error-stack,
+.error-component-stack {
+  background: var(--color-background-tertiary);
+  border: 1px solid var(--color-border-tertiary);
+  border-radius: var(--radius-medium);
+  padding: var(--spacing-4);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-caption-1);
+  color: var(--color-text-secondary);
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+/* Integration Status (Development) */
+.integration-status {
+  font-family: var(--font-family-mono);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: var(--shadow-lg);
+  user-select: none;
+  pointer-events: none;
+}
+
+/* Hover Effects for Interactive Elements */
+.macos-button {
+  transition: all var(--transition-fast);
+}
+
+.macos-button:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.macos-button:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Focus States */
+.macos-button:focus-visible,
+.error-details-toggle:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
+}
+
+/* Accessibility Improvements */
+@media (prefers-reduced-motion: reduce) {
+  .macos-fade-transition,
+  .macos-slide-transition,
+  .macos-spring-transition,
+  .page-transition-content,
+  .morph-transition,
+  .parallax-transition,
+  .recovery-spinner,
+  .macos-button,
+  .error-details-toggle {
+    transition: none !important;
+    animation: none !important;
+    transform: none !important;
+  }
+  
+  .staggered-list-item.macos-fade-transition--visible {
+    animation: none !important;
+  }
+  
+  .macos-fade-transition--visible,
+  .macos-slide-transition--visible,
+  .macos-spring-transition--visible {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  
+  .macos-fade-transition--hidden,
+  .macos-slide-transition--hidden,
+  .macos-spring-transition--hidden {
+    opacity: 0 !important;
+    transform: none !important;
+  }
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+  .error-details-toggle,
+  .error-details-content,
+  .error-details-summary {
+    border-width: 2px;
+    border-color: currentColor;
+  }
+  
+  .error-stack,
+  .error-component-stack {
+    border-width: 2px;
+  }
+}
+
+/* Dark Mode Adjustments */
+@media (prefers-color-scheme: dark) {
+  .recovery-spinner {
+    border-color: var(--color-border-secondary);
+    border-top-color: var(--color-accent);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 640px) {
+  .enhanced-error-boundary {
+    padding: var(--spacing-4);
+    min-height: 300px;
+  }
+  
+  .error-content {
+    max-width: 100%;
+  }
+  
+  .error-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .error-details-content {
+    padding: var(--spacing-4);
+  }
+  
+  .error-stack,
+  .error-component-stack {
+    font-size: var(--font-size-caption-2);
+    padding: var(--spacing-3);
+  }
+}
+
+/* Performance Optimizations */
+.macos-fade-transition,
+.macos-slide-transition,
+.macos-spring-transition {
+  will-change: opacity, transform;
+}
+
+.macos-fade-transition--visible,
+.macos-slide-transition--visible,
+.macos-spring-transition--visible {
+  will-change: auto;
+}
+
+/* GPU Acceleration */
+.page-transition-content,
+.morph-transition,
+.parallax-transition {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}

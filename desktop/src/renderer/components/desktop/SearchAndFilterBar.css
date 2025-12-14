@@ -92,12 +92,12 @@
   align-items: center;
   gap: 6px;
   padding: 8px 12px;
-  background: var(--background-primary, #ffffff);
-  border: 1px solid var(--border-color, #e1e5e9);
+  background: var(--color-background-primary);
+  border: 1px solid var(--color-border-secondary);
   border-radius: 6px;
   font-size: 13px;
   font-weight: 500;
-  color: var(--text-primary, #1d1d1f);
+  color: var(--color-text-primary);
   cursor: pointer;
   transition: all 0.2s ease;
   position: relative;
@@ -144,11 +144,11 @@
 
 .sort-field-select {
   padding: 8px 10px;
-  border: 1px solid var(--border-color, #e1e5e9);
+  border: 1px solid var(--color-border-secondary);
   border-radius: 6px;
   font-size: 13px;
-  background: var(--background-primary, #ffffff);
-  color: var(--text-primary, #1d1d1f);
+  background: var(--color-background-primary);
+  color: var(--color-text-primary);
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -165,11 +165,11 @@
 
 .sort-direction-button {
   padding: 8px 10px;
-  background: var(--background-primary, #ffffff);
-  border: 1px solid var(--border-color, #e1e5e9);
+  background: var(--color-background-primary);
+  border: 1px solid var(--color-border-secondary);
   border-radius: 6px;
   font-size: 14px;
-  color: var(--text-primary, #1d1d1f);
+  color: var(--color-text-primary);
   cursor: pointer;
   transition: all 0.2s ease;
   display: flex;
@@ -215,8 +215,8 @@
 
 /* Advanced Filters Panel */
 .advanced-filters-panel {
-  background: var(--background-primary, #ffffff);
-  border: 1px solid var(--border-color, #e1e5e9);
+  background: var(--color-background-primary);
+  border: 1px solid var(--color-border-secondary);
   border-radius: 8px;
   padding: 16px;
   display: flex;
@@ -235,7 +235,7 @@
 .filter-label {
   font-size: 13px;
   font-weight: 600;
-  color: var(--text-primary, #1d1d1f);
+  color: var(--color-text-primary);
   margin: 0;
 }
 
@@ -248,11 +248,11 @@
 .filter-option {
   padding: 6px 12px;
   background: var(--background-secondary, #f8f9fa);
-  border: 1px solid var(--border-color, #e1e5e9);
+  border: 1px solid var(--color-border-secondary);
   border-radius: 16px;
   font-size: 12px;
   font-weight: 500;
-  color: var(--text-primary, #1d1d1f);
+  color: var(--color-text-primary);
   cursor: pointer;
   transition: all 0.2s ease;
   white-space: nowrap;
@@ -285,7 +285,7 @@
 }
 
 .context-options::-webkit-scrollbar-thumb {
-  background: var(--border-color, #e1e5e9);
+  background: var(--color-border-secondary);
   border-radius: 3px;
 }
 
@@ -326,11 +326,11 @@
 
 .date-input {
   padding: 8px 10px;
-  border: 1px solid var(--border-color, #e1e5e9);
+  border: 1px solid var(--color-border-secondary);
   border-radius: 6px;
   font-size: 13px;
-  background: var(--background-primary, #ffffff);
-  color: var(--text-primary, #1d1d1f);
+  background: var(--color-background-primary);
+  color: var(--color-text-primary);
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, sans-serif;
   transition: all 0.2s ease;
 }

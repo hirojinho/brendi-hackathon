@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { QuickNote, quickNotesService } from '../../services/quickNotesService';
 import { PermanentNote, permanentNotesService } from '../../services/permanentNotesService';
 import { Context, contextsService } from '../../services/contextsService';
@@ -12,6 +12,11 @@ import { NoteTransformationInterface } from '../review/NoteTransformationInterfa
 import { IntegratedChatPanel } from './IntegratedChatPanel';
 import { PerformanceDashboard } from './PerformanceDashboard';
 import { useSettings } from '../../hooks/useSettings';
+import { useSystemPreferences } from '../../hooks/useSystemPreferences';
+import { ErrorBoundary } from '../common/ErrorBoundary';
+import { useNotificationHelpers } from '../common/NotificationSystem';
+import { LoadingState, LoadingOverlay } from '../common/LoadingState';
+import { FadeTransition, SlideTransition } from '../common/Transitions';
 import './NotesManagementPanel.css';
 
 export type DisplayMode = 'unified' | 'quick-only' | 'permanent-only';
@@ -81,6 +86,16 @@ export const NotesManagementPanel: React.FC = () => {
   // Use settings hook for chat configuration
   const { provider, modelName } = useSettings(true);
 
+  // Use system preferences for accessibility
+  const systemPreferences = useSystemPreferences();
+
+  // Use notification helpers for user feedback
+  const { showSuccess, showError, showWarning, showInfo } = useNotificationHelpers();
+
+  // Refs for keyboard navigation
+  const panelRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
+
   // Load data on component mount
   useEffect(() => {
     loadData();
@@ -114,8 +129,18 @@ export const NotesManagementPanel: React.FC = () => {
       setQuickNotes(result.quickNotesData);
       setPermanentNotes(result.permanentNotesData);
       setContexts(result.contextsData);
+      
+      // Show success notification for large data loads
+      if (result.quickNotesData.length + result.permanentNotesData.length > 100) {
+        showSuccess(
+          'Notes loaded successfully',
+          `Loaded ${result.quickNotesData.length + result.permanentNotesData.length} notes`
+        );
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load notes');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load notes';
+      setError(errorMessage);
+      showError('Failed to load notes', errorMessage);
     } finally {
       setLoading(false);
     }
@@ -302,14 +327,18 @@ export const NotesManagementPanel: React.FC = () => {
       const session = await createReviewSession();
       if (session) {
         setShowReviewSession(true);
+        showInfo('Review session started', `${session.notes.length} notes ready for review`);
       }
     } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to start review session';
       console.error('Failed to start review session:', err);
+      showError('Review session failed', errorMessage);
     }
   };
 
   const handleCompleteReviewSession = async () => {
     setShowReviewSession(false);
+    showSuccess('Review session completed', 'Notes have been updated');
     await loadData(); // Refresh notes after review
   };
 
@@ -404,13 +433,79 @@ export const NotesManagementPanel: React.FC = () => {
     return filteredAndSortedNotes.filter(note => chatContextNoteIds.includes(note.id));
   }, [filteredAndSortedNotes, chatContextNoteIds]);
 
+  // Keyboard navigation handlers
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    // Global keyboard shortcuts
+    if (e.metaKey || e.ctrlKey) {
+      switch (e.key) {
+        case 'f':
+          e.preventDefault();
+          searchRef.current?.focus();
+          break;
+        case 'r':
+          e.preventDefault();
+          loadData();
+          break;
+        case 'n':
+          e.preventDefault();
+          // TODO: Implement new note creation
+          break;
+        case 'Enter':
+          if (e.shiftKey && isReviewRequired && !activeSession) {
+            e.preventDefault();
+            handleStartReviewSession();
+          }
+          break;
+      }
+    }
+
+    // Escape key handling
+    if (e.key === 'Escape') {
+      if (showReviewSession) {
+        handleCancelReviewSession();
+      } else if (showBulkReviewInterface) {
+        handleBulkReviewCancel();
+      } else if (bulkSelectionMode) {
+        handleToggleBulkSelection();
+      } else if (chatPanelVisible) {
+        handleToggleChatPanel();
+      }
+    }
+  }, [isReviewRequired, activeSession, showReviewSession, showBulkReviewInterface, bulkSelectionMode, chatPanelVisible]);
+
+  // Announce status changes to screen readers
+  const announceToScreenReader = useCallback((message: string) => {
+    if (systemPreferences.voiceOverEnabled) {
+      const announcement = document.createElement('div');
+      announcement.setAttribute('aria-live', 'polite');
+      announcement.setAttribute('aria-atomic', 'true');
+      announcement.className = 'sr-only';
+      announcement.textContent = message;
+      document.body.appendChild(announcement);
+      
+      setTimeout(() => {
+        document.body.removeChild(announcement);
+      }, 1000);
+    }
+  }, [systemPreferences.voiceOverEnabled]);
+
+  // Announce data loading status
+  useEffect(() => {
+    if (!loading && !error) {
+      announceToScreenReader(`Loaded ${filteredAndSortedNotes.length} notes`);
+    } else if (error) {
+      announceToScreenReader(`Error loading notes: ${error}`);
+    }
+  }, [loading, error, filteredAndSortedNotes.length, announceToScreenReader]);
+
   if (loading) {
     return (
       <div className="notes-management-panel">
-        <div className="loading-state">
-          <div className="loading-spinner"></div>
-          <p>Loading notes...</p>
-        </div>
+        <LoadingState 
+          message="Loading notes..." 
+          size="large"
+          variant="spinner"
+        />
       </div>
     );
   }
@@ -418,29 +513,55 @@ export const NotesManagementPanel: React.FC = () => {
   if (error) {
     return (
       <div className="notes-management-panel">
-        <div className="error-state">
-          <div className="error-icon">⚠️</div>
-          <h2>Error Loading Notes</h2>
-          <p>{error}</p>
-          <button onClick={loadData} className="retry-button">
-            Try Again
-          </button>
-        </div>
+        <ErrorBoundary
+          fallback={
+            <div className="error-state">
+              <div className="error-icon">⚠️</div>
+              <h2>Error Loading Notes</h2>
+              <p>{error}</p>
+              <button onClick={loadData} className="macos-button macos-button--primary macos-button--medium">
+                Try Again
+              </button>
+            </div>
+          }
+        >
+          <div>Error occurred</div>
+        </ErrorBoundary>
       </div>
     );
   }
 
   return (
-    <div className={`notes-management-panel ${chatPanelVisible ? 'with-chat' : ''}`}>
-      <div className="notes-main-content">
+    <div 
+      className={`notes-management-panel ${chatPanelVisible ? 'with-chat' : ''}`}
+      ref={panelRef}
+      onKeyDown={handleKeyDown}
+      role="main"
+      aria-label="Notes Management"
+    >
+      {/* Skip link for keyboard navigation */}
+      <a href="#main-content" className="skip-link">
+        Skip to main content
+      </a>
+      
+      {/* Screen reader announcements */}
+      <div aria-live="polite" aria-atomic="true" className="sr-only" id="status-announcements">
+        {loading && "Loading notes..."}
+        {error && `Error: ${error}`}
+      </div>
+
+      <div className="notes-main-content" id="main-content">
         <div className="panel-header">
         <div className="header-top">
-          <h1>Notes</h1>
-          <div className="header-actions">
+          <h1 id="page-title">Notes</h1>
+          <div className="header-actions" role="toolbar" aria-label="Notes actions">
             {/* Review Status Indicator */}
             {isReviewRequired && (
-              <div className="review-status-indicator">
-                <span className="review-badge">
+              <div className="review-status-indicator" role="status" aria-live="polite">
+                <span 
+                  className="review-badge"
+                  aria-label={`${reviewCount} note${reviewCount !== 1 ? 's' : ''} need${reviewCount === 1 ? 's' : ''} review`}
+                >
                   {reviewCount} need{reviewCount !== 1 ? '' : 's'} review
                 </span>
               </div>
@@ -450,11 +571,13 @@ export const NotesManagementPanel: React.FC = () => {
             {isReviewRequired && !activeSession && (
               <button 
                 onClick={handleStartReviewSession} 
-                className="review-session-button"
+                className="review-session-button touch-target keyboard-focusable"
                 disabled={reviewLoading}
                 title="Start Review Session"
+                aria-label={`Start review session for ${reviewCount} notes`}
+                aria-describedby="review-help"
               >
-                📝 Start Review
+                <span aria-hidden="true">📝</span> Start Review
               </button>
             )}
             
@@ -462,64 +585,91 @@ export const NotesManagementPanel: React.FC = () => {
             {activeSession && (
               <button 
                 onClick={() => setShowReviewSession(true)} 
-                className="active-review-button"
+                className="active-review-button touch-target keyboard-focusable"
                 title="Continue Review Session"
+                aria-label={`Continue review session, ${activeSession.notes.length} notes remaining`}
               >
-                📝 Continue Review ({activeSession.notes.length} remaining)
+                <span aria-hidden="true">📝</span> Continue Review ({activeSession.notes.length} remaining)
               </button>
             )}
             
             {/* Bulk Selection Toggle */}
             <button 
               onClick={handleToggleBulkSelection}
-              className={`bulk-selection-button ${bulkSelectionMode ? 'active' : ''}`}
+              className={`bulk-selection-button ${bulkSelectionMode ? 'active' : ''} touch-target keyboard-focusable`}
               title="Bulk Selection Mode"
+              aria-label={bulkSelectionMode ? 'Exit bulk selection mode' : 'Enter bulk selection mode'}
+              aria-pressed={bulkSelectionMode}
             >
-              {bulkSelectionMode ? '✓ Bulk Mode' : '☐ Bulk Select'}
+              <span aria-hidden="true">{bulkSelectionMode ? '✓' : '☐'}</span> 
+              {bulkSelectionMode ? 'Bulk Mode' : 'Bulk Select'}
             </button>
             
             <button 
               onClick={handleToggleChatPanel}
-              className={`chat-toggle-button ${chatPanelVisible ? 'active' : ''}`}
+              className={`chat-toggle-button ${chatPanelVisible ? 'active' : ''} touch-target keyboard-focusable`}
               title="Toggle Chat Panel"
+              aria-label={chatPanelVisible ? 'Close chat panel' : 'Open chat panel'}
+              aria-pressed={chatPanelVisible}
+              aria-expanded={chatPanelVisible}
             >
-              💬 Chat
+              <span aria-hidden="true">💬</span> Chat
             </button>
             
             {/* Performance Dashboard Toggle (Development Mode) */}
             {process.env.NODE_ENV === 'development' && (
               <button 
                 onClick={handleTogglePerformanceDashboard}
-                className={`performance-button ${performanceDashboardVisible ? 'active' : ''}`}
+                className={`performance-button ${performanceDashboardVisible ? 'active' : ''} touch-target keyboard-focusable`}
                 title="Performance Dashboard"
+                aria-label={performanceDashboardVisible ? 'Close performance dashboard' : 'Open performance dashboard'}
+                aria-pressed={performanceDashboardVisible}
               >
-                📊 Performance
+                <span aria-hidden="true">📊</span> Performance
               </button>
             )}
             
-            <button onClick={loadData} className="refresh-button" title="Refresh">
-              🔄
+            <button 
+              onClick={loadData} 
+              className="refresh-button touch-target keyboard-focusable" 
+              title="Refresh notes"
+              aria-label="Refresh notes list"
+            >
+              <span aria-hidden="true">🔄</span>
+              <span className="sr-only">Refresh</span>
             </button>
           </div>
         </div>
         
         {/* Mode Switcher */}
-        <div className="mode-switcher">
+        <div className="mode-switcher" role="tablist" aria-label="Note display modes">
           <button
-            className={`mode-button ${displayMode === 'unified' ? 'active' : ''}`}
+            className={`mode-button ${displayMode === 'unified' ? 'active' : ''} keyboard-focusable`}
             onClick={() => setDisplayMode('unified')}
+            role="tab"
+            aria-selected={displayMode === 'unified'}
+            aria-controls="notes-content"
+            id="tab-unified"
           >
             All Notes
           </button>
           <button
-            className={`mode-button ${displayMode === 'quick-only' ? 'active' : ''}`}
+            className={`mode-button ${displayMode === 'quick-only' ? 'active' : ''} keyboard-focusable`}
             onClick={() => setDisplayMode('quick-only')}
+            role="tab"
+            aria-selected={displayMode === 'quick-only'}
+            aria-controls="notes-content"
+            id="tab-quick"
           >
             Quick Notes
           </button>
           <button
-            className={`mode-button ${displayMode === 'permanent-only' ? 'active' : ''}`}
+            className={`mode-button ${displayMode === 'permanent-only' ? 'active' : ''} keyboard-focusable`}
             onClick={() => setDisplayMode('permanent-only')}
+            role="tab"
+            aria-selected={displayMode === 'permanent-only'}
+            aria-controls="notes-content"
+            id="tab-permanent"
           >
             Permanent Notes
           </button>
@@ -527,21 +677,32 @@ export const NotesManagementPanel: React.FC = () => {
 
         {/* Bulk Selection Controls */}
         {bulkSelectionMode && (
-          <div className="bulk-selection-controls">
+          <div className="bulk-selection-controls" role="region" aria-label="Bulk selection controls">
             <div className="bulk-selection-info">
-              <span>{selectedNotes.size} note{selectedNotes.size !== 1 ? 's' : ''} selected</span>
+              <span aria-live="polite" aria-atomic="true">
+                {selectedNotes.size} note{selectedNotes.size !== 1 ? 's' : ''} selected
+              </span>
             </div>
-            <div className="bulk-selection-actions">
-              <button onClick={handleSelectAll} className="bulk-action-button">
+            <div className="bulk-selection-actions" role="group" aria-label="Bulk actions">
+              <button 
+                onClick={handleSelectAll} 
+                className="bulk-action-button keyboard-focusable"
+                aria-label="Select all pending notes"
+              >
                 Select All Pending
               </button>
-              <button onClick={handleDeselectAll} className="bulk-action-button">
+              <button 
+                onClick={handleDeselectAll} 
+                className="bulk-action-button keyboard-focusable"
+                aria-label="Deselect all notes"
+              >
                 Deselect All
               </button>
               {selectedNotes.size > 0 && (
                 <button 
                   onClick={handleBulkReview} 
-                  className="bulk-review-button"
+                  className="bulk-review-button keyboard-focusable"
+                  aria-label={`Review ${selectedNotes.size} selected notes`}
                 >
                   Review Selected ({selectedNotes.size})
                 </button>
@@ -564,84 +725,132 @@ export const NotesManagementPanel: React.FC = () => {
           availableTags={availableTags}
           totalNotesCount={quickNotes.length + permanentNotes.length}
           filteredNotesCount={filteredAndSortedNotes.length}
+          ref={searchRef}
         />
       </div>
 
-      <div className="panel-content">
+      <div className="panel-content" id="notes-content" role="tabpanel" aria-labelledby={`tab-${displayMode}`}>
         {/* Review Session Interface */}
-        {showReviewSession && (
-          <div className="review-session-overlay">
+        <FadeTransition isVisible={showReviewSession} duration={300}>
+          <div 
+            className="review-session-overlay" 
+            role="dialog" 
+            aria-modal="true" 
+            aria-labelledby="review-session-title"
+          >
             <ReviewSession
               onComplete={handleCompleteReviewSession}
               onCancel={handleCancelReviewSession}
             />
           </div>
-        )}
+        </FadeTransition>
 
         {/* Bulk Review Interface */}
-        {showBulkReviewInterface && currentBulkReviewNote && (
-          <div className="bulk-review-overlay">
+        <SlideTransition isVisible={showBulkReviewInterface && !!currentBulkReviewNote} direction="up" duration={300}>
+          <div 
+            className="bulk-review-overlay" 
+            role="dialog" 
+            aria-modal="true" 
+            aria-labelledby="bulk-review-title"
+          >
             <div className="bulk-review-header">
-              <h2>Bulk Review ({selectedNotes.size} remaining)</h2>
-              <button onClick={handleBulkReviewCancel} className="cancel-bulk-review">
+              <h2 id="bulk-review-title">Bulk Review ({selectedNotes.size} remaining)</h2>
+              <button 
+                onClick={handleBulkReviewCancel} 
+                className="cancel-bulk-review keyboard-focusable macos-button macos-button--secondary macos-button--small"
+                aria-label="Cancel bulk review"
+              >
                 Cancel
               </button>
             </div>
-            <NoteTransformationInterface
-              note={{
-                id: currentBulkReviewNote.id,
-                title: currentBulkReviewNote.title,
-                content: currentBulkReviewNote.content,
-                tags: currentBulkReviewNote.tags,
-                contextId: currentBulkReviewNote.contextId,
-                createdAt: currentBulkReviewNote.createdAt.toISOString(),
-                lastModified: currentBulkReviewNote.updatedAt.toISOString(),
-                isReviewRequired: true
-              }}
-              onTransform={async (permanentNoteData) => {
-                // Process the note transformation
-                const success = await processNote(currentBulkReviewNote.id, {
-                  action: 'transform',
-                  permanentNoteData
-                });
-                if (success) {
-                  handleBulkReviewNext();
-                }
-              }}
-              onDiscard={async () => {
-                // Process the note discard
-                const success = await processNote(currentBulkReviewNote.id, {
-                  action: 'discard'
-                });
-                if (success) {
-                  handleBulkReviewNext();
-                }
-              }}
-              isProcessing={reviewLoading}
-            />
+            {currentBulkReviewNote && (
+              <LoadingOverlay isVisible={reviewLoading} message="Processing note...">
+                <NoteTransformationInterface
+                  note={{
+                    id: currentBulkReviewNote.id,
+                    title: currentBulkReviewNote.title,
+                    content: currentBulkReviewNote.content,
+                    tags: currentBulkReviewNote.tags,
+                    contextId: currentBulkReviewNote.contextId,
+                    createdAt: currentBulkReviewNote.createdAt.toISOString(),
+                    lastModified: currentBulkReviewNote.updatedAt.toISOString(),
+                    isReviewRequired: true
+                  }}
+                  onTransform={async (permanentNoteData) => {
+                    try {
+                      const success = await processNote(currentBulkReviewNote.id, {
+                        action: 'transform',
+                        permanentNoteData
+                      });
+                      if (success) {
+                        showSuccess('Note transformed', 'Note has been converted to permanent note');
+                        handleBulkReviewNext();
+                      }
+                    } catch (err) {
+                      showError('Transform failed', err instanceof Error ? err.message : 'Failed to transform note');
+                    }
+                  }}
+                  onDiscard={async () => {
+                    try {
+                      const success = await processNote(currentBulkReviewNote.id, {
+                        action: 'discard'
+                      });
+                      if (success) {
+                        showInfo('Note discarded', 'Note has been removed');
+                        handleBulkReviewNext();
+                      }
+                    } catch (err) {
+                      showError('Discard failed', err instanceof Error ? err.message : 'Failed to discard note');
+                    }
+                  }}
+                  isProcessing={reviewLoading}
+                />
+              </LoadingOverlay>
+            )}
           </div>
-        )}
+        </SlideTransition>
 
         {/* Notes List */}
-        {!showReviewSession && !showBulkReviewInterface && (
-          <OptimizedNotesList
-            notes={filteredAndSortedNotes}
-            searchQuery={searchQuery}
-            bulkSelectionMode={bulkSelectionMode}
-            selectedNotes={selectedNotes}
-            onNoteClick={(note) => {
-              // TODO: Implement note detail view or editing
-              console.log('Note clicked:', note);
-            }}
-            onSelectionChange={handleNoteSelection}
-            onSelectAll={handleSelectAll}
-            onDeselectAll={handleDeselectAll}
-            containerHeight={600}
-            enableVirtualScrolling={filteredAndSortedNotes.length > 100}
-            enablePagination={filteredAndSortedNotes.length > 50}
-            itemsPerPage={50}
-          />
-        )}
+        <FadeTransition isVisible={!showReviewSession && !showBulkReviewInterface} duration={200}>
+          <ErrorBoundary
+            fallback={
+              <div className="notes-list-error">
+                <p>Failed to load notes list. Please try refreshing.</p>
+                <button onClick={loadData} className="macos-button macos-button--primary macos-button--medium">
+                  Refresh
+                </button>
+              </div>
+            }
+          >
+            <OptimizedNotesList
+              notes={filteredAndSortedNotes}
+              searchQuery={searchQuery}
+              bulkSelectionMode={bulkSelectionMode}
+              selectedNotes={selectedNotes}
+              onNoteClick={(note) => {
+                showInfo('Note selected', `Opened note: ${note.title}`);
+                console.log('Note clicked:', note);
+              }}
+              onSelectionChange={handleNoteSelection}
+              onSelectAll={handleSelectAll}
+              onDeselectAll={handleDeselectAll}
+              containerHeight={600}
+              enableVirtualScrolling={filteredAndSortedNotes.length > 100}
+              enablePagination={filteredAndSortedNotes.length > 50}
+              itemsPerPage={50}
+            />
+          </ErrorBoundary>
+        </FadeTransition>
+        </div>
+      </div>
+
+      {/* Hidden help text for screen readers */}
+      <div className="sr-only">
+        <div id="review-help">
+          Press Shift+Cmd+Enter to start a review session. Use Escape to cancel operations.
+        </div>
+        <div id="keyboard-help">
+          Keyboard shortcuts: Cmd+F to search, Cmd+R to refresh, Cmd+N for new note, Escape to cancel.
         </div>
       </div>
 

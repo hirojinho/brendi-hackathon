@@ -122,7 +122,9 @@ const NoteCard: React.FC<NoteCardProps> = ({
 
   const handleDeleteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    onNoteDelete(note.id);
+    if (window.confirm(`Are you sure you want to delete "${note.title}"?`)) {
+      onNoteDelete(note.id);
+    }
   };
 
   const formatDate = (date: Date) => {
@@ -132,17 +134,29 @@ const NoteCard: React.FC<NoteCardProps> = ({
     });
   };
 
+  const cardId = `note-card-${note.id}`;
+  const titleId = `note-title-${note.id}`;
+  const contentId = `note-content-${note.id}`;
+
   return (
-    <div 
-      className={`unified-note-card ${note.type} ${isSelected ? 'selected' : ''} ${bulkSelectionMode ? 'bulk-mode' : ''}`}
+    <article 
+      id={cardId}
+      className={`unified-note-card ${note.type} ${isSelected ? 'selected' : ''} ${bulkSelectionMode ? 'bulk-mode' : ''} keyboard-focusable`}
       data-note-id={note.id}
       onClick={handleCardClick}
-      role="button"
+      role={bulkSelectionMode ? 'checkbox' : 'button'}
       tabIndex={0}
+      aria-checked={bulkSelectionMode ? isSelected : undefined}
+      aria-labelledby={titleId}
+      aria-describedby={contentId}
+      aria-selected={isSelected}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
           handleCardClick(e as any);
+        } else if (e.key === 'Delete' && !bulkSelectionMode) {
+          e.preventDefault();
+          handleDeleteClick(e as any);
         }
       }}
     >
@@ -153,80 +167,107 @@ const NoteCard: React.FC<NoteCardProps> = ({
             checked={isSelected}
             onChange={handleCheckboxChange}
             onClick={(e) => e.stopPropagation()}
+            aria-label={`Select note: ${note.title}`}
+            tabIndex={-1}
           />
         </div>
       )}
 
       <div className="note-header">
         <div className="note-title-row">
-          <h3 className="note-title">
+          <h3 id={titleId} className="note-title">
             <SearchHighlighter text={note.title} searchQuery={searchQuery} />
           </h3>
-          <div className="note-indicators">
-            <span className={`note-type-badge ${note.type}`}>
+          <div className="note-indicators" role="group" aria-label="Note indicators">
+            <span 
+              className={`note-type-badge ${note.type}`}
+              aria-label={`${note.type === 'quick' ? 'Quick' : 'Permanent'} note`}
+              title={`${note.type === 'quick' ? 'Quick' : 'Permanent'} note`}
+            >
               {note.type === 'quick' ? 'Q' : 'P'}
             </span>
             {note.reviewStatus === 'pending' && (
-              <span className="review-status-badge pending" title="Review Required">
-                ⚠️
+              <span 
+                className="review-status-badge pending" 
+                title="Review Required"
+                aria-label="Review required"
+                role="status"
+              >
+                <span aria-hidden="true">⚠️</span>
               </span>
             )}
           </div>
         </div>
         
-        <div className="note-meta">
-          <span className="note-date">
+        <div className="note-meta" aria-label="Note metadata">
+          <time 
+            className="note-date"
+            dateTime={note.createdAt.toISOString()}
+            title={`Created: ${formatDate(note.createdAt)}`}
+          >
             Created: {formatDate(note.createdAt)}
-          </span>
+          </time>
           {note.updatedAt.getTime() !== note.createdAt.getTime() && (
-            <span className="note-date">
+            <time 
+              className="note-date"
+              dateTime={note.updatedAt.toISOString()}
+              title={`Updated: ${formatDate(note.updatedAt)}`}
+            >
               Updated: {formatDate(note.updatedAt)}
-            </span>
+            </time>
           )}
         </div>
       </div>
 
       {note.contextId && note.contextName && (
         <div className="note-context">
-          <span className="context-badge" title={`Context: ${note.contextName}`}>
-            📁 {note.contextName}
+          <span 
+            className="context-badge" 
+            title={`Context: ${note.contextName}`}
+            aria-label={`Context: ${note.contextName}`}
+          >
+            <span aria-hidden="true">📁</span> {note.contextName}
           </span>
         </div>
       )}
 
-      <div className="note-content">
+      <div id={contentId} className="note-content" aria-label="Note content">
         <SearchHighlighter text={note.excerpt} searchQuery={searchQuery} />
       </div>
 
       {note.tags.length > 0 && (
-        <div className="note-tags">
+        <div className="note-tags" role="group" aria-label={`Tags: ${note.tags.join(', ')}`}>
           {note.tags.map((tag, idx) => (
-            <span key={idx} className="note-tag">
+            <span key={idx} className="note-tag" aria-label={`Tag: ${tag}`}>
               <SearchHighlighter text={tag} searchQuery={searchQuery} />
             </span>
           ))}
         </div>
       )}
 
-      <div className="note-actions">
+      <div className="note-actions" role="group" aria-label="Note actions">
         <button 
-          className="action-btn edit-btn"
+          className="action-btn edit-btn touch-target keyboard-focusable"
           onClick={handleEditClick}
           title="Edit note"
+          aria-label={`Edit note: ${note.title}`}
           tabIndex={-1}
         >
-          ✏️
+          <span aria-hidden="true">✏️</span>
+          <span className="sr-only">Edit</span>
         </button>
         <button 
-          className="action-btn delete-btn"
+          className="action-btn delete-btn touch-target keyboard-focusable"
           onClick={handleDeleteClick}
           title="Delete note"
+          aria-label={`Delete note: ${note.title}`}
           tabIndex={-1}
         >
-          🗑️
+          <span aria-hidden="true">🗑️</span>
+          <span className="sr-only">Delete</span>
         </button>
       </div>
-    </div>
+    </article>
   );
 };
 

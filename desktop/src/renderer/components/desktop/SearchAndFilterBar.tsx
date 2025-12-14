@@ -37,7 +37,7 @@ export interface SearchAndFilterBarProps {
   filteredNotesCount: number;
 }
 
-export const SearchAndFilterBar: React.FC<SearchAndFilterBarProps> = ({
+export const SearchAndFilterBar = React.forwardRef<HTMLInputElement, SearchAndFilterBarProps>(({
   searchQuery,
   onSearchChange,
   filters,
@@ -50,7 +50,7 @@ export const SearchAndFilterBar: React.FC<SearchAndFilterBarProps> = ({
   availableTags,
   totalNotesCount,
   filteredNotesCount
-}) => {
+}, ref) => {
   const [searchInputValue, setSearchInputValue] = useState(searchQuery);
   const [debounceTimer, setDebounceTimer] = useState<NodeJS.Timeout | null>(null);
 
@@ -180,49 +180,63 @@ export const SearchAndFilterBar: React.FC<SearchAndFilterBarProps> = ({
   };
 
   return (
-    <div className="search-and-filter-bar">
+    <div className="search-and-filter-bar" role="search" aria-label="Search and filter notes">
       {/* Main Search Row */}
       <div className="search-row">
         <div className="search-input-container">
           <div className="search-input-wrapper">
-            <span className="search-icon">🔍</span>
+            <label htmlFor="notes-search" className="sr-only">
+              Search notes by title, content, or tags
+            </label>
+            <span className="search-icon" aria-hidden="true">🔍</span>
             <input
+              ref={ref}
+              id="notes-search"
               type="text"
               placeholder="Search notes by title, content, or tags..."
               value={searchInputValue}
               onChange={handleSearchInputChange}
-              className="search-input"
+              className="search-input keyboard-focusable"
               autoComplete="off"
+              aria-describedby="search-help"
+              aria-label="Search notes"
             />
             {searchInputValue && (
               <button
                 onClick={handleClearSearch}
-                className="clear-search-button"
+                className="clear-search-button keyboard-focusable"
                 title="Clear search"
+                aria-label="Clear search query"
               >
-                ✕
+                <span aria-hidden="true">✕</span>
               </button>
             )}
           </div>
         </div>
 
-        <div className="search-controls">
+        <div className="search-controls" role="group" aria-label="Search controls">
           <button
             onClick={() => onToggleAdvancedFilters(!showAdvancedFilters)}
-            className={`advanced-filters-toggle ${showAdvancedFilters ? 'active' : ''}`}
+            className={`advanced-filters-toggle ${showAdvancedFilters ? 'active' : ''} keyboard-focusable`}
             title="Toggle advanced filters"
+            aria-label={showAdvancedFilters ? 'Hide advanced filters' : 'Show advanced filters'}
+            aria-expanded={showAdvancedFilters}
+            aria-controls="advanced-filters-panel"
           >
-            <span className="filter-icon">⚙️</span>
+            <span className="filter-icon" aria-hidden="true">⚙️</span>
             Filters
-            {hasActiveFilters && <span className="active-indicator">●</span>}
+            {hasActiveFilters && <span className="active-indicator" aria-label="Active filters">●</span>}
           </button>
 
-          <div className="sort-controls">
+          <div className="sort-controls" role="group" aria-label="Sort controls">
+            <label htmlFor="sort-field" className="sr-only">Sort notes by</label>
             <select
+              id="sort-field"
               value={sortBy.field}
               onChange={(e) => handleSortFieldChange(e.target.value as SortOption['field'])}
-              className="sort-field-select"
+              className="sort-field-select keyboard-focusable"
               title="Sort by"
+              aria-label="Sort notes by"
             >
               <option value="createdAt">Created Date</option>
               <option value="updatedAt">Modified Date</option>
@@ -232,18 +246,19 @@ export const SearchAndFilterBar: React.FC<SearchAndFilterBarProps> = ({
             
             <button
               onClick={handleSortDirectionToggle}
-              className="sort-direction-button"
+              className="sort-direction-button keyboard-focusable"
               title={`Sort ${sortBy.direction === 'asc' ? 'Descending' : 'Ascending'}`}
+              aria-label={`Sort ${sortBy.direction === 'asc' ? 'ascending' : 'descending'}, click to change to ${sortBy.direction === 'asc' ? 'descending' : 'ascending'}`}
             >
-              {sortBy.direction === 'asc' ? '↑' : '↓'}
+              <span aria-hidden="true">{sortBy.direction === 'asc' ? '↑' : '↓'}</span>
             </button>
           </div>
         </div>
       </div>
 
       {/* Results Summary */}
-      <div className="results-summary">
-        <span className="results-count">
+      <div className="results-summary" role="status" aria-live="polite">
+        <span className="results-count" aria-label={`Showing ${filteredNotesCount} of ${totalNotesCount} notes`}>
           {filteredNotesCount === totalNotesCount 
             ? `${totalNotesCount} notes`
             : `${filteredNotesCount} of ${totalNotesCount} notes`
@@ -252,32 +267,44 @@ export const SearchAndFilterBar: React.FC<SearchAndFilterBarProps> = ({
         {hasActiveFilters && (
           <button
             onClick={handleClearAllFilters}
-            className="clear-filters-button"
+            className="clear-filters-button keyboard-focusable"
+            aria-label="Clear all active filters"
           >
             Clear all filters
           </button>
         )}
       </div>
 
+      {/* Hidden help text */}
+      <div className="sr-only">
+        <div id="search-help">
+          Type to search notes in real-time. Use filters to narrow results by type, context, tags, or date.
+        </div>
+      </div>
+
       {/* Advanced Filters Panel */}
       {showAdvancedFilters && (
-        <div className="advanced-filters-panel">
+        <div className="advanced-filters-panel" id="advanced-filters-panel" role="region" aria-label="Advanced filters">
           {/* Note Type Filter */}
-          <div className="filter-section">
-            <label className="filter-label">Note Type</label>
-            <div className="filter-options">
+          <fieldset className="filter-section">
+            <legend className="filter-label">Note Type</legend>
+            <div className="filter-options" role="radiogroup" aria-label="Note type filter">
               {(['all', 'quick', 'permanent'] as const).map(type => (
                 <button
                   key={type}
                   onClick={() => handleNoteTypeChange(type)}
-                  className={`filter-option ${filters.noteType === type ? 'active' : ''}`}
+                  className={`filter-option ${filters.noteType === type ? 'active' : ''} keyboard-focusable`}
+                  role="radio"
+                  aria-checked={filters.noteType === type}
+                  aria-label={type === 'all' ? 'All Notes' : 
+                             type === 'quick' ? 'Quick Notes' : 'Permanent Notes'}
                 >
                   {type === 'all' ? 'All Notes' : 
                    type === 'quick' ? 'Quick Notes' : 'Permanent Notes'}
                 </button>
               ))}
             </div>
-          </div>
+          </fieldset>
 
           {/* Context Filter */}
           {contexts.length > 0 && (
@@ -363,4 +390,6 @@ export const SearchAndFilterBar: React.FC<SearchAndFilterBarProps> = ({
       )}
     </div>
   );
-};
+});
+
+SearchAndFilterBar.displayName = 'SearchAndFilterBar';

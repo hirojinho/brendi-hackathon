@@ -273,6 +273,8 @@
   }
 }
 
+/* Accessibility Support */
+
 /* Reduced Motion Support */
 @media (prefers-reduced-motion: reduce) {
   :root {
@@ -280,6 +282,96 @@
     --transition-normal: none;
     --transition-slow: none;
   }
+}
+
+/* Reduced Transparency Support (macOS) */
+@media (prefers-reduced-transparency: reduce) {
+  :root {
+    --color-surface-overlay: rgba(0, 0, 0, 0.8);
+    --color-hover-overlay: rgba(0, 0, 0, 0.12);
+    --color-pressed-overlay: rgba(0, 0, 0, 0.24);
+  }
+  
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --color-surface-overlay: rgba(0, 0, 0, 0.9);
+      --color-hover-overlay: rgba(255, 255, 255, 0.16);
+      --color-pressed-overlay: rgba(255, 255, 255, 0.32);
+    }
+  }
+}
+
+/* Increased Contrast Support */
+@media (prefers-contrast: more) {
+  :root {
+    --color-border-primary: #000000;
+    --color-border-secondary: #333333;
+    --color-text-primary: #000000;
+    --color-text-secondary: #333333;
+    --color-focus-ring: rgba(0, 122, 255, 0.5);
+  }
+  
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --color-border-primary: #ffffff;
+      --color-border-secondary: #cccccc;
+      --color-text-primary: #ffffff;
+      --color-text-secondary: #cccccc;
+      --color-focus-ring: rgba(10, 132, 255, 0.7);
+    }
+  }
+}
+
+/* Font Size Scaling */
+[data-font-size="small"] {
+  --font-scale: 0.9;
+}
+
+[data-font-size="medium"] {
+  --font-scale: 1.0;
+}
+
+[data-font-size="large"] {
+  --font-scale: 1.1;
+}
+
+[data-font-size="extra-large"] {
+  --font-scale: 1.25;
+}
+
+/* Apply font scaling to all text elements */
+[data-font-size] {
+  font-size: calc(var(--font-size-body) * var(--font-scale, 1));
+}
+
+/* Screen Reader Optimizations */
+[data-screen-reader="true"] {
+  /* Ensure focus indicators are more prominent for screen readers */
+  --color-focus-ring: rgba(0, 122, 255, 0.6);
+  
+  /* Increase spacing for better navigation */
+  --spacing-scale: 1.2;
+}
+
+/* Motion Scaling */
+[data-reduced-motion="true"] * {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* Transparency Scaling */
+[data-reduced-transparency="true"] {
+  --color-surface-overlay: rgba(0, 0, 0, 0.95);
+  --color-hover-overlay: rgba(0, 0, 0, 0.15);
+  --color-pressed-overlay: rgba(0, 0, 0, 0.25);
+}
+
+[data-reduced-transparency="true"][data-theme="dark"] {
+  --color-surface-overlay: rgba(0, 0, 0, 0.98);
+  --color-hover-overlay: rgba(255, 255, 255, 0.2);
+  --color-pressed-overlay: rgba(255, 255, 255, 0.35);
 }
 
 /* Component Base Styles */
@@ -318,6 +410,16 @@
   background-clip: content-box;
 }
 
+/* Responsive Breakpoints */
+:root {
+  --breakpoint-xs: 480px;
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+  --breakpoint-2xl: 1536px;
+}
+
 /* Utility Classes */
 .text-primary { color: var(--color-text-primary); }
 .text-secondary { color: var(--color-text-secondary); }
@@ -344,3 +446,126 @@
 .transition-fast { transition: all var(--transition-fast); }
 .transition-normal { transition: all var(--transition-normal); }
 .transition-slow { transition: all var(--transition-slow); }
+
+/* Accessibility Utilities */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.focus-visible {
+  outline: none;
+}
+
+.focus-visible:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 6px;
+  background: var(--color-accent);
+  color: var(--color-text-inverse);
+  padding: 8px;
+  text-decoration: none;
+  border-radius: var(--radius-medium);
+  z-index: var(--z-tooltip);
+  font-weight: var(--font-weight-medium);
+}
+
+.skip-link:focus {
+  top: 6px;
+}
+
+/* High Contrast Mode Utilities */
+@media (prefers-contrast: high) {
+  .border-contrast {
+    border: 2px solid currentColor !important;
+  }
+  
+  .text-contrast {
+    color: var(--color-text-primary) !important;
+  }
+  
+  .bg-contrast {
+    background: var(--color-background-primary) !important;
+  }
+}
+
+/* Responsive Utilities */
+.container {
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--spacing-4);
+  padding-right: var(--spacing-4);
+}
+
+@media (min-width: 640px) {
+  .container {
+    max-width: 640px;
+    padding-left: var(--spacing-6);
+    padding-right: var(--spacing-6);
+  }
+}
+
+@media (min-width: 768px) {
+  .container {
+    max-width: 768px;
+    padding-left: var(--spacing-8);
+    padding-right: var(--spacing-8);
+  }
+}
+
+@media (min-width: 1024px) {
+  .container {
+    max-width: 1024px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .container {
+    max-width: 1280px;
+  }
+}
+
+/* Responsive Text Utilities */
+@media (max-width: 767px) {
+  .text-responsive {
+    font-size: var(--font-size-subheadline);
+  }
+}
+
+@media (min-width: 768px) {
+  .text-responsive {
+    font-size: var(--font-size-body);
+  }
+}
+
+/* Touch Target Utilities */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Keyboard Navigation Utilities */
+.keyboard-focusable {
+  outline: none;
+}
+
+.keyboard-focusable:focus-visible {
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
+  border-radius: var(--radius-medium);
+}
