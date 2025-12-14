@@ -3,6 +3,7 @@ import { DesktopSidebar } from './desktop/DesktopSidebar';
 import { UltraMinimalZettelkastenPanel } from './desktop/UltraMinimalZettelkastenPanel';
 import { MinimalChatPanel } from './desktop/MinimalChatPanel';
 import { MinimalNotesPanel } from './desktop/MinimalNotesPanel';
+import { useSystemPreferences } from '../hooks/useSystemPreferences';
 import './DesktopApp.css';
 
 type TabType = 'chat' | 'notes' | 'zettelkasten' | 'review' | 'documents';
@@ -24,6 +25,9 @@ const SimpleTabContent: React.FC<{ tabName: string }> = ({ tabName }) => (
 
 export const DebugDesktopApp: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('chat');
+  
+  // Test adding useSystemPreferences hook
+  useSystemPreferences();
   const [model, setModel] = useState<'openrouter' | 'openai' | 'ollama'>('openrouter');
   const [openrouterModelName, setOpenrouterModelName] = useState<string>('qwen/qwen3-14b:free');
   const [ollamaModelName, setOllamaModelName] = useState<string>('phi3:latest');
