@@ -1,8 +1,5 @@
 import React, { useState } from 'react';
 import { DesktopSidebar } from './desktop/DesktopSidebar';
-import { UltraMinimalZettelkastenPanel } from './desktop/UltraMinimalZettelkastenPanel';
-import { MinimalChatPanel } from './desktop/MinimalChatPanel';
-import { MinimalNotesPanel } from './desktop/MinimalNotesPanel';
 import { useSystemPreferences } from '../hooks/useSystemPreferences';
 import { NotificationProvider } from './common/NotificationSystem';
 import { SimpleApplicationIntegration } from './integration/SimpleApplicationIntegration';
@@ -90,20 +87,10 @@ export const DebugDesktopApp: React.FC = () => {
         </div>
 
         {/* Direct rendering without transitions or error boundaries */}
-        {activeTab === 'chat' && (
-          <MinimalChatPanel
-            model={model}
-            modelName={model === 'openrouter' ? openrouterModelName : model === 'ollama' ? ollamaModelName : undefined}
-            embeddingProvider={embeddingProvider}
-          />
-        )}
-        
-        {activeTab === 'notes' && <MinimalNotesPanel />}
-        
-        {activeTab === 'zettelkasten' && <UltraMinimalZettelkastenPanel />}
-        
+        {activeTab === 'chat' && <SimpleTabContent tabName="chat" />}
+        {activeTab === 'notes' && <SimpleTabContent tabName="notes" />}
+        {activeTab === 'zettelkasten' && <SimpleTabContent tabName="zettelkasten" />}
         {activeTab === 'review' && <SimpleTabContent tabName="review" />}
-        
         {activeTab === 'documents' && <SimpleTabContent tabName="documents" />}
       </div>
     </div>
