@@ -3,14 +3,14 @@
   min-width: 220px;
   display: flex;
   flex-direction: column;
-  background: #f5f5f7;
-  border-right: 1px solid rgba(0, 0, 0, 0.08);
+  background: var(--color-background-secondary);
+  border-right: 1px solid var(--color-border-secondary);
   padding-top: 20px;
 }
 
 .sidebar-header {
   padding: 20px 20px 16px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  border-bottom: 1px solid var(--color-border-secondary);
 }
 
 .app-logo {
@@ -19,12 +19,12 @@
   gap: 8px;
   font-size: 17px;
   font-weight: 600;
-  color: #1d1d1f;
+  color: var(--color-text-primary);
   letter-spacing: -0.3px;
 }
 
 .app-logo svg {
-  color: #007AFF;
+  color: var(--color-accent);
 }
 
 .sidebar-nav {
@@ -45,19 +45,19 @@
   border-radius: 6px;
   font-size: 13px;
   font-weight: 400;
-  color: #1d1d1f;
+  color: var(--color-text-primary);
   cursor: pointer;
   transition: background 0.15s ease;
   text-align: left;
 }
 
 .nav-item:hover {
-  background: rgba(0, 0, 0, 0.04);
+  background: var(--color-hover-overlay);
 }
 
 .nav-item.active {
-  background: rgba(0, 122, 255, 0.1);
-  color: #007AFF;
+  background: var(--color-selection);
+  color: var(--color-accent);
   font-weight: 500;
 }
 
@@ -68,7 +68,7 @@
 
 .sidebar-settings {
   padding: 16px 12px;
-  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  border-top: 1px solid var(--color-border-secondary);
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -83,7 +83,7 @@
 .settings-label {
   font-size: 11px;
   font-weight: 600;
-  color: #86868b;
+  color: var(--color-text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.3px;
 }
@@ -92,32 +92,32 @@
 .settings-input {
   width: 100%;
   padding: 6px 10px;
-  border: 1px solid rgba(0, 0, 0, 0.12);
+  border: 1px solid var(--color-input-border);
   border-radius: 6px;
   font-size: 13px;
   font-family: inherit;
-  background: var(--color-background-primary);
-  color: #1d1d1f;
+  background: var(--color-input-background);
+  color: var(--color-text-primary);
   transition: border-color 0.15s ease;
   outline: none;
 }
 
 .settings-select:hover,
 .settings-input:hover {
-  border-color: rgba(0, 0, 0, 0.2);
+  border-color: var(--color-border-primary);
 }
 
 .settings-select:focus,
 .settings-input:focus {
-  border-color: #007AFF;
+  border-color: var(--color-input-border-focus);
   outline: none;
-  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
-  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
+  background: var(--color-input-background);
 }
 
 .settings-select option {
   background: var(--color-surface-primary);
-  color: #1d1d1f;
+  color: var(--color-text-primary);
 }
 
 .keyboard-shortcuts {
@@ -129,7 +129,7 @@
 .shortcuts-title {
   font-size: 11px;
   font-weight: 600;
-  color: #86868b;
+  color: var(--color-text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.3px;
 }
@@ -143,16 +143,16 @@
 
 .shortcut-keys {
   font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
-  background: rgba(0, 0, 0, 0.06);
+  background: var(--color-background-tertiary);
   padding: 2px 6px;
   border-radius: 4px;
   font-size: 10px;
   font-weight: 500;
-  color: #1d1d1f;
+  color: var(--color-text-primary);
 }
 
 .shortcut-desc {
-  color: #86868b;
+  color: var(--color-text-secondary);
   font-weight: 400;
 }
 

@@ -384,7 +384,7 @@
   margin: 0 0 20px 0;
   padding: 16px 20px;
   border-radius: 12px;
-  background: white;
+  background: var(--color-surface-primary);
   border: 1px solid rgba(0, 122, 255, 0.3);
   box-shadow: 0 2px 20px rgba(0, 0, 0, 0.08);
   animation: fadeIn 0.3s ease-out;

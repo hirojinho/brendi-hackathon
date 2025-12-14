@@ -178,7 +178,7 @@
 
 /* Transformation interface */
 .minimal-transformation {
-  background: white;
+  background: var(--color-surface-primary);
   border: 1px solid rgba(0, 122, 255, 0.2);
   border-radius: 16px;
   padding: 24px 28px;
@@ -210,7 +210,7 @@
 
 .minimal-transformation-input:focus {
   border-color: #007aff;
-  background: white;
+  background: var(--color-surface-primary);
   box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
 }
 
@@ -233,7 +233,7 @@
 
 .minimal-transformation-textarea:focus {
   border-color: #007aff;
-  background: white;
+  background: var(--color-surface-primary);
   box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
 }
 

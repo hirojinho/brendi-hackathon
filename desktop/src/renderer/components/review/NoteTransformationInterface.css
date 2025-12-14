@@ -119,7 +119,7 @@
   border-radius: 6px;
   font-size: 0.875rem;
   font-family: inherit;
-  background: var(--bg-primary, #ffffff);
+  background: var(--color-input-background);
   color: var(--text-primary, #111827);
   transition: border-color 0.2s ease;
 }
@@ -150,7 +150,7 @@
   padding: 1rem;
   border: 1px solid var(--border-color, #e5e7eb);
   border-radius: 6px;
-  background: var(--bg-primary, #ffffff);
+  background: var(--color-input-background);
 }
 
 .preview-title {
