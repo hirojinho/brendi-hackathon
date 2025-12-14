@@ -19,6 +19,39 @@
 }
 
 
+/* Tab Error Fallback Styling */
+.tab-error-fallback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 2rem;
+  text-align: center;
+  background: var(--color-background-primary);
+  color: var(--color-text-primary);
+}
+
+.tab-error-fallback .error-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.tab-error-fallback h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: var(--color-text-primary);
+}
+
+.tab-error-fallback p {
+  font-size: 1rem;
+  color: var(--color-text-secondary);
+  margin-bottom: 1.5rem;
+  max-width: 400px;
+  line-height: 1.5;
+}
+
 /* Scrollbar Styling - macOS style */
 .desktop-app *::-webkit-scrollbar {
   width: 11px;

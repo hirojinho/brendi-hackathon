@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { useChat } from '../../hooks/useChat';
 import { MarkdownRenderer } from '../common/MarkdownRenderer';
 import './DesktopChatPanel.css';
@@ -14,6 +14,50 @@ export const DesktopChatPanel: React.FC<DesktopChatPanelProps> = ({
   modelName,
   // embeddingProvider, // Unused
 }) => {
+  const [chatError, setChatError] = useState<string | null>(null);
+  const [useSimpleChat, setUseSimpleChat] = useState(false);
+
+  let chatHook;
+  try {
+    chatHook = useChat({
+      initialModel: model,
+    });
+  } catch (error) {
+    console.error('Chat hook error:', error);
+    setChatError(error instanceof Error ? error.message : 'Chat initialization failed');
+    setUseSimpleChat(true);
+  }
+
+  if (useSimpleChat || chatError || !chatHook) {
+    return (
+      <div className="desktop-chat-panel">
+        <div className="chat-messages-container">
+          <div className="chat-messages">
+            <div className="chat-welcome">
+              <div className="welcome-icon">💬</div>
+              <h2>Chat Panel (Simple Mode)</h2>
+              <p>The chat functionality is temporarily unavailable.</p>
+              {chatError && (
+                <div className="error-details">
+                  <p><strong>Error:</strong> {chatError}</p>
+                </div>
+              )}
+              <button 
+                onClick={() => {
+                  setChatError(null);
+                  setUseSimpleChat(false);
+                }}
+                className="macos-button macos-button--primary macos-button--medium"
+              >
+                Try Again
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const {
     messages,
     input,
@@ -27,9 +71,7 @@ export const DesktopChatPanel: React.FC<DesktopChatPanelProps> = ({
     setUseRag,
     setMaxChunks,
     sendMessage,
-  } = useChat({
-    initialModel: model,
-  });
+  } = chatHook;
 
   // Update chat model when prop changes
   React.useEffect(() => {

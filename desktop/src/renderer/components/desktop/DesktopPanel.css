@@ -54,6 +54,23 @@
   margin: 0;
 }
 
+.empty-state .status-text {
+  font-size: 13px;
+  color: var(--color-text-tertiary);
+  margin-top: 16px;
+  font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+}
+
+.empty-state .error-details {
+  margin-top: 16px;
+  padding: 12px;
+  background: var(--color-surface-error);
+  border: 1px solid var(--color-border-error);
+  border-radius: 8px;
+  font-size: 13px;
+  max-width: 400px;
+}
+
 /* Notes panel specific styling */
 .desktop-panel.notes-panel {
   padding: 0;
