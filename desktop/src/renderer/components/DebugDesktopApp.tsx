@@ -5,6 +5,7 @@ import { MinimalChatPanel } from './desktop/MinimalChatPanel';
 import { MinimalNotesPanel } from './desktop/MinimalNotesPanel';
 import { useSystemPreferences } from '../hooks/useSystemPreferences';
 import { NotificationProvider } from './common/NotificationSystem';
+import { SimpleApplicationIntegration } from './integration/SimpleApplicationIntegration';
 import './DesktopApp.css';
 
 type TabType = 'chat' | 'notes' | 'zettelkasten' | 'review' | 'documents';
@@ -58,7 +59,8 @@ export const DebugDesktopApp: React.FC = () => {
 
   return (
     <NotificationProvider>
-      <div className="desktop-app">
+      <SimpleApplicationIntegration>
+        <div className="desktop-app">
       <DesktopSidebar
         activeTab={activeTab}
         onTabChange={handleTabChange}
@@ -105,6 +107,7 @@ export const DebugDesktopApp: React.FC = () => {
         {activeTab === 'documents' && <SimpleTabContent tabName="documents" />}
       </div>
     </div>
+      </SimpleApplicationIntegration>
     </NotificationProvider>
   );
 };
