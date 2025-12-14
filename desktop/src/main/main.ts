@@ -379,6 +379,10 @@ ipcMain.handle('note-taking-agent:process', async (_event, payload) => {
     return await response.json();
   } catch (error: any) {
     console.error('[Main] Note-taking agent error:', error);
+    // Provide more specific error messages
+    if (error.message?.includes('API key')) {
+      throw new Error('API key not configured. Please check your environment variables.');
+    }
     throw error;
   }
 });

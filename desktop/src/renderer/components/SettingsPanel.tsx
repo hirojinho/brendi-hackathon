@@ -48,13 +48,34 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose }) => {
             <p className="settings-description">
               Choose your AI provider and model. Settings are saved automatically.
             </p>
+            
+            {/* Current configuration display */}
+            <div style={{ 
+              background: 'rgba(0, 122, 255, 0.1)', 
+              border: '1px solid rgba(0, 122, 255, 0.2)', 
+              borderRadius: '8px', 
+              padding: '12px', 
+              marginBottom: '16px',
+              fontSize: '13px'
+            }}>
+              <strong>Current:</strong> {provider} 
+              {modelName && ` (${modelName})`}
+              {!modelName && provider === 'openrouter' && ' (meta-llama/llama-3.3-8b-instruct:free)'}
+              {!modelName && provider === 'openai' && ' (gpt-4o-mini)'}
+              {!modelName && provider === 'ollama' && ' (phi3:latest)'}
+            </div>
 
             <div className="settings-field">
               <label>
                 Provider
                 <select
                   value={provider}
-                  onChange={(e) => setProvider(e.target.value as 'openai' | 'openrouter' | 'ollama')}
+                  onChange={(e) => {
+                    const newProvider = e.target.value as 'openai' | 'openrouter' | 'ollama';
+                    setProvider(newProvider);
+                    // Auto-save provider changes immediately
+                    setTimeout(() => saveSettings(), 100);
+                  }}
                   disabled={isLoading}
                 >
                   <option value="openai">OpenAI</option>
@@ -62,7 +83,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose }) => {
                   <option value="ollama">Ollama</option>
                 </select>
               </label>
-              <small>Select the AI provider to use</small>
+              <small>Select the AI provider to use (auto-saved)</small>
             </div>
 
             <div className="settings-field">
@@ -72,6 +93,10 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose }) => {
                   type="text"
                   value={modelName}
                   onChange={(e) => setModelName(e.target.value)}
+                  onBlur={() => {
+                    // Auto-save model name when user finishes editing
+                    setTimeout(() => saveSettings(), 100);
+                  }}
                   placeholder={
                     provider === 'openai' 
                       ? 'gpt-4o-mini' 
@@ -83,9 +108,9 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose }) => {
                 />
               </label>
               <small>
-                {provider === 'openai' && 'Leave empty to use default (gpt-4.1-mini) or specify: gpt-4o-mini, gpt-4o, gpt-4-turbo, gpt-3.5-turbo'}
-                {provider === 'openrouter' && 'Model ID from OpenRouter (e.g., meta-llama/llama-3.3-8b-instruct:free)'}
-                {provider === 'ollama' && 'Model name from your local Ollama instance (e.g., phi3:latest, llama3, mistral)'}
+                {provider === 'openai' && 'Leave empty to use default (gpt-4o-mini) or specify: gpt-4o-mini, gpt-4o, gpt-4-turbo, gpt-3.5-turbo (auto-saved)'}
+                {provider === 'openrouter' && 'Model ID from OpenRouter (e.g., meta-llama/llama-3.3-8b-instruct:free) (auto-saved)'}
+                {provider === 'ollama' && 'Model name from your local Ollama instance (e.g., phi3:latest, llama3, mistral) (auto-saved)'}
               </small>
             </div>
           </div>

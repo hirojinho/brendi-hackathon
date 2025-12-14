@@ -48,6 +48,8 @@ const NoteTakingAgent: React.FC = () => {
     input,
     isLoading,
     lastResult,
+    model,
+    modelName,
     setInput,
     processInput,
     clearResult,
@@ -253,6 +255,10 @@ const NoteTakingAgent: React.FC = () => {
             {contexts.find(c => c.id === selectedContextId)?.name || 'Context active'}
           </div>
         )}
+        {/* Debug: Show current model */}
+        <div className="status-indicator model-debug" style={{ fontSize: '10px', opacity: 0.7 }}>
+          {model}{modelName ? ` (${modelName})` : ''}
+        </div>
       </div>
 
       {/* Notification overlay */}

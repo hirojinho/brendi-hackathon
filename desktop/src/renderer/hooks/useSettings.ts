@@ -6,15 +6,21 @@ export function useSettings(isOpen: boolean) {
   const [openaiKey, setOpenaiKey] = useState('');
   const [openrouterKey, setOpenrouterKey] = useState('');
   const [ollamaUrl, setOllamaUrl] = useState('');
-  const [provider, setProvider] = useState<ProviderType>('openai');
+  const [provider, setProvider] = useState<ProviderType>('openrouter'); // Changed default to openrouter
   const [modelName, setModelName] = useState('');
   const [globalShortcut, setGlobalShortcut] = useState('');
-  const [defaultMode, setDefaultMode] = useState<'chat' | 'note-taking'>('chat');
+  const [defaultMode, setDefaultMode] = useState<'chat' | 'note-taking'>('note-taking'); // Changed default to note-taking
   const [maxQuickNotes, setMaxQuickNotes] = useState(10);
   const [reviewAgeThresholdHours, setReviewAgeThresholdHours] = useState(24);
   const [isLoading, setIsLoading] = useState(false);
   const [saveStatus, setSaveStatus] = useState<string>('');
 
+  // Load settings on mount, not just when panel opens
+  useEffect(() => {
+    loadSettings();
+  }, []);
+
+  // Also reload when panel opens to ensure fresh data
   useEffect(() => {
     if (isOpen) {
       loadSettings();
@@ -26,11 +32,11 @@ export function useSettings(isOpen: boolean) {
       const settings = await settingsService.loadAllSettings();
       setOpenaiKey(settings.openaiApiKey || '');
       setOpenrouterKey(settings.openrouterApiKey || '');
-      setOllamaUrl(settings.ollamaBaseUrl || '');
-      setProvider(settings.provider || 'openai');
+      setOllamaUrl(settings.ollamaBaseUrl || 'http://localhost:11434');
+      setProvider(settings.provider || 'openrouter'); // Default to openrouter since it's configured
       setModelName(settings.modelName || '');
       setGlobalShortcut(settings.globalShortcut || 'CmdOrCtrl+Shift+Space');
-      setDefaultMode(settings.defaultMode || 'chat');
+      setDefaultMode(settings.defaultMode || 'note-taking'); // Default to note-taking mode
       setMaxQuickNotes(settings.maxQuickNotes || 10);
       setReviewAgeThresholdHours(settings.reviewAgeThresholdHours || 24);
     } catch (error) {

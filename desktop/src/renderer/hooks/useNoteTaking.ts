@@ -18,7 +18,7 @@ export function useNoteTaking(options: UseNoteTakingOptions = {}) {
 
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [model, setModel] = useState<ModelType>(initialModel || 'openai');
+  const [model, setModel] = useState<ModelType>(initialModel || 'openrouter');
   const [modelName, setModelName] = useState<string>(initialModelName);
   const [lastResult, setLastResult] = useState<{
     shouldCreateNote: boolean;
