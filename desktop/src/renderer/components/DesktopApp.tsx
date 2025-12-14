@@ -7,6 +7,7 @@ import { MinimalNotesPanel } from './desktop/MinimalNotesPanel';
 import { DesktopDocumentsPanel } from './desktop/DesktopDocumentsPanel';
 import { DesktopReviewPanel } from './desktop/DesktopReviewPanel';
 import { DesktopZettelkastenPanel } from './desktop/DesktopZettelkastenPanel';
+import { UltraMinimalZettelkastenPanel } from './desktop/UltraMinimalZettelkastenPanel';
 import { useSystemPreferences } from '../hooks/useSystemPreferences';
 import { ErrorBoundary } from './common/ErrorBoundary';
 import { NotificationProvider } from './common/NotificationSystem';
@@ -162,9 +163,16 @@ export const DesktopApp: React.FC = () => {
 
   // Sync state changes to main process
   const handleTabChange = (tab: TabType) => {
-    setActiveTab(tab);
-    if (window.electronAPI?.setState) {
-      window.electronAPI.setState('lastActiveTab', tab);
+    console.log('[DesktopApp] Tab change requested:', tab);
+    try {
+      setActiveTab(tab);
+      console.log('[DesktopApp] Tab state updated to:', tab);
+      if (window.electronAPI?.setState) {
+        window.electronAPI.setState('lastActiveTab', tab);
+        console.log('[DesktopApp] Electron state updated');
+      }
+    } catch (error) {
+      console.error('[DesktopApp] Error during tab change:', error);
     }
   };
 
@@ -308,25 +316,9 @@ export const DesktopApp: React.FC = () => {
                 </ErrorBoundary>
               </MacOSFadeTransition>
               
-              <MacOSFadeTransition isVisible={activeTab === 'zettelkasten'} duration={250}>
-                <ErrorBoundary
-                  fallback={
-                    <div className="tab-error-fallback">
-                      <div className="error-icon">⚠️</div>
-                      <h2>Zettelkasten Panel Error</h2>
-                      <p>The zettelkasten panel encountered an error. Please try refreshing the application.</p>
-                      <button 
-                        onClick={() => window.location.reload()} 
-                        className="macos-button macos-button--primary macos-button--medium"
-                      >
-                        Refresh App
-                      </button>
-                    </div>
-                  }
-                >
-                  <DesktopZettelkastenPanel />
-                </ErrorBoundary>
-              </MacOSFadeTransition>
+              {activeTab === 'zettelkasten' && (
+                <UltraMinimalZettelkastenPanel />
+              )}
               
               <MacOSFadeTransition isVisible={activeTab === 'review'} duration={250}>
                 <ErrorBoundary
