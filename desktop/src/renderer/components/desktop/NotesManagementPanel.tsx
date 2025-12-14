@@ -38,6 +38,7 @@ export interface NoteDisplayItem {
 }
 
 export const NotesManagementPanel: React.FC = () => {
+  console.log('[NotesManagementPanel] Component rendering');
   const [displayMode, setDisplayMode] = useState<DisplayMode>('unified');
   const [quickNotes, setQuickNotes] = useState<QuickNote[]>([]);
   const [permanentNotes, setPermanentNotes] = useState<PermanentNote[]>([]);
@@ -499,6 +500,7 @@ export const NotesManagementPanel: React.FC = () => {
   }, [loading, error, filteredAndSortedNotes.length, announceToScreenReader]);
 
   if (loading) {
+    console.log('[NotesManagementPanel] Rendering loading state');
     return (
       <div className="notes-management-panel">
         <LoadingState 
@@ -511,6 +513,7 @@ export const NotesManagementPanel: React.FC = () => {
   }
 
   if (error) {
+    console.log('[NotesManagementPanel] Rendering error state:', error);
     return (
       <div className="notes-management-panel">
         <ErrorBoundary

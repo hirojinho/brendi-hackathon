@@ -1,17 +1,32 @@
-import MockDatabase from './mockDatabase.js';
-import { NoteEntity } from 'domain/entities';
+import Database from 'better-sqlite3';
+import { NoteEntity } from '../../domain/entities/index.js';
 import { Document } from 'langchain/document';
 import path from 'path';
+import fs from 'fs';
 
 export class NoteDatabase {
-  private db: MockDatabase;
+  private db!: Database.Database;
   private fallbackMode = false;
   private memoryStore: any[] = [];
 
   constructor() {
-    console.warn('[NoteDatabase] Using mock database implementation');
-    this.db = new MockDatabase();
-    this.fallbackMode = true; // Always use fallback mode with mock
+    try {
+      // Ensure the database directory exists
+      const dbDir = path.dirname(path.resolve('study_notes.db'));
+      if (!fs.existsSync(dbDir)) {
+        fs.mkdirSync(dbDir, { recursive: true });
+      }
+
+      // Initialize SQLite database
+      this.db = new Database('study_notes.db');
+      this.db.pragma('journal_mode = WAL');
+      this.initializeTables();
+      console.log('[NoteDatabase] SQLite database initialized successfully');
+    } catch (error) {
+      console.error('[NoteDatabase] Failed to initialize SQLite database:', error);
+      console.warn('[NoteDatabase] Falling back to in-memory storage');
+      this.fallbackMode = true;
+    }
   }
 
   private initializeTables(): void {

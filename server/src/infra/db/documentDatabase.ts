@@ -1,13 +1,29 @@
-import MockDatabase from './mockDatabase.js';
+import Database from 'better-sqlite3';
 import path from 'path';
+import fs from 'fs';
 
 export class DocumentDatabase {
-  private db: MockDatabase;
-  private fallbackMode = true;
+  private db!: Database.Database;
+  private fallbackMode = false;
 
   constructor() {
-    console.warn('[DocumentDatabase] Using mock database implementation');
-    this.db = new MockDatabase();
+    try {
+      // Ensure the database directory exists
+      const dbDir = path.dirname(path.resolve('documents.db'));
+      if (!fs.existsSync(dbDir)) {
+        fs.mkdirSync(dbDir, { recursive: true });
+      }
+
+      // Initialize SQLite database
+      this.db = new Database('documents.db');
+      this.db.pragma('journal_mode = WAL');
+      this.initializeTables();
+      console.log('[DocumentDatabase] SQLite database initialized successfully');
+    } catch (error) {
+      console.error('[DocumentDatabase] Failed to initialize SQLite database:', error);
+      console.warn('[DocumentDatabase] Falling back to in-memory storage');
+      this.fallbackMode = true;
+    }
   }
 
   private initializeTables(): void {
