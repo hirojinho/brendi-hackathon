@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { DesktopSidebar } from './desktop/DesktopSidebar';
 import { DesktopChatPanel } from './desktop/DesktopChatPanel';
 import { DesktopNotesPanel } from './desktop/DesktopNotesPanel';
+import { MinimalChatPanel } from './desktop/MinimalChatPanel';
+import { MinimalNotesPanel } from './desktop/MinimalNotesPanel';
 import { DesktopDocumentsPanel } from './desktop/DesktopDocumentsPanel';
 import { DesktopReviewPanel } from './desktop/DesktopReviewPanel';
 import { DesktopZettelkastenPanel } from './desktop/DesktopZettelkastenPanel';
@@ -28,6 +30,7 @@ export const DesktopApp: React.FC = () => {
   const [embeddingProvider, setEmbeddingProvider] = useState<'openai' | 'ollama'>('ollama');
   const [showWorkflowValidator, setShowWorkflowValidator] = useState(false);
   const [showDiagnostics, setShowDiagnostics] = useState(false);
+  const [useMinimalComponents, setUseMinimalComponents] = useState(true); // Start with minimal to prevent crashes
   
   // Initialize system preferences support
   useSystemPreferences();
@@ -137,6 +140,10 @@ export const DesktopApp: React.FC = () => {
           event.preventDefault();
           setShowDiagnostics(!showDiagnostics);
         }
+        if (event.key === 'M') {
+          event.preventDefault();
+          setUseMinimalComponents(!useMinimalComponents);
+        }
       }
 
       // Escape key to hide diagnostics
@@ -215,6 +222,36 @@ export const DesktopApp: React.FC = () => {
               onEmbeddingProviderChange={handleEmbeddingProviderChange}
             />
             <div className="desktop-main-content">
+              {/* Development Mode Toggle */}
+              {process.env.NODE_ENV === 'development' && (
+                <div style={{
+                  position: 'absolute',
+                  top: '10px',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  zIndex: 1000,
+                  background: 'rgba(0, 0, 0, 0.8)',
+                  color: 'white',
+                  padding: '8px 12px',
+                  borderRadius: '6px',
+                  fontSize: '12px'
+                }}>
+                  <button 
+                    onClick={() => setUseMinimalComponents(!useMinimalComponents)}
+                    style={{
+                      background: useMinimalComponents ? '#34C759' : '#FF3B30',
+                      color: 'white',
+                      border: 'none',
+                      padding: '4px 8px',
+                      borderRadius: '4px',
+                      fontSize: '11px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {useMinimalComponents ? 'Minimal Mode' : 'Full Mode'} (Cmd+Shift+M)
+                  </button>
+                </div>
+              )}
               <MacOSFadeTransition isVisible={activeTab === 'chat'} duration={250}>
                 <ErrorBoundary
                   fallback={
@@ -231,11 +268,19 @@ export const DesktopApp: React.FC = () => {
                     </div>
                   }
                 >
-                  <DesktopChatPanel
-                    model={model}
-                    modelName={model === 'openrouter' ? openrouterModelName : model === 'ollama' ? ollamaModelName : undefined}
-                    embeddingProvider={embeddingProvider}
-                  />
+                  {useMinimalComponents ? (
+                    <MinimalChatPanel
+                      model={model}
+                      modelName={model === 'openrouter' ? openrouterModelName : model === 'ollama' ? ollamaModelName : undefined}
+                      embeddingProvider={embeddingProvider}
+                    />
+                  ) : (
+                    <DesktopChatPanel
+                      model={model}
+                      modelName={model === 'openrouter' ? openrouterModelName : model === 'ollama' ? ollamaModelName : undefined}
+                      embeddingProvider={embeddingProvider}
+                    />
+                  )}
                 </ErrorBoundary>
               </MacOSFadeTransition>
               
@@ -255,7 +300,11 @@ export const DesktopApp: React.FC = () => {
                     </div>
                   }
                 >
-                  <DesktopNotesPanel />
+                  {useMinimalComponents ? (
+                    <MinimalNotesPanel />
+                  ) : (
+                    <DesktopNotesPanel />
+                  )}
                 </ErrorBoundary>
               </MacOSFadeTransition>
               
