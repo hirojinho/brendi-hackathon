@@ -216,8 +216,27 @@ const NoteTakingAgent: React.FC = () => {
 
   return (
     <div className="minimal-note-taking">
-      {/* Minimal header - only close button */}
+      {/* Minimal header - close and settings buttons */}
       <div className="minimal-header">
+        <button 
+          className="minimal-settings-btn"
+          onClick={() => setShowSettings(true)}
+          title="Settings (Cmd+,)"
+          style={{
+            background: 'none',
+            border: 'none',
+            color: 'rgba(0, 0, 0, 0.6)',
+            fontSize: '16px',
+            cursor: 'pointer',
+            padding: '4px 8px',
+            borderRadius: '4px',
+            transition: 'all 0.15s ease'
+          }}
+          onMouseOver={(e) => e.currentTarget.style.background = 'rgba(0, 0, 0, 0.1)'}
+          onMouseOut={(e) => e.currentTarget.style.background = 'none'}
+        >
+          ⚙️
+        </button>
         <button 
           className="minimal-close-btn"
           onClick={() => window.electronAPI.toggleOverlay()}

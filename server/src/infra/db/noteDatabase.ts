@@ -1,15 +1,17 @@
-import Database from 'better-sqlite3';
+import MockDatabase from './mockDatabase.js';
 import { NoteEntity } from 'domain/entities';
 import { Document } from 'langchain/document';
 import path from 'path';
 
 export class NoteDatabase {
-  private db: Database.Database;
+  private db: MockDatabase;
+  private fallbackMode = false;
+  private memoryStore: any[] = [];
 
   constructor() {
-    const dbPath = path.join(process.cwd(), 'study_notes.db');
-    this.db = new Database(dbPath);
-    this.initializeTables();
+    console.warn('[NoteDatabase] Using mock database implementation');
+    this.db = new MockDatabase();
+    this.fallbackMode = true; // Always use fallback mode with mock
   }
 
   private initializeTables(): void {

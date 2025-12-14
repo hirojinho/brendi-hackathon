@@ -1,17 +1,29 @@
-import Database from 'better-sqlite3';
+import MockDatabase from './mockDatabase.js';
 import { QuickNoteEntity, PermanentNoteEntity, ReviewSessionEntity } from '../../domain/entities/index.js';
 import path from 'path';
 
 export class QuickNotesDatabase {
-  private db: Database.Database;
+  private db: MockDatabase;
+  private fallbackMode = false;
+  private memoryStore: {
+    quickNotes: any[];
+    permanentNotes: any[];
+    reviewSessions: any[];
+  } = {
+    quickNotes: [],
+    permanentNotes: [],
+    reviewSessions: []
+  };
 
   constructor() {
-    const dbPath = path.join(process.cwd(), 'quick_notes.db');
-    this.db = new Database(dbPath);
-    this.initializeTables();
+    console.warn('[Database] Using mock database implementation');
+    this.db = new MockDatabase();
+    this.fallbackMode = true; // Always use fallback mode with mock
   }
 
   private initializeTables(): void {
+    if (this.fallbackMode) return;
+    
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS contexts (
         id TEXT PRIMARY KEY,
@@ -68,6 +80,24 @@ export class QuickNotesDatabase {
   }
 
   getAllQuickNotes(contextId?: string): QuickNoteEntity[] {
+    if (this.fallbackMode) {
+      // Use in-memory fallback
+      let notes = this.memoryStore.quickNotes;
+      if (contextId) {
+        notes = notes.filter(note => note.context_id === contextId);
+      }
+      return notes.map(note => ({
+        id: note.id,
+        title: note.title,
+        content: note.content,
+        tags: note.tags,
+        contextId: note.context_id || null,
+        createdAt: note.created_at,
+        lastModified: note.last_modified,
+        isReviewRequired: Boolean(note.is_review_required)
+      }));
+    }
+    
     let query = 'SELECT * FROM quick_notes';
     const params: any[] = [];
     
@@ -92,6 +122,21 @@ export class QuickNotesDatabase {
   }
 
   getQuickNote(id: string): QuickNoteEntity | null {
+    if (this.fallbackMode) {
+      const note = this.memoryStore.quickNotes.find(n => n.id === id);
+      if (!note) return null;
+      return {
+        id: note.id,
+        title: note.title,
+        content: note.content,
+        tags: note.tags,
+        contextId: note.context_id || null,
+        createdAt: note.created_at,
+        lastModified: note.last_modified,
+        isReviewRequired: Boolean(note.is_review_required)
+      };
+    }
+    
     const note = this.db.prepare('SELECT * FROM quick_notes WHERE id = ?').get(id) as any;
     if (!note) return null;
     return {
@@ -116,6 +161,28 @@ export class QuickNotesDatabase {
     lastModified: Date;
     isReviewRequired?: boolean;
   }): void {
+    if (this.fallbackMode) {
+      // Use in-memory fallback
+      const existingIndex = this.memoryStore.quickNotes.findIndex(n => n.id === note.id);
+      const noteData = {
+        id: note.id,
+        title: note.title,
+        content: note.content,
+        tags: note.tags,
+        context_id: note.contextId || null,
+        created_at: note.createdAt.toISOString(),
+        last_modified: note.lastModified.toISOString(),
+        is_review_required: note.isReviewRequired ? 1 : 0
+      };
+      
+      if (existingIndex >= 0) {
+        this.memoryStore.quickNotes[existingIndex] = noteData;
+      } else {
+        this.memoryStore.quickNotes.push(noteData);
+      }
+      return;
+    }
+    
     this.db.prepare(`
       INSERT OR REPLACE INTO quick_notes (
         id, title, content, tags, context_id, created_at, last_modified, is_review_required

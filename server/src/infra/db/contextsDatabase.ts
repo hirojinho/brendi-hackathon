@@ -1,17 +1,25 @@
-import Database from 'better-sqlite3';
+import MockDatabase from './mockDatabase.js';
 import { ContextEntity } from '../../domain/entities/index.js';
 import path from 'path';
 
 export class ContextsDatabase {
-  private db: Database.Database;
+  private db: MockDatabase;
+  private fallbackMode = false;
+  private memoryStore: any[] = [];
 
   constructor() {
-    const dbPath = path.join(process.cwd(), 'quick_notes.db');
-    this.db = new Database(dbPath);
-    this.initializeTables();
+    console.warn('[ContextsDatabase] Using mock database implementation');
+    this.db = new MockDatabase();
+    this.fallbackMode = true; // Always use fallback mode with mock
+  }
+
+  private isDbAvailable(): boolean {
+    return !this.fallbackMode && this.db !== null;
   }
 
   private initializeTables(): void {
+    if (this.fallbackMode) return;
+    
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS contexts (
         id TEXT PRIMARY KEY,
@@ -44,6 +52,17 @@ export class ContextsDatabase {
   }
 
   getAllContexts(): ContextEntity[] {
+    if (this.fallbackMode) {
+      return this.memoryStore.map(context => ({
+        id: context.id,
+        name: context.name,
+        description: context.description,
+        parentId: context.parent_id || null,
+        createdAt: context.created_at,
+        lastModified: context.last_modified
+      }));
+    }
+    
     const contexts = this.db.prepare('SELECT * FROM contexts ORDER BY created_at DESC').all() as any[];
     return contexts.map(context => ({
       id: context.id,

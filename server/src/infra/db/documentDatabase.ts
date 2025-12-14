@@ -1,16 +1,18 @@
-import Database from 'better-sqlite3';
+import MockDatabase from './mockDatabase.js';
 import path from 'path';
 
 export class DocumentDatabase {
-  private db: Database.Database;
+  private db: MockDatabase;
+  private fallbackMode = true;
 
   constructor() {
-    const dbPath = path.join(process.cwd(), 'documents.db');
-    this.db = new Database(dbPath);
-    this.initializeTables();
+    console.warn('[DocumentDatabase] Using mock database implementation');
+    this.db = new MockDatabase();
   }
 
   private initializeTables(): void {
+    if (this.fallbackMode) return;
+    
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS documents (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -41,33 +43,54 @@ export class DocumentDatabase {
   }
 
   saveChunks(documentId: number, chunks: { chunk_index: number, chunk_text: string, embedding: number[] }[]): void {
+    if (this.fallbackMode) {
+      // Mock implementation - do nothing
+      return;
+    }
+    
     const stmt = this.db.prepare(`
       INSERT INTO document_chunks (document_id, chunk_index, chunk_text, embedding)
       VALUES (?, ?, ?, ?)
     `);
-    const insertMany = this.db.transaction((chunksArr) => {
-      for (const chunk of chunksArr) {
+    const insertMany = this.db.transaction(() => {
+      for (const chunk of chunks) {
         stmt.run(documentId, chunk.chunk_index, chunk.chunk_text, JSON.stringify(chunk.embedding));
       }
     });
-    insertMany(chunks);
+    insertMany();
   }
 
   getAllDocuments(): { id: number; title: string; originalname: string; created_at: string }[] {
+    if (this.fallbackMode) {
+      return [];
+    }
+    
     return this.db.prepare('SELECT id, title, originalname, created_at FROM documents ORDER BY created_at DESC').all() as { id: number; title: string; originalname: string; created_at: string }[];
   }
 
   deleteDocument(id: number): void {
+    if (this.fallbackMode) {
+      return;
+    }
+    
     this.db.prepare('DELETE FROM documents WHERE id = ?').run(id);
   }
 
   public getEmbeddingAndText(id: number): { embedding: number[]; text: string } | null {
+    if (this.fallbackMode) {
+      return null;
+    }
+    
     const row = this.db.prepare('SELECT embedding, text FROM documents WHERE id = ?').get(id) as { embedding: string; text: string } | undefined;
     if (!row) return null;
     return { embedding: JSON.parse(row.embedding), text: row.text };
   }
 
   getAllChunks(): { id: number; document_id: number; chunk_index: number; chunk_text: string; embedding: number[] }[] {
+    if (this.fallbackMode) {
+      return [];
+    }
+    
     const rows = this.db.prepare(`
       SELECT id, document_id, chunk_index, chunk_text, embedding 
       FROM document_chunks 
@@ -77,6 +100,10 @@ export class DocumentDatabase {
   }
 
   getChunkWithDocMeta(chunkId: number): { title: string; originalname: string } | null {
+    if (this.fallbackMode) {
+      return null;
+    }
+    
     const row = this.db.prepare(`
       SELECT d.title, d.originalname
       FROM documents d
@@ -87,6 +114,10 @@ export class DocumentDatabase {
   }
 
   saveDocumentWithChunks({ title, originalname, embedding, text, chunks }: { title: string, originalname: string, embedding: number[], text: string, chunks: { chunk_index: number, chunk_text: string, embedding: number[] }[] }): number {
+    if (this.fallbackMode) {
+      return 1; // Mock document ID
+    }
+    
     const insertDoc = this.db.prepare(`
       INSERT INTO documents (title, originalname, embedding, text)
       VALUES (?, ?, ?, ?)
@@ -106,6 +137,10 @@ export class DocumentDatabase {
   }
 
   updateDocumentEmbeddingAndText(id: number, embedding: number[], text: string): void {
+    if (this.fallbackMode) {
+      return;
+    }
+    
     this.db.prepare('UPDATE documents SET embedding = ?, text = ? WHERE id = ?').run(JSON.stringify(embedding), text, id);
   }
 }

@@ -11,15 +11,18 @@
   overflow: hidden;
 }
 
-/* Minimal header with only close button */
+/* Minimal header with settings and close buttons */
 .minimal-header {
   position: absolute;
   top: 16px;
   right: 16px;
   z-index: 100;
+  display: flex;
+  gap: 8px;
 }
 
-.minimal-close-btn {
+.minimal-close-btn,
+.minimal-settings-btn {
   width: 32px;
   height: 32px;
   border: none;
@@ -36,7 +39,8 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.minimal-close-btn:hover {
+.minimal-close-btn:hover,
+.minimal-settings-btn:hover {
   background: rgba(255, 255, 255, 0.15);
   color: #ffffff;
   transform: scale(1.05);
