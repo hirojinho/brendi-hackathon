@@ -7,7 +7,9 @@ dist
 # Ignore SQLite database files
 *.db
 server/*.db
+desktop/*.db
 server/**/*.db
+desktop/**/*.db
 study-assistant/server/*.db
 study-assistant/server/**/*.db
 uploads/
