@@ -4,7 +4,6 @@ import type {
   ReviewStatus, 
   ActiveReviewSessionData, 
   ProcessNoteRequest, 
-  QuickNote,
   ReviewSession 
 } from '../types/review';
 

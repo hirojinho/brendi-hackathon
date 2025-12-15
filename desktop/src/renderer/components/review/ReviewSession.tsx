@@ -72,16 +72,12 @@ export const ReviewSession: React.FC<ReviewSessionProps> = ({
   useEffect(() => {
     const createSessionIfNeeded = async () => {
       // Only create if we're done initializing, have no session, and no error
-      if (!isInitializing && !activeSession && !error) {
+      if (!isInitializing && !activeSession && !error && !isLoading) {
         try {
           setIsInitializing(true);
           clearError();
-          const session = await createReviewSession();
-          if (!session) {
-            // Session creation failed (e.g., no notes to review)
-            // This is expected, don't treat as error
-            setIsInitializing(false);
-          }
+          await createReviewSession();
+          setIsInitializing(false);
         } catch (err: any) {
           // Don't log error if no notes require review - this is expected
           if (!err.message?.includes('No notes require review')) {
