@@ -1,3 +1,8 @@
+/**
+ * @deprecated Use useQuickNotesStatus from features/notes instead
+ * This hook is maintained for backward compatibility only.
+ * See MIGRATION_GUIDE.md for migration instructions.
+ */
 import { useState, useEffect, useCallback } from 'react';
 import { quickNotesService, type QuickNotesStatus } from '../services/quickNotesService';
 

@@ -8,6 +8,7 @@ import type {
 } from '../../../types/review';
 import { reviewService } from '../../../services/reviewService';
 import { ReviewSession } from '../domain/ReviewSession';
+import { cacheManager } from '../../../shared/cache/Cache';
 
 /**
  * Repository interface for review data access
@@ -26,27 +27,51 @@ export interface ReviewRepository {
 }
 
 /**
- * Implementation of ReviewRepository
+ * Implementation of ReviewRepository with caching
  * Wraps the service layer and converts data to domain models
  */
-export class ReviewRepositoryImpl implements ReviewRepository {
+class ReviewRepositoryImpl implements ReviewRepository {
+  private cache = cacheManager.getCache<any>('review', { ttl: 3000 }); // 3 second cache
+
   async getStatus(): Promise<ReviewStatus> {
-    return await reviewService.getReviewStatus();
+    const cacheKey = 'review:status';
+    const cached = this.cache.get<ReviewStatus>(cacheKey);
+    
+    if (cached) {
+      return cached;
+    }
+
+    const status = await reviewService.getReviewStatus();
+    this.cache.set(cacheKey, status);
+    return status;
   }
 
   async getActiveSession(): Promise<ReviewSession | null> {
+    const cacheKey = 'review:active-session';
+    const cached = this.cache.get<ReviewSession | null>(cacheKey);
+    
+    if (cached !== null) { // null is a valid value (no session)
+      return cached;
+    }
+
     const data = await reviewService.getActiveReviewSession();
     
     if (!data) {
+      this.cache.set(cacheKey, null, 1000); // Cache "no session" for shorter time
       return null;
     }
 
     // Convert API data to domain model
-    return ReviewSession.fromData(data.session, data.notes);
+    const session = ReviewSession.fromData(data.session, data.notes);
+    this.cache.set(cacheKey, session);
+    return session;
   }
 
   async createSession(): Promise<ReviewSession> {
     const sessionData = await reviewService.createReviewSession();
+    
+    // Invalidate caches
+    this.cache.invalidatePattern('review:*');
     
     // After creating, fetch the full session with notes
     const activeSession = await this.getActiveSession();
@@ -63,11 +88,21 @@ export class ReviewRepositoryImpl implements ReviewRepository {
     noteId: string,
     request: ProcessNoteRequest
   ): Promise<ProcessNoteResponse> {
-    return await reviewService.processNoteInReview(sessionId, noteId, request);
+    const result = await reviewService.processNoteInReview(sessionId, noteId, request);
+    
+    // Invalidate caches
+    this.cache.invalidatePattern('review:*');
+    
+    return result;
   }
 
   async completeSession(sessionId: string): Promise<{ canCreateNewNotes: boolean }> {
-    return await reviewService.completeReviewSession(sessionId);
+    const result = await reviewService.completeReviewSession(sessionId);
+    
+    // Invalidate all review caches
+    this.cache.invalidatePattern('review:*');
+    
+    return result;
   }
 }
 

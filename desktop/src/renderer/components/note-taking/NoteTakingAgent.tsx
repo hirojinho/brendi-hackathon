@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNoteTaking } from '../../hooks/useNoteTaking';
-import { useContexts } from '../../hooks/useContexts';
-import { useReview } from '../../hooks/useReview';
-import { useQuickNotesStatus } from '../../hooks/useQuickNotesStatus';
-import { quickNotesService } from '../../services/quickNotesService';
+import { useNoteTaking } from '../../features/note-taking/hooks/useNoteTaking';
+import { useContexts } from '../../features/contexts/hooks/useContexts';
+import { useReviewStatus } from '../../features/review/hooks/useReviewStatus';
+import { useQuickNotesStatus } from '../../features/notes/hooks/useQuickNotes';
 import { ChatInput } from '../chat';
 import SettingsPanel from '../SettingsPanel';
 import { QuickNotesView } from '../quick-notes';
@@ -34,23 +33,26 @@ const NoteTakingAgent: React.FC = () => {
   } = useContexts({ hierarchy: true, autoLoad: true });
 
   const {
-    reviewStatus,
-    isReviewRequired,
-    loadReviewStatus
-  } = useReview({ autoLoad: true });
+    status: reviewStatus,
+    loadStatus: loadReviewStatus
+  } = useReviewStatus({ autoLoad: true });
+  
+  const isReviewRequired = reviewStatus?.isReviewRequired || false;
 
   const {
     status: quickNotesStatus,
-    reload: reloadQuickNotesStatus
-  } = useQuickNotesStatus();
+    loadStatus: reloadQuickNotesStatus
+  } = useQuickNotesStatus({ autoLoad: true });
 
   const {
     input,
+    setInput,
     isLoading,
-    lastResult,
+    result: lastResult,
     model,
     modelName,
-    setInput,
+    setModel,
+    setModelName,
     processInput,
     clearResult,
   } = useNoteTaking({ selectedContextId });
@@ -140,7 +142,7 @@ const NoteTakingAgent: React.FC = () => {
       if (lastResult && lastResult.shouldCreateNote && lastResult.createdNoteIds && lastResult.createdNoteIds.length > 0) {
         for (const noteId of lastResult.createdNoteIds) {
           try {
-            await quickNotesService.update({
+            await notesRepository.updateQuickNote({
               id: noteId,
               contextId: newContext.id
             });
@@ -303,7 +305,12 @@ const NoteTakingAgent: React.FC = () => {
 
         {lastResult && (
           <NoteTakingResult
-            result={lastResult}
+            result={{
+              shouldCreateNote: lastResult.shouldCreateNote,
+              contextId: lastResult.contextId,
+              reasoning: lastResult.reasoning,
+              notes: lastResult.notes,
+            }}
             contexts={contexts}
             onClear={clearResult}
           />

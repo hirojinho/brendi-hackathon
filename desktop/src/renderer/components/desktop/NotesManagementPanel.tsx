@@ -1,12 +1,15 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { QuickNote, quickNotesService } from '../../services/quickNotesService';
-import { PermanentNote, permanentNotesService } from '../../services/permanentNotesService';
-import { Context, contextsService } from '../../services/contextsService';
 import { SearchAndFilterBar, NoteFilters, SortOption } from './SearchAndFilterBar';
 import { calculateRelevanceScore, findSearchMatches, SearchMatch } from '../common/SearchHighlighter';
 import { OptimizedNotesList } from './OptimizedNotesList';
 import { performanceMonitor } from '../../utils/performanceMonitor';
-import { useReview } from '../../hooks/useReview';
+import { useReviewStatus } from '../../features/review/hooks/useReviewStatus';
+import { useQuickNotes } from '../../features/notes/hooks/useQuickNotes';
+import { usePermanentNotes } from '../../features/notes/hooks/usePermanentNotes';
+import { useContexts } from '../../features/contexts/hooks/useContexts';
+import type { QuickNote as QuickNoteData } from '../../services/quickNotesService';
+import type { PermanentNote as PermanentNoteData } from '../../services/permanentNotesService';
+import type { Context as ContextData } from '../../services/contextsService';
 import { ReviewSessionContainer } from '../../features/review/components/ReviewSessionContainer';
 import { NoteTransformationInterface } from '../review/NoteTransformationInterface';
 import { IntegratedChatPanel } from './IntegratedChatPanel';
@@ -40,9 +43,17 @@ export interface NoteDisplayItem {
 export const NotesManagementPanel: React.FC = () => {
   console.log('[NotesManagementPanel] Component rendering');
   const [displayMode, setDisplayMode] = useState<DisplayMode>('unified');
-  const [quickNotes, setQuickNotes] = useState<QuickNote[]>([]);
-  const [permanentNotes, setPermanentNotes] = useState<PermanentNote[]>([]);
-  const [contexts, setContexts] = useState<Context[]>([]);
+  
+  // Use new feature hooks
+  const { notes: quickNotesData, isLoading: quickNotesLoading, loadNotes: loadQuickNotes } = useQuickNotes({ autoLoad: true });
+  const { notes: permanentNotesData, isLoading: permanentNotesLoading, loadNotes: loadPermanentNotes } = usePermanentNotes({ autoLoad: true });
+  const { contexts: contextsData, isLoading: contextsLoading, loadContexts } = useContexts({ autoLoad: true, hierarchy: true });
+  const { status: reviewStatus, isLoading: reviewStatusLoading } = useReviewStatus({ autoLoad: true });
+  
+  // Convert domain models to display format (for backward compatibility)
+  const quickNotes: QuickNoteData[] = quickNotesData.map(note => note.toData());
+  const permanentNotes: PermanentNoteData[] = permanentNotesData.map(note => note.toData());
+  const contexts: ContextData[] = contextsData.map(ctx => ctx.toData());
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<NoteFilters>({
     noteType: 'all',
@@ -56,7 +67,6 @@ export const NotesManagementPanel: React.FC = () => {
     direction: 'desc'
   });
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
   // Review functionality state
@@ -73,16 +83,9 @@ export const NotesManagementPanel: React.FC = () => {
   // Performance monitoring state
   const [performanceDashboardVisible, setPerformanceDashboardVisible] = useState(false);
   
-  // Use review hook for status and session management
-  const {
-    reviewStatus,
-    activeSession,
-    isLoading: reviewLoading,
-    isReviewRequired,
-    reviewCount,
-    createReviewSession,
-    processNote
-  } = useReview({ autoLoad: true });
+  // Review status from new hook
+  const isReviewRequired = reviewStatus?.isReviewRequired || false;
+  const reviewCount = reviewStatus?.reviewCount || 0;
 
   // Use settings hook for chat configuration
   const { provider, modelName } = useSettings(true);
@@ -97,61 +100,48 @@ export const NotesManagementPanel: React.FC = () => {
   const panelRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
-  // Load data on component mount
-  useEffect(() => {
-    loadData();
-  }, []);
+  // Loading state from hooks
+  const isLoading = quickNotesLoading || permanentNotesLoading || contextsLoading || reviewStatusLoading;
 
   // Refresh data when review session completes
   useEffect(() => {
-    if (!activeSession && reviewStatus) {
-      loadData(); // Refresh notes when review session ends
+    if (reviewStatus && !reviewStatus.activeSession) {
+      // Refresh notes when review session ends
+      loadQuickNotes();
+      loadPermanentNotes();
+      loadContexts();
     }
-  }, [activeSession, reviewStatus]);
+  }, [reviewStatus?.activeSession, loadQuickNotes, loadPermanentNotes, loadContexts]);
 
   const loadData = async () => {
     try {
-      setLoading(true);
       setError(null);
-      
-      const { result } = await performanceMonitor.timeAsyncOperation(
-        'load-notes-data',
-        async () => {
-          const [quickNotesData, permanentNotesData, contextsData] = await Promise.all([
-            quickNotesService.list(),
-            permanentNotesService.list(),
-            contextsService.list()
-          ]);
-          
-          return { quickNotesData, permanentNotesData, contextsData };
-        }
-      );
-      
-      setQuickNotes(result.quickNotesData);
-      setPermanentNotes(result.permanentNotesData);
-      setContexts(result.contextsData);
+      await Promise.all([
+        loadQuickNotes(),
+        loadPermanentNotes(),
+        loadContexts()
+      ]);
       
       // Show success notification for large data loads
-      if (result.quickNotesData.length + result.permanentNotesData.length > 100) {
+      const totalNotes = quickNotes.length + permanentNotes.length;
+      if (totalNotes > 100) {
         showSuccess(
           'Notes loaded successfully',
-          `Loaded ${result.quickNotesData.length + result.permanentNotesData.length} notes`
+          `Loaded ${totalNotes} notes`
         );
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load notes';
       setError(errorMessage);
       showError('Failed to load notes', errorMessage);
-    } finally {
-      setLoading(false);
     }
   };
 
   // Convert notes to unified display format
   const convertToDisplayItems = (
-    quickNotes: QuickNote[], 
-    permanentNotes: PermanentNote[], 
-    contexts: Context[],
+    quickNotes: QuickNoteData[], 
+    permanentNotes: PermanentNoteData[], 
+    contexts: ContextData[],
     searchQuery: string
   ): NoteDisplayItem[] => {
     const contextMap = new Map(contexts.map(c => [c.id, c.name]));
@@ -325,10 +315,10 @@ export const NotesManagementPanel: React.FC = () => {
   // Review functionality handlers
   const handleStartReviewSession = async () => {
     try {
-      const session = await createReviewSession();
-      if (session) {
-        setShowReviewSession(true);
-        showInfo('Review session started', `${session.quickNoteIds.length} notes ready for review`);
+      // The ReviewSessionContainer will handle session creation automatically
+      setShowReviewSession(true);
+      if (reviewStatus?.reviewCount) {
+        showInfo('Review session started', `${reviewStatus.reviewCount} notes ready for review`);
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to start review session';
@@ -452,7 +442,7 @@ export const NotesManagementPanel: React.FC = () => {
           // TODO: Implement new note creation
           break;
         case 'Enter':
-          if (e.shiftKey && isReviewRequired && !activeSession) {
+          if (e.shiftKey && isReviewRequired && !reviewStatus?.activeSession) {
             e.preventDefault();
             handleStartReviewSession();
           }
@@ -472,7 +462,7 @@ export const NotesManagementPanel: React.FC = () => {
         handleToggleChatPanel();
       }
     }
-  }, [isReviewRequired, activeSession, showReviewSession, showBulkReviewInterface, bulkSelectionMode, chatPanelVisible]);
+  }, [isReviewRequired, reviewStatus?.activeSession, showReviewSession, showBulkReviewInterface, bulkSelectionMode, chatPanelVisible]);
 
   // Announce status changes to screen readers
   const announceToScreenReader = useCallback((message: string) => {
@@ -492,14 +482,14 @@ export const NotesManagementPanel: React.FC = () => {
 
   // Announce data loading status
   useEffect(() => {
-    if (!loading && !error) {
+    if (!isLoading && !error) {
       announceToScreenReader(`Loaded ${filteredAndSortedNotes.length} notes`);
     } else if (error) {
       announceToScreenReader(`Error loading notes: ${error}`);
     }
-  }, [loading, error, filteredAndSortedNotes.length, announceToScreenReader]);
+  }, [isLoading, error, filteredAndSortedNotes.length, announceToScreenReader]);
 
-  if (loading) {
+  if (isLoading) {
     console.log('[NotesManagementPanel] Rendering loading state');
     return (
       <div className="notes-management-panel">
@@ -549,7 +539,7 @@ export const NotesManagementPanel: React.FC = () => {
       
       {/* Screen reader announcements */}
       <div aria-live="polite" aria-atomic="true" className="sr-only" id="status-announcements">
-        {loading && "Loading notes..."}
+        {isLoading && "Loading notes..."}
         {error && `Error: ${error}`}
       </div>
 
@@ -571,11 +561,11 @@ export const NotesManagementPanel: React.FC = () => {
             )}
             
             {/* Review Session Button */}
-            {isReviewRequired && !activeSession && (
+            {isReviewRequired && !reviewStatus?.activeSession && (
               <button 
                 onClick={handleStartReviewSession} 
                 className="review-session-button touch-target keyboard-focusable"
-                disabled={reviewLoading}
+                disabled={reviewStatusLoading}
                 title="Start Review Session"
                 aria-label={`Start review session for ${reviewCount} notes`}
                 aria-describedby="review-help"
@@ -585,14 +575,14 @@ export const NotesManagementPanel: React.FC = () => {
             )}
             
             {/* Active Session Indicator */}
-            {activeSession && (
+            {reviewStatus?.activeSession && (
               <button 
                 onClick={() => setShowReviewSession(true)} 
                 className="active-review-button touch-target keyboard-focusable"
                 title="Continue Review Session"
-                aria-label={`Continue review session, ${activeSession.notes.length} notes remaining`}
+                aria-label={`Continue review session, ${reviewStatus.activeSession.quickNoteIds.length} notes remaining`}
               >
-                <span aria-hidden="true">📝</span> Continue Review ({activeSession.notes.length} remaining)
+                <span aria-hidden="true">📝</span> Continue Review ({reviewStatus.activeSession.quickNoteIds.length} remaining)
               </button>
             )}
             
@@ -767,7 +757,7 @@ export const NotesManagementPanel: React.FC = () => {
               </button>
             </div>
             {currentBulkReviewNote && (
-              <LoadingOverlay isVisible={reviewLoading} message="Processing note...">
+              <LoadingOverlay isVisible={false} message="Processing note...">
                 <NoteTransformationInterface
                   note={{
                     id: currentBulkReviewNote.id,
@@ -781,32 +771,38 @@ export const NotesManagementPanel: React.FC = () => {
                   }}
                   onTransform={async (permanentNoteData) => {
                     try {
-                      const success = await processNote(currentBulkReviewNote.id, {
-                        action: 'transform',
-                        permanentNoteData
+                      // For bulk review, we need to create a session first or use direct transformation
+                      // For now, we'll use the permanent notes service directly
+                      const { permanentNotesService } = await import('../../services/permanentNotesService');
+                      await permanentNotesService.create({
+                        title: permanentNoteData.title || currentBulkReviewNote.title,
+                        content: permanentNoteData.content || currentBulkReviewNote.content,
+                        tags: permanentNoteData.tags || currentBulkReviewNote.tags,
+                        sourceQuickNoteId: currentBulkReviewNote.id
                       });
-                      if (success) {
-                        showSuccess('Note transformed', 'Note has been converted to permanent note');
-                        handleBulkReviewNext();
-                      }
+                      // Delete the quick note
+                      const { quickNotesService } = await import('../../services/quickNotesService');
+                      await quickNotesService.delete(currentBulkReviewNote.id);
+                      showSuccess('Note transformed', 'Note has been converted to permanent note');
+                      handleBulkReviewNext();
+                      loadQuickNotes();
+                      loadPermanentNotes();
                     } catch (err) {
                       showError('Transform failed', err instanceof Error ? err.message : 'Failed to transform note');
                     }
                   }}
                   onDiscard={async () => {
                     try {
-                      const success = await processNote(currentBulkReviewNote.id, {
-                        action: 'discard'
-                      });
-                      if (success) {
-                        showInfo('Note discarded', 'Note has been removed');
-                        handleBulkReviewNext();
-                      }
+                      const { quickNotesService } = await import('../../services/quickNotesService');
+                      await quickNotesService.delete(currentBulkReviewNote.id);
+                      showInfo('Note discarded', 'Note has been removed');
+                      handleBulkReviewNext();
+                      loadQuickNotes();
                     } catch (err) {
                       showError('Discard failed', err instanceof Error ? err.message : 'Failed to discard note');
                     }
                   }}
-                  isProcessing={reviewLoading}
+                  isProcessing={false}
                 />
               </LoadingOverlay>
             )}

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { useChat } from '../../hooks/useChat';
+import { useChatSession } from '../../features/chat/hooks/useChatSession';
 import { MarkdownRenderer } from '../common/MarkdownRenderer';
 import { NoteDisplayItem } from './NotesManagementPanel';
 import { Message } from '../../types/chat';
@@ -38,33 +38,39 @@ export const IntegratedChatPanel: React.FC<IntegratedChatPanelProps> = ({
   const [contextSelectionMode, setContextSelectionMode] = useState(false);
   const [selectedContextNotes, setSelectedContextNotes] = useState<Set<string>>(new Set());
 
+  const [input, setInput] = useState('');
+  
   const {
     messages,
-    input,
     isLoading,
     currentResponse,
     useRag,
     maxChunks,
-    setInput,
-    setModel: setChatModel,
-    setModelName: setChatModelName,
-    setUseRag,
-    setMaxChunks,
-    sendMessage,
-    clearChat,
-  } = useChat({
+    sendMessage: sendChatMessage,
+    clearMessages,
+    updateSettings,
+  } = useChatSession({
     initialModel: model,
   });
+
+  const sendMessage = () => {
+    if (input.trim()) {
+      sendChatMessage(input);
+      setInput('');
+    }
+  };
+
+  const clearChat = clearMessages;
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Update chat model when prop changes
   useEffect(() => {
-    setChatModel(model);
-    if (modelName) {
-      setChatModelName(modelName);
-    }
-  }, [model, modelName, setChatModel, setChatModelName]);
+    updateSettings({
+      model,
+      modelName: modelName || undefined,
+    });
+  }, [model, modelName, updateSettings]);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -86,7 +92,7 @@ export const IntegratedChatPanel: React.FC<IntegratedChatPanelProps> = ({
     if (messages.length > 0 && activeChatId) {
       saveChatSession();
     }
-  }, [messages, activeChatId]);
+  }, [messages.length, activeChatId]);
 
   const activeSession = useMemo(() => {
     return chatSessions.find(session => session.id === activeChatId);
@@ -120,16 +126,20 @@ export const IntegratedChatPanel: React.FC<IntegratedChatPanelProps> = ({
       if (session.id === activeChatId) {
         const updatedSession = {
           ...session,
-          messages: [...messages],
+          messages: messages.map(m => m.toData ? m.toData() : m),
           contextNoteIds: Array.from(selectedContextNotes),
           lastActivity: new Date(),
         };
 
         // Update title based on first user message if it's still "New Chat"
         if (session.title === 'New Chat' && messages.length > 0) {
-          const firstUserMessage = messages.find(m => m.role === 'user');
+          const firstUserMessage = messages.find(m => {
+            const msgData = m.toData ? m.toData() : m;
+            return msgData.role === 'user';
+          });
           if (firstUserMessage) {
-            updatedSession.title = generateSessionTitle(firstUserMessage.content);
+            const msgData = firstUserMessage.toData ? firstUserMessage.toData() : firstUserMessage;
+            updatedSession.title = generateSessionTitle(msgData.content);
           }
         }
 
@@ -396,20 +406,23 @@ export const IntegratedChatPanel: React.FC<IntegratedChatPanelProps> = ({
             </div>
           )}
 
-          {messages.map((message, index) => (
-            <div
-              key={index}
-              className={`chat-message ${message.role}`}
-            >
-              <div className="message-content">
-                {message.role === 'assistant' ? (
-                  <MarkdownRenderer content={message.content} />
-                ) : (
-                  <p>{message.content}</p>
-                )}
+          {messages.map((message, index) => {
+            const messageData = message.toData ? message.toData() : message;
+            return (
+              <div
+                key={index}
+                className={`chat-message ${messageData.role}`}
+              >
+                <div className="message-content">
+                  {messageData.role === 'assistant' ? (
+                    <MarkdownRenderer content={messageData.content} />
+                  ) : (
+                    <p>{messageData.content}</p>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
 
           {isLoading && (
             <div className="chat-message assistant">
@@ -438,7 +451,7 @@ export const IntegratedChatPanel: React.FC<IntegratedChatPanelProps> = ({
             <input
               type="checkbox"
               checked={useRag}
-              onChange={(e) => setUseRag(e.target.checked)}
+              onChange={(e) => updateSettings({ useRag: e.target.checked })}
             />
             <span className="toggle-slider"></span>
             <span className="toggle-label">Use Document Retrieval (RAG)</span>
@@ -451,7 +464,7 @@ export const IntegratedChatPanel: React.FC<IntegratedChatPanelProps> = ({
                 min="1"
                 max="20"
                 value={maxChunks}
-                onChange={(e) => setMaxChunks(parseInt(e.target.value) || 5)}
+                onChange={(e) => updateSettings({ maxChunks: parseInt(e.target.value) || 5 })}
                 className="chunks-input"
               />
             </div>

@@ -1,3 +1,8 @@
+/**
+ * @deprecated Use useChatSession from features/chat instead
+ * This hook is maintained for backward compatibility only.
+ * See MIGRATION_GUIDE.md for migration instructions.
+ */
 import { useState, useCallback, useEffect } from 'react';
 import type { Message, ModelType, ChatRequest } from '../types';
 import { chatService } from '../services/chatService';

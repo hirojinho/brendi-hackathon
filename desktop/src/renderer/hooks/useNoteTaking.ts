@@ -1,3 +1,8 @@
+/**
+ * @deprecated Use useNoteTaking from features/note-taking instead
+ * This hook is maintained for backward compatibility only.
+ * See MIGRATION_GUIDE.md for migration instructions.
+ */
 import { useState, useCallback, useEffect } from 'react';
 import type { ModelType } from '../types';
 import { noteTakingAgentService } from '../services/noteTakingAgentService';

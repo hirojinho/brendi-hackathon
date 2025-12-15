@@ -1,3 +1,8 @@
+/**
+ * @deprecated Use useContexts from features/contexts instead
+ * This hook is maintained for backward compatibility only.
+ * See MIGRATION_GUIDE.md for migration instructions.
+ */
 import { useState, useEffect, useCallback } from 'react';
 import { contextsService, type Context } from '../services/contextsService';
 

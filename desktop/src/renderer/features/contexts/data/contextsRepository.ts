@@ -1,5 +1,6 @@
 import { contextsService, type Context as ContextData, type CreateContextRequest, type UpdateContextRequest } from '../../../services/contextsService';
 import { Context } from '../domain/Context';
+import { cacheManager } from '../../../shared/cache/Cache';
 
 /**
  * Repository interface for contexts data access
@@ -13,31 +14,66 @@ export interface ContextsRepository {
 }
 
 /**
- * Implementation of ContextsRepository
+ * Implementation of ContextsRepository with caching
  */
-export class ContextsRepositoryImpl implements ContextsRepository {
+class ContextsRepositoryImpl implements ContextsRepository {
+  private cache = cacheManager.getCache<any>('contexts', { ttl: 10000 }); // 10 second cache (contexts change less frequently)
+
   async list(options?: { hierarchy?: boolean }): Promise<Context[]> {
+    const cacheKey = `contexts:list:${options?.hierarchy ? 'hierarchy' : 'flat'}`;
+    const cached = this.cache.get<Context[]>(cacheKey);
+    
+    if (cached) {
+      return cached;
+    }
+
     const contexts = await contextsService.list(options);
-    return contexts.map(Context.fromData);
+    const domainContexts = contexts.map(Context.fromData);
+    
+    this.cache.set(cacheKey, domainContexts);
+    return domainContexts;
   }
 
   async getChildren(parentId: string): Promise<Context[]> {
+    const cacheKey = `contexts:children:${parentId}`;
+    const cached = this.cache.get<Context[]>(cacheKey);
+    
+    if (cached) {
+      return cached;
+    }
+
     const contexts = await contextsService.getChildren(parentId);
-    return contexts.map(Context.fromData);
+    const domainContexts = contexts.map(Context.fromData);
+    
+    this.cache.set(cacheKey, domainContexts);
+    return domainContexts;
   }
 
   async create(request: CreateContextRequest): Promise<Context> {
     const context = await contextsService.create(request);
-    return Context.fromData(context);
+    const domainContext = Context.fromData(context);
+    
+    // Invalidate caches
+    this.cache.invalidatePattern('contexts:*');
+    
+    return domainContext;
   }
 
   async update(request: UpdateContextRequest): Promise<Context> {
     const context = await contextsService.update(request);
-    return Context.fromData(context);
+    const domainContext = Context.fromData(context);
+    
+    // Invalidate caches
+    this.cache.invalidatePattern('contexts:*');
+    
+    return domainContext;
   }
 
   async delete(id: string): Promise<void> {
     await contextsService.delete(id);
+    
+    // Invalidate caches
+    this.cache.invalidatePattern('contexts:*');
   }
 }
 

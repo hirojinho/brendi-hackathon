@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { quickNotesService, type QuickNote } from '../../services/quickNotesService';
 import { permanentNotesService, type PermanentNote } from '../../services/permanentNotesService';
-import { useContexts } from '../../hooks/useContexts';
+import { useContexts } from '../../features/contexts/hooks/useContexts';
 import { ChatHeader } from '../layout';
 import NotesGraphView from '../NotesGraphView';
 // import { ContextSelector, ContextTree, ContextBadge } from '../contexts'; // Unused
@@ -43,6 +43,9 @@ const QuickNotesView: React.FC<QuickNotesViewProps> = ({ onBack }) => {
     loadContexts,
     deleteContext,
   } = useContexts({ hierarchy: true, autoLoad: true });
+  
+  // Convert domain models to service format for backward compatibility
+  const contextsForDisplay = contexts.map(ctx => ctx.toData());
 
   useEffect(() => {
     loadData();
@@ -151,7 +154,7 @@ const QuickNotesView: React.FC<QuickNotesViewProps> = ({ onBack }) => {
 
   const handleDeleteContext = async (id: string) => {
     const context = contexts.find(ctx => ctx.id === id);
-    const notesCount = countNotesForContext(id, contexts, notes);
+    const notesCount = countNotesForContext(id, contextsForDisplay, notes);
     
     let message = `Are you sure you want to delete the source "${context?.name}"?`;
     if (notesCount > 0) {

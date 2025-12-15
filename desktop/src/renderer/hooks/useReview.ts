@@ -1,3 +1,8 @@
+/**
+ * @deprecated Use useReviewStatus and useReviewSession from features/review instead
+ * This hook is maintained for backward compatibility only.
+ * See MIGRATION_GUIDE.md for migration instructions.
+ */
 import { useState, useCallback, useEffect } from 'react';
 import { reviewService } from '../services/reviewService';
 import type { 
