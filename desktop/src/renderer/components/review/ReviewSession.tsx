@@ -193,7 +193,7 @@ export const ReviewSession: React.FC<ReviewSessionProps> = ({
     );
   }
 
-  if (!activeSession || !currentNote) {
+  if (!activeSession || !activeSession.notes?.length || !currentNote) {
     return (
       <ReviewEmptyState 
         onCancel={handleCancel}
@@ -208,7 +208,11 @@ export const ReviewSession: React.FC<ReviewSessionProps> = ({
       <div className="minimal-review-header">
         <h1 className="minimal-review-title">Review Session</h1>
         <div className="minimal-review-progress">
-          {activeSession.notes.length - remainingNotes + 1} of {activeSession.notes.length}
+
+        activeSession.notes?.length
+          ? {activeSession.notes.length - remainingNotes + 1} of {activeSession.notes.length}
+          : 'Loading...'
+
         </div>
         <button 
           onClick={handleCancel}

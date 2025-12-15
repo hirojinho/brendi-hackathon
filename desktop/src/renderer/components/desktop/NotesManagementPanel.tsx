@@ -91,7 +91,7 @@ export const NotesManagementPanel: React.FC = () => {
   const systemPreferences = useSystemPreferences();
 
   // Use notification helpers for user feedback
-  const { showSuccess, showError, showWarning, showInfo } = useNotificationHelpers();
+  const { showSuccess, showError, showInfo } = useNotificationHelpers();
 
   // Refs for keyboard navigation
   const panelRef = useRef<HTMLDivElement>(null);
@@ -328,7 +328,7 @@ export const NotesManagementPanel: React.FC = () => {
       const session = await createReviewSession();
       if (session) {
         setShowReviewSession(true);
-        showInfo('Review session started', `${session.notes.length} notes ready for review`);
+        showInfo('Review session started', `${session.quickNoteIds.length} notes ready for review`);
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to start review session';
