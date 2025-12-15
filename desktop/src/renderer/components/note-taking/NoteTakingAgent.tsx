@@ -10,7 +10,7 @@ import { QuickNotesView } from '../quick-notes';
 import { NoteTakingResult } from './NoteTakingResult';
 import { ContextCreationPrompt } from './ContextCreationPrompt';
 import { NoteTakingEmptyState } from './NoteTakingEmptyState';
-import { ReviewSession } from '../review';
+import { ReviewSessionContainer } from '../../features/review/components/ReviewSessionContainer';
 import '../ChatBox.css';
 import './MinimalNoteTaking.css';
 
@@ -207,7 +207,7 @@ const NoteTakingAgent: React.FC = () => {
 
   if (showReview) {
     return (
-      <ReviewSession 
+      <ReviewSessionContainer 
         onComplete={handleReviewComplete}
         onCancel={handleReviewCancel}
       />

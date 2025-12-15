@@ -7,7 +7,7 @@ import { calculateRelevanceScore, findSearchMatches, SearchMatch } from '../comm
 import { OptimizedNotesList } from './OptimizedNotesList';
 import { performanceMonitor } from '../../utils/performanceMonitor';
 import { useReview } from '../../hooks/useReview';
-import { ReviewSession } from '../review/ReviewSession';
+import { ReviewSessionContainer } from '../../features/review/components/ReviewSessionContainer';
 import { NoteTransformationInterface } from '../review/NoteTransformationInterface';
 import { IntegratedChatPanel } from './IntegratedChatPanel';
 import { PerformanceDashboard } from './PerformanceDashboard';
@@ -741,7 +741,7 @@ export const NotesManagementPanel: React.FC = () => {
             aria-modal="true" 
             aria-labelledby="review-session-title"
           >
-            <ReviewSession
+            <ReviewSessionContainer
               onComplete={handleCompleteReviewSession}
               onCancel={handleCancelReviewSession}
             />
