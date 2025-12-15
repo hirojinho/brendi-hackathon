@@ -6,7 +6,12 @@ dist
 
 # Ignore SQLite database files
 *.db
-server/*.db
+*/.db-shm
+*/.db-wal
+server/**/*.db-shm
+server/**/*.db-wal
+desktop/**/*.db-shm
+desktop/**/*.db-wal
 desktop/*.db
 server/**/*.db
 desktop/**/*.db
