@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, ReactNode } from 'react';
 import { useSystemPreferences } from '../../hooks/useSystemPreferences';
+import './EnhancedTransitions.css';
 
 interface MacOSTransitionProps {
   isVisible: boolean;
@@ -24,22 +25,34 @@ export const MacOSFadeTransition: React.FC<MacOSTransitionProps> = ({
   respectMotionPreference = true
 }) => {
   const [shouldRender, setShouldRender] = useState(isVisible);
-  const [isAnimating, setIsAnimating] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(isVisible);
   const timeoutRef = useRef<NodeJS.Timeout>();
+  const rafRef = useRef<number>();
+  // Memoize system preferences to avoid re-renders
   const systemPreferences = useSystemPreferences();
-
   const effectiveDuration = respectMotionPreference && systemPreferences.reducedMotion ? 0 : duration;
 
   useEffect(() => {
+    // Clear any pending timeouts/animations
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+    }
+
     if (isVisible) {
       setShouldRender(true);
-      requestAnimationFrame(() => {
+      // If mounting with isVisible=true, show immediately; otherwise animate in
+      if (!shouldRender) {
+        // Component was hidden, animate in
+        rafRef.current = requestAnimationFrame(() => {
+          setIsAnimating(true);
+          onEnter?.();
+        });
+      } else {
+        // Already rendered, ensure it's visible
         setIsAnimating(true);
-        onEnter?.();
-      });
-      
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
       }
     } else {
       setIsAnimating(false);
@@ -54,9 +67,13 @@ export const MacOSFadeTransition: React.FC<MacOSTransitionProps> = ({
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+      }
     };
-  }, [isVisible, effectiveDuration, onEnter, onExit]);
+  }, [isVisible, effectiveDuration, onEnter, onExit, shouldRender]);
 
+  // Don't render at all if not visible and not animating out
   if (!shouldRender) {
     return null;
   }
@@ -67,7 +84,8 @@ export const MacOSFadeTransition: React.FC<MacOSTransitionProps> = ({
       style={{ 
         '--transition-duration': `${effectiveDuration}ms`,
         transitionDuration: `${effectiveDuration}ms`,
-        transitionTimingFunction: 'cubic-bezier(0.32, 0.72, 0, 1)' // macOS easing
+        transitionTimingFunction: 'cubic-bezier(0.32, 0.72, 0, 1)', // macOS easing
+        pointerEvents: isAnimating ? 'auto' : 'none'
       } as React.CSSProperties}
     >
       {children}
@@ -416,7 +434,7 @@ export const ParallaxTransition: React.FC<ParallaxTransitionProps> = ({
 
     const handleScroll = () => {
       if (elementRef.current) {
-        const rect = elementRef.current.getBoundingClientRect();
+        elementRef.current.getBoundingClientRect();
         const scrolled = window.pageYOffset;
         const rate = scrolled * speed;
         setScrollY(rate);

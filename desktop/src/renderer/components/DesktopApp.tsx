@@ -21,10 +21,13 @@ export const DesktopApp: React.FC = () => {
 
   // Load initial state from main process
   useEffect(() => {
+    let isMounted = true;
     const loadInitialState = async () => {
       if (window.electronAPI?.getState) {
         try {
           const state = await window.electronAPI.getState();
+          if (!isMounted) return;
+          
           if (state.lastActiveTab) {
             setActiveTab(state.lastActiveTab);
           }
@@ -41,12 +44,22 @@ export const DesktopApp: React.FC = () => {
             setEmbeddingProvider(state.lastEmbeddingProvider);
           }
         } catch (error) {
-          console.warn('[DesktopApp] Failed to load initial state:', error);
+          if (isMounted) {
+            console.warn('[DesktopApp] Failed to load initial state:', error);
+          }
         }
       }
     };
 
-    loadInitialState();
+    loadInitialState().catch((error) => {
+      if (isMounted) {
+        console.error('[DesktopApp] Unhandled error loading initial state:', error);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   // Listen for navigation events from main process
@@ -202,113 +215,43 @@ export const DesktopApp: React.FC = () => {
             embeddingProvider={embeddingProvider}
             onEmbeddingProviderChange={handleEmbeddingProviderChange}
           />
-          <div className="desktop-main-content">
-            <MacOSFadeTransition isVisible={activeTab === 'chat'} duration={250}>
-              <ErrorBoundary
-                fallback={
-                  <div className="tab-error-fallback">
-                    <div className="error-icon">⚠️</div>
-                    <h2>Chat Panel Error</h2>
-                    <p>The chat panel encountered an error. Please try refreshing the application.</p>
-                    <button 
-                      onClick={() => window.location.reload()} 
-                      className="macos-button macos-button--primary macos-button--medium"
-                    >
-                      Refresh App
-                    </button>
-                  </div>
-                }
-              >
+          <div className="desktop-main-content" id="desktop-main-content">
+            <ErrorBoundary
+              fallback={
+                <div className="tab-error-fallback">
+                  <div className="error-icon">⚠️</div>
+                  <h2>Panel Error</h2>
+                  <p>The panel encountered an error. Please try refreshing the application.</p>
+                  <button 
+                    onClick={() => window.location.reload()} 
+                    className="macos-button macos-button--primary macos-button--medium"
+                  >
+                    Refresh App
+                  </button>
+                </div>
+              }
+            >
+              {activeTab === 'chat' && (
                 <DesktopChatPanel
                   model={model}
                   modelName={model === 'openrouter' ? openrouterModelName : model === 'ollama' ? ollamaModelName : undefined}
                   embeddingProvider={embeddingProvider}
                 />
-              </ErrorBoundary>
-            </MacOSFadeTransition>
-            
-            <MacOSFadeTransition isVisible={activeTab === 'notes'} duration={250}>
-              <ErrorBoundary
-                fallback={
-                  <div className="tab-error-fallback">
-                    <div className="error-icon">⚠️</div>
-                    <h2>Notes Panel Error</h2>
-                    <p>The notes panel encountered an error. Please try refreshing the application.</p>
-                    <button 
-                      onClick={() => window.location.reload()} 
-                      className="macos-button macos-button--primary macos-button--medium"
-                    >
-                      Refresh App
-                    </button>
-                  </div>
-                }
-              >
-                <NotesManagementPanel />
-              </ErrorBoundary>
-            </MacOSFadeTransition>
-            
-            <MacOSFadeTransition isVisible={activeTab === 'zettelkasten'} duration={250}>
-              <ErrorBoundary
-                fallback={
-                  <div className="tab-error-fallback">
-                    <div className="error-icon">⚠️</div>
-                    <h2>Zettelkasten Panel Error</h2>
-                    <p>The zettelkasten panel encountered an error. Please try refreshing the application.</p>
-                    <button 
-                      onClick={() => window.location.reload()} 
-                      className="macos-button macos-button--primary macos-button--medium"
-                    >
-                      Refresh App
-                    </button>
-                  </div>
-                }
-              >
-                <NotesManagementPanel />
-              </ErrorBoundary>
-            </MacOSFadeTransition>
-            
-            <MacOSFadeTransition isVisible={activeTab === 'review'} duration={250}>
-              <ErrorBoundary
-                fallback={
-                  <div className="tab-error-fallback">
-                    <div className="error-icon">⚠️</div>
-                    <h2>Review Panel Error</h2>
-                    <p>The review panel encountered an error. Please try refreshing the application.</p>
-                    <button 
-                      onClick={() => window.location.reload()} 
-                      className="macos-button macos-button--primary macos-button--medium"
-                    >
-                      Refresh App
-                    </button>
-                  </div>
-                }
-              >
+              )}
+              
+              {activeTab === 'notes' && <NotesManagementPanel />}
+              
+              {activeTab === 'zettelkasten' && <NotesManagementPanel />}
+              
+              {activeTab === 'review' && (
                 <DesktopReviewPanel
                   model={model}
                   modelName={model === 'openrouter' ? openrouterModelName : model === 'ollama' ? ollamaModelName : undefined}
                 />
-              </ErrorBoundary>
-            </MacOSFadeTransition>
-            
-            <MacOSFadeTransition isVisible={activeTab === 'documents'} duration={250}>
-              <ErrorBoundary
-                fallback={
-                  <div className="tab-error-fallback">
-                    <div className="error-icon">⚠️</div>
-                    <h2>Documents Panel Error</h2>
-                    <p>The documents panel encountered an error. Please try refreshing the application.</p>
-                    <button 
-                      onClick={() => window.location.reload()} 
-                      className="macos-button macos-button--primary macos-button--medium"
-                    >
-                      Refresh App
-                    </button>
-                  </div>
-                }
-              >
-                <DesktopDocumentsPanel embeddingProvider={embeddingProvider} />
-              </ErrorBoundary>
-            </MacOSFadeTransition>
+              )}
+              
+              {activeTab === 'documents' && <DesktopDocumentsPanel embeddingProvider={embeddingProvider} />}
+            </ErrorBoundary>
           </div>
         </div>
       </NotificationProvider>

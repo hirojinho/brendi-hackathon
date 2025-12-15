@@ -1,5 +1,5 @@
 // Integration Components
-export { ApplicationIntegration } from './ApplicationIntegration';
+export { SimpleApplicationIntegration as ApplicationIntegration } from './SimpleApplicationIntegration';
 export { 
   EnhancedErrorBoundary, 
   useAsyncErrorHandler, 
@@ -15,4 +15,5 @@ export {
   MorphTransition,
   ParallaxTransition
 } from './EnhancedTransitions';
-export { WorkflowValidator } from './WorkflowValidator';
+// WorkflowValidator is only used in tests, commented out to avoid build errors
+// export { WorkflowValidator } from './WorkflowValidator';

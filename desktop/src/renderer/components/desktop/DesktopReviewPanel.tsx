@@ -9,20 +9,42 @@ interface DesktopReviewPanelProps {
 export const DesktopReviewPanel: React.FC<DesktopReviewPanelProps> = ({ model, modelName }) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const containerRef = React.useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    console.log('[DesktopReviewPanel] Component mounted');
+    console.log('[DesktopReviewPanel] Props:', { model, modelName });
+    
     // Simulate component initialization
     const timer = setTimeout(() => {
       try {
         // Add any initialization logic here
-        console.log('Review panel initialized with model:', model, modelName);
+        console.log('[DesktopReviewPanel] Initialized with model:', model, modelName);
         setIsLoaded(true);
+        
+        // Diagnostic: Check if container is visible
+        if (containerRef.current) {
+          const styles = window.getComputedStyle(containerRef.current);
+          console.log('[DesktopReviewPanel] Container styles:', {
+            display: styles.display,
+            visibility: styles.visibility,
+            opacity: styles.opacity,
+            width: styles.width,
+            height: styles.height,
+            backgroundColor: styles.backgroundColor,
+            color: styles.color,
+          });
+        }
       } catch (err) {
+        console.error('[DesktopReviewPanel] Error during initialization:', err);
         setError(err instanceof Error ? err.message : 'Failed to load');
       }
     }, 100);
 
-    return () => clearTimeout(timer);
+    return () => {
+      console.log('[DesktopReviewPanel] Component unmounting');
+      clearTimeout(timer);
+    };
   }, [model, modelName]);
 
   if (error) {
@@ -52,7 +74,10 @@ export const DesktopReviewPanel: React.FC<DesktopReviewPanelProps> = ({ model, m
   }
 
   return (
-    <div className="desktop-panel">
+    <div 
+      ref={containerRef}
+      className="desktop-panel"
+    >
       <div className="panel-header">
         <h1>Review</h1>
       </div>

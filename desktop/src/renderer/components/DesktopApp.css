@@ -16,8 +16,9 @@
   flex-direction: column;
   min-width: 0;
   background: var(--color-background-primary);
+  position: relative;
+  overflow: hidden;
 }
-
 
 /* Tab Error Fallback Styling */
 .tab-error-fallback {
