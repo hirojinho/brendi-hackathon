@@ -5,6 +5,20 @@ import { ReviewEmptyState } from './ReviewEmptyState';
 import './ReviewSession.css';
 import './MinimalReviewSession.css';
 
+/**
+ * ReviewSession - Quick Note to Permanent Note Review System
+ * 
+ * This component handles the review workflow for converting quick notes into permanent notes.
+ * This is separate from the SRS (Spaced Repetition System) review which is in DesktopReviewPanel.
+ * 
+ * Flow:
+ * 1. User clicks "Start Review" in NotesManagementPanel
+ * 2. System creates a review session with notes requiring review
+ * 3. User reviews each note and either:
+ *    - Transforms it to a permanent note (with optional edits)
+ *    - Discards it
+ * 4. Session completes when all notes are processed
+ */
 interface ReviewSessionProps {
   onComplete?: () => void;
   onCancel?: () => void;
@@ -34,39 +48,52 @@ export const ReviewSession: React.FC<ReviewSessionProps> = ({
     const initializeSession = async () => {
       try {
         setIsInitializing(true);
+        clearError(); // Clear any previous errors
         
         // First try to load existing active session
+        // This will return null if no session exists (expected case)
         await loadActiveSession();
-      } catch (err) {
-        console.error('Failed to load active session:', err);
+      } catch (err: any) {
+        // Only log actual errors, not "no session" cases
+        if (err.message && 
+            !err.message.includes('No active review session') &&
+            !err.message.includes('not found')) {
+          console.error('Failed to load active session:', err);
+        }
       } finally {
         setIsInitializing(false);
       }
     };
 
     initializeSession();
-  }, [loadActiveSession]);
+  }, [loadActiveSession, clearError]);
 
-  // Create session if none exists after loading and review is actually needed
+  // Create session if none exists after loading
   useEffect(() => {
     const createSessionIfNeeded = async () => {
+      // Only create if we're done initializing, have no session, and no error
       if (!isInitializing && !activeSession && !error) {
         try {
           setIsInitializing(true);
-          await createReviewSession();
+          clearError();
+          const session = await createReviewSession();
+          if (!session) {
+            // Session creation failed (e.g., no notes to review)
+            // This is expected, don't treat as error
+            setIsInitializing(false);
+          }
         } catch (err: any) {
           // Don't log error if no notes require review - this is expected
           if (!err.message?.includes('No notes require review')) {
             console.error('Failed to create review session:', err);
           }
-        } finally {
           setIsInitializing(false);
         }
       }
     };
 
     createSessionIfNeeded();
-  }, [isInitializing, activeSession, error, createReviewSession]);
+  }, [isInitializing, activeSession, error, createReviewSession, clearError]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -140,7 +167,10 @@ export const ReviewSession: React.FC<ReviewSessionProps> = ({
     );
   }
 
-  if (error) {
+  // Only show error for actual errors, not "no session" cases
+  if (error && 
+      !error.includes('No active review session') &&
+      !error.includes('not found')) {
     const isNoNotesError = error.includes('No notes require review');
     
     return (

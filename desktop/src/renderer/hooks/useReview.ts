@@ -38,12 +38,23 @@ export function useReview(options: UseReviewOptions = {}) {
       setIsLoading(true);
       setError(null);
       const sessionData = await reviewService.getActiveReviewSession();
+      // null means no active session exists - this is expected, not an error
       setActiveSession(sessionData);
+      if (!sessionData) {
+        // Clear any previous errors since no session is a valid state
+        setError(null);
+      }
     } catch (err: any) {
-      if (err.message.includes('No active review session')) {
-        setActiveSession(null);
-      } else {
+      // Only set error for actual errors, not "no session" cases
+      if (err.message && 
+          !err.message.includes('No active review session') &&
+          !err.message.includes('not found') &&
+          !err.message.includes('404')) {
         setError(err.message || 'Failed to load active session');
+      } else {
+        // No session is expected - clear error and set session to null
+        setActiveSession(null);
+        setError(null);
       }
     } finally {
       setIsLoading(false);

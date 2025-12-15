@@ -1,6 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import './DesktopPanel.css';
 
+/**
+ * DesktopReviewPanel - SRS (Spaced Repetition System) Review Panel
+ * 
+ * NOTE: This is the LEGACY SRS-based review system for spaced repetition learning.
+ * This is separate from the Quick Note to Permanent Note review system.
+ * 
+ * The Quick Note review system is implemented in:
+ * - ReviewSession component (for reviewing quick notes to convert to permanent notes)
+ * - Used in NotesManagementPanel when clicking "Start Review"
+ * 
+ * This panel is a placeholder for future SRS implementation.
+ */
 interface DesktopReviewPanelProps {
   model: 'openrouter' | 'openai' | 'ollama';
   modelName?: string;

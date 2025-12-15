@@ -13,7 +13,7 @@ declare global {
       review: {
         getStatus: () => Promise<ReviewStatus>;
         createSession: () => Promise<{ session: ReviewSession }>;
-        getActiveSession: () => Promise<ActiveReviewSessionData>;
+        getActiveSession: () => Promise<ActiveReviewSessionData | null>;
         processNote: (payload: { sessionId: string; noteId: string; action: 'transform' | 'discard'; permanentNoteData?: any }) => Promise<ProcessNoteResponse>;
         completeSession: (sessionId: string) => Promise<{ canCreateNewNotes: boolean }>;
       };
@@ -46,15 +46,26 @@ export class ReviewService {
     }
   }
 
-  async getActiveReviewSession(): Promise<ActiveReviewSessionData> {
+  async getActiveReviewSession(): Promise<ActiveReviewSessionData | null> {
     try {
       const result = await window.electronAPI.review.getActiveSession();
+      // If result is null, there's no active session (expected case)
+      if (!result) {
+        return null;
+      }
       return result;
     } catch (error) {
-      console.error('Failed to get active review session:', error);
-      if (error instanceof Error && error.message.includes('404')) {
-        throw new Error('No active review session found');
+      // Check if this is a "no session" case (expected) vs actual error
+      if (error instanceof Error) {
+        if (error.message.includes('404') || 
+            error.message.includes('Active review session') ||
+            error.message.includes('not found')) {
+          // No active session - this is expected, return null
+          return null;
+        }
       }
+      // Actual error - log and throw
+      console.error('Failed to get active review session:', error);
       throw new Error(`Failed to get active review session: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }

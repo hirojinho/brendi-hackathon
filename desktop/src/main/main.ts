@@ -705,6 +705,11 @@ ipcMain.handle('review:get-active-session', async () => {
       headers: { 'Content-Type': 'application/json' },
     });
     
+    // 404 means no active session exists - this is expected, not an error
+    if (response.status === 404) {
+      return null;
+    }
+    
     if (!response.ok) {
       const error = await response.json().catch(() => ({ error: 'Unknown error' }));
       throw new Error(error.error || `HTTP ${response.status}`);
@@ -712,7 +717,11 @@ ipcMain.handle('review:get-active-session', async () => {
     
     return await response.json();
   } catch (error: any) {
-    console.error('[Main] Review get active session error:', error);
+    // Only log actual errors, not "no session" cases
+    if (!error.message?.includes('404') && !error.message?.includes('Active review session')) {
+      console.error('[Main] Review get active session error:', error);
+    }
+    // Re-throw to let frontend handle it
     throw error;
   }
 });
