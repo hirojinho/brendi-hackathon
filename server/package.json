@@ -9,7 +9,8 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "test": "jest",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "postinstall": "if [ -d ../desktop/node_modules/electron ]; then npx electron-rebuild -f -w better-sqlite3 --electron-prebuilt-dir=../desktop/node_modules/electron 2>&1 | grep -v 'No receipt for' || (echo ''; echo '⚠️  Native module rebuild failed. This is likely due to missing Xcode.'; echo '   The app will use in-memory storage until better-sqlite3 is rebuilt for Electron.'; echo '   To fix: Install Xcode from App Store, then run: cd ../desktop && npm run rebuild:native'; echo ''); else echo 'Electron not found, skipping native module rebuild for Electron'; fi"
   },
   "keywords": [],
   "author": "",
@@ -38,6 +39,7 @@
     "@types/jest": "^30.0.0",
     "@types/node": "^20.11.24",
     "@types/uuid": "^10.0.0",
+    "electron-rebuild": "^3.2.9",
     "fast-check": "^4.4.0",
     "jest": "^30.2.0",
     "ts-jest": "^29.4.6",
